@@ -25,22 +25,22 @@ BufferOutput::BufferOutput(VideoOptions const *options) : Output(options), buf_(
 	if (!fp_)
 		throw std::runtime_error("could not open output file");
 
-	std::thread t1(WriterThread, std::ref(*this));
-	t1.detach();
+	// std::thread t1(WriterThread, std::ref(*this));
+	// t1.detach();
 }
 
 BufferOutput::~BufferOutput()
 {
-	// while(framesWritten_ < framesBuffered_)
-	// {
-	// 	if (fwrite(buf_[framesWritten_], 18677760, 1, fp_) != 1) // NEED TO % 300
-	// 		std::cerr << "failed to write output bytes" << std::endl;
-	// 	else
-	// 	{
-	// 		std::cerr << "Frames Written: " << framesWritten_ << ", Frames Buffered: " << framesBuffered_ << std::endl;
-	// 		framesWritten_++;
-	// 	}
-	// }
+	while(framesWritten_ < framesBuffered_)
+	{
+		if (fwrite(buf_[framesWritten_], 18677760, 1, fp_) != 1) // NEED TO % 300
+			std::cerr << "failed to write output bytes" << std::endl;
+		else
+		{
+			std::cerr << "Frames Written: " << framesWritten_ << ", Frames Buffered: " << framesBuffered_ << std::endl;
+			framesWritten_++;
+		}
+	}
 	CloseFile();
 }
 
@@ -52,11 +52,11 @@ void BufferOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, ui
 	auto stop = high_resolution_clock::now();
 	auto duration = duration_cast<milliseconds>(stop - start);
 	std::cerr << "Copy took: " << duration.count() << "ms, Frames Buffered: " << framesBuffered_ << std::endl;
-	while (framesBuffered_ == options_->frames &&  framesWritten_ != options_->frames)
-	{
-		std::cerr << "Waiting 100ms for WriterThread to finish" << std::endl;
-		std::this_thread::sleep_for (std::chrono::milliseconds(100));
-	}
+	// while (framesBuffered_ == options_->frames &&  framesWritten_ != options_->frames)
+	// {
+	// 	std::cerr << "Waiting 100ms for WriterThread to finish" << std::endl;
+	// 	std::this_thread::sleep_for (std::chrono::milliseconds(100));
+	// }
 }
 
 void BufferOutput::CloseFile()
