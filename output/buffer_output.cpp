@@ -77,25 +77,23 @@ void BufferOutput::WriterThread(BufferOutput &obj)
 
 	while (obj.fp_ != nullptr)
 	{
-		// obj.lastWriteTime_ = 0;
 		// if (obj.framesBuffered_ == 300) 
 		// {
-		// 	while(obj.framesBuffered_ - obj.framesWritten_ > 0)
-		// 	{
-		// 		if (fwrite(obj.buf_[obj.framesWritten_], 18677760, 1, obj.fp_) != 1) // NEED TO % 300
-		// 			throw std::runtime_error("failed to write output bytes");
-		// 		else
-		// 			obj.framesWritten_++;
-		// 	}
+			while(obj.framesBuffered_ - obj.framesWritten_ > 0)
+			{
+				if (fwrite(obj.buf_[obj.framesWritten_], 18677760, 1, obj.fp_) != 1) // NEED TO % 300
+					throw std::runtime_error("failed to write output bytes");
+				else
+					obj.framesWritten_++;
+			}
 		// }
 		// else if (obj.framesBuffered_ - obj.framesWritten_ > 0)
-		if (obj.framesBuffered_ - obj.framesWritten_ > 0)
-		{
-			if (fwrite(obj.buf_[obj.framesWritten_], 18677760, 1, obj.fp_) != 1) // NEED TO % 300
-				throw std::runtime_error("failed to write output bytes");
-			else
-				obj.framesWritten_++;
-		}
+		// {
+		// 	if (fwrite(obj.buf_[obj.framesWritten_], 18677760, 1, obj.fp_) != 1) // NEED TO % 300
+		// 		throw std::runtime_error("failed to write output bytes");
+		// 	else
+		// 		obj.framesWritten_++;
+		// }
 		std::this_thread::sleep_for (std::chrono::milliseconds(100));
 	}
 	std::cerr << "NULL!!!" << std::endl;
