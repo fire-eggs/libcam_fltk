@@ -38,7 +38,7 @@ BufferOutput::~BufferOutput()
 void BufferOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint32_t flags)
 {
 	auto start = high_resolution_clock::now();
-	memcpy(&buf_[framesBuffered_], mem, 18495360); // Need to pad/align to 4096
+	memcpy(&buf_[framesBuffered_], mem, 18677760); // Need to pad/align to 4096
 	auto stop = high_resolution_clock::now();
 	auto duration = duration_cast<milliseconds>(stop - start);
 	std::cerr << "Copy took: " << duration.count() << "ms framesBuffered: " << framesBuffered_ << " framesWritten: " << framesWritten_ << " lastWriteTime(broken): " << lastWriteTime_ << std::endl;
@@ -67,7 +67,7 @@ void BufferOutput::WriterThread(BufferOutput &obj) // NEED A WAY TO HOLD PROGRAM
 		while(obj.framesBuffered_ - obj.framesWritten_ > 0)
 		{
 			auto start = high_resolution_clock::now();
-			if (fwrite(obj.buf_[obj.framesBuffered_ - 1], 18495360, 1, obj.fp_) != 1) 
+			if (fwrite(obj.buf_[obj.framesBuffered_ - 1], 18677760, 1, obj.fp_) != 1) // NEED TO % 300
 				throw std::runtime_error("failed to write output bytes");
 			else
 				obj.framesWritten_++;
