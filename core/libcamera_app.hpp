@@ -138,10 +138,18 @@ private:
 		}
 		T Wait()
 		{
+			std::cerr << "WAIT0" << std::endl;
 			std::unique_lock<std::mutex> lock(mutex_);
-			cond_.wait(lock, [this] { return !queue_.empty(); });
+			std::cerr << "WAIT1" << std::endl;
+			// cond_.wait(lock, [this] { 
+			// 	std::cerr << "WAITWAIT: " << !queue_.empty() << std::endl;
+			// 	return !queue_.empty(); 
+			// });
+			std::cerr << "WAIT2" << std::endl;
 			T msg = std::move(queue_.front());
+			std::cerr << "WAIT3" << std::endl;
 			queue_.pop();
+			std::cerr << "WAIT4" << std::endl;
 			return msg;
 		}
 		void Clear()

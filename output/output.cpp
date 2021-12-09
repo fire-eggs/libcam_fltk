@@ -28,6 +28,12 @@ Output::Output(VideoOptions const *options)
 	enable_ = !options->pause;
 }
 
+Output::Output()
+	: state_(WAITING_KEYFRAME), fp_timestamps_(nullptr), time_offset_(0), last_timestamp_(0)
+{
+	enable_ = true;
+}
+
 Output::~Output()
 {
 	if (fp_timestamps_)
@@ -75,10 +81,13 @@ Output *Output::Create(VideoOptions const *options)
 		return new NetOutput(options);
 	else if (options->circular)
 		return new CircularOutput(options);
-	else if (options->buffer)
-		return new BufferOutput(options);
 	else if (!options->output.empty())
 		return new FileOutput(options);
 	else
 		return new Output(options);
+}
+
+Output *Output::Create()
+{
+	return new BufferOutput();
 }

@@ -17,8 +17,10 @@ class Output
 {
 public:
 	static Output *Create(VideoOptions const *options);
+	static Output *Create();
 
 	Output(VideoOptions const *options);
+	Output();
 	virtual ~Output();
 	virtual void Signal(); // a derived class might redefine what this means
 	void OutputReady(void *mem, size_t size, int64_t timestamp_us, bool keyframe);

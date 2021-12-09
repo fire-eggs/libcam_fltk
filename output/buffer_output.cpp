@@ -14,17 +14,9 @@ using namespace std::chrono;
 // We're going to align the frames within the buffer to friendly byte boundaries
 // static constexpr int ALIGN = 16; // power of 2, please
 
-BufferOutput::BufferOutput(VideoOptions const *options) : Output(options), buf_(), framesBuffered_(0), framesWritten_(0)
+BufferOutput::BufferOutput() : Output(), buf_(), framesBuffered_(0), framesWritten_(0)
 {
-	if (options_->output == "-")
-		fp_ = stdout;
-	else if (!options_->output.empty())
-	{
-		fp_ = fopen(options_->output.c_str(), "w");
-	}
-	if (!fp_)
-		throw std::runtime_error("could not open output file");
-
+	fp_ = stdout;
 	// std::thread t1(WriterThread, std::ref(*this));
 	// t1.detach();
 }
@@ -41,7 +33,8 @@ BufferOutput::~BufferOutput()
 			framesWritten_++;
 		}
 	}
-	CloseFile();
+	// CloseFile();
+	Reset();
 }
 
 void BufferOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint32_t flags)
@@ -52,7 +45,7 @@ void BufferOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, ui
 	auto stop = high_resolution_clock::now();
 	auto duration = duration_cast<milliseconds>(stop - start);
 	std::cerr << "Copy took: " << duration.count() << "ms, Frames Buffered: " << framesBuffered_ << std::endl;
-	// while (framesBuffered_ == options_->frames &&  framesWritten_ != options_->frames)
+	// while (framesBuffered_ == options_->frames &&  framesWritten_ != options_->frames) // OPTIONS NO LONGER EXISTS
 	// {
 	// 	std::cerr << "Waiting 100ms for WriterThread to finish" << std::endl;
 	// 	std::this_thread::sleep_for (std::chrono::milliseconds(100));
@@ -65,6 +58,13 @@ void BufferOutput::CloseFile()
 		fclose(fp_);
 	fp_ = nullptr;
 }
+
+void BufferOutput::Reset()
+{
+	framesWritten_ = 0;
+	framesBuffered_ = 0;
+}
+
 
 void BufferOutput::WriterThread(BufferOutput &obj)
 {

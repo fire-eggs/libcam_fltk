@@ -50,8 +50,6 @@ struct VideoOptions : public Options
 			 "Create a new output file every time recording is paused and then resumed")
 			("segment", value<uint32_t>(&segment)->default_value(0),
 			 "Break the recording into files of approximately this many milliseconds")
-			("buffer", value<bool>(&buffer)->default_value(false)->implicit_value(true),
-			 "Buffer output")
 			("circular", value<size_t>(&circular)->default_value(0)->implicit_value(4),
 			 "Write output to a circular buffer of the given size (in MB) which is saved on exit")
 			("frames", value<unsigned int>(&frames)->default_value(0),
@@ -77,7 +75,6 @@ struct VideoOptions : public Options
 	uint32_t segment;
 	size_t circular;
 	uint32_t frames;
-	bool buffer;
 	
 	virtual bool Parse(int argc, char *argv[]) override
 	{
@@ -126,6 +123,5 @@ struct VideoOptions : public Options
 		std::cerr << "    split: " << split << std::endl;
 		std::cerr << "    segment: " << segment << std::endl;
 		std::cerr << "    circular: " << circular << std::endl;
-		std::cerr << "    buffer: " << buffer << std::endl;
 	}
 };

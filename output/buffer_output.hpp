@@ -12,7 +12,7 @@
 class BufferOutput : public Output
 {
 	public:
-		BufferOutput(VideoOptions const *options);
+		BufferOutput();
 		~BufferOutput();
 
 	protected:
@@ -20,8 +20,9 @@ class BufferOutput : public Output
 
 	private:
 		void CloseFile();
+		void Reset();
 		static void WriterThread(BufferOutput &obj);
-		std::array<std::byte[18677760], 300> buf_;
+		std::array<std::byte[18677760], 50> buf_;
 		std::atomic_uint framesBuffered_;
 		std::atomic_uint framesWritten_;
 		FILE *fp_;
