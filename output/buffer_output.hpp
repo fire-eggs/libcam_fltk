@@ -22,8 +22,7 @@ class BufferOutput : public Output
 		void CloseFile();
 		static void WriterThread(BufferOutput &obj);
 		std::array<std::byte[18677760], 300> buf_;
-		size_t framesBuffered_;
-		size_t framesWritten_;
-		size_t lastWriteTime_;
+		std::atomic_uint framesBuffered_;
+		std::atomic_uint framesWritten_;
 		FILE *fp_;
 };
