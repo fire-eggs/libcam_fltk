@@ -8,6 +8,7 @@
 #include <cinttypes>
 #include <stdexcept>
 
+#include "buffer_output.hpp"
 #include "circular_output.hpp"
 #include "file_output.hpp"
 #include "net_output.hpp"
@@ -74,6 +75,8 @@ Output *Output::Create(VideoOptions const *options)
 		return new NetOutput(options);
 	else if (options->circular)
 		return new CircularOutput(options);
+	else if (options->buffer)
+		return new BufferOutput(options);
 	else if (!options->output.empty())
 		return new FileOutput(options);
 	else
