@@ -11,12 +11,13 @@
 #include <sys/signalfd.h>
 #include <sys/stat.h>
 
+#include "core/control_options.hpp"
 #include "core/libcamera_encoder.hpp"
 #include "output/output.hpp"
 
 using namespace std::placeholders;
 
-// GLOBAL HACKS UNTIL CREATION OF CONTROL_OPTIONS AND CONTROL CLASS
+// GLOBAL HACKS UNTIL CREATION CONTROL CLASS
 int global_argc;
 char **global_argv;
 pollfd p[1] = { { STDIN_FILENO, POLLIN, 0 } }; // NOT REALLY SURE WHAT THIS DOES
@@ -102,7 +103,7 @@ int main(int argc, char *argv[])
 		std::unique_ptr<Output> output = std::unique_ptr<Output>(Output::Create());
 		while (true) 
 		{
-			if (signal_received == 10)
+			if (signal_received == 10) // TWO SIGNALS SHOULD BE: 1 CHECK FILE FOR MODE AND PARAMETERS, 2 STOP CURRENT CAPTURE
 			{
 				std::cerr << "HERE1" << std::endl;
 				signal_received = 0;
