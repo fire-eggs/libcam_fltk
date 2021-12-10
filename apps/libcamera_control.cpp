@@ -187,7 +187,8 @@ static void yuv420_save(std::vector<libcamera::Span<uint8_t>> const &mem, unsign
 			throw std::runtime_error("both width and height must be even");
 		if (mem.size() != 1)
 			throw std::runtime_error("incorrect number of planes in YUV420 data");
-		FILE *fp = fopen(filename.c_str(), "w");
+		// FILE *fp = fopen(filename.c_str(), "w");
+		FILE *fp = stdout;
 		if (!fp)
 			throw std::runtime_error("failed to open file " + filename);
 		try
@@ -214,7 +215,7 @@ static void yuv420_save(std::vector<libcamera::Span<uint8_t>> const &mem, unsign
 		}
 		catch (std::exception const &e)
 		{
-			fclose(fp);
+			// fclose(fp);
 			throw;
 		}
 	}
@@ -329,7 +330,6 @@ static void still() {
 
 	}
 	options->timeout = 0;
-	options->output = parameters.at("output");
 	options->mode = parameters.at("sensor_mode"); // BROKEN CURRENTLY WITH "4056:3040:12:P" / PASS "" FOR NOW
 	options->width = parameters.at("width");
 	options->height = parameters.at("height");
@@ -381,7 +381,6 @@ static void still() {
 		// capture mode if an output was requested.
 		if (app.ViewfinderStream())
 		{
-			std::cerr << "DUSTIN  ViewfinderStream" << std::endl;
 			if (options->verbose)
 				std::cerr << "Viewfinder frame " << count << std::endl;
 
@@ -453,7 +452,6 @@ static void video(std::unique_ptr<Output> & output) {
 		options->height = parameters.at("height");
 		options->framerate = parameters.at("framerate");
 	}
-	options->output = parameters.at("output");
 	options->frames = parameters.at("frames");
 	options->shutter = parameters.at("shutter");
 	options->sharpness = parameters.at("sharpness");
