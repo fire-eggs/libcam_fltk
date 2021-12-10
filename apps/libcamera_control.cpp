@@ -73,9 +73,6 @@ int main(int argc, char *argv[])
 
 			for (unsigned int count = 0; ; count++)
 			{
-				std::cerr << "HERE0" << std::endl;
-				try
-				{
 				LibcameraEncoder::Msg msg = app.Wait();
 				// if (msg.type == LibcameraEncoder::MsgType::Quit)
 				// 	break;
@@ -87,7 +84,6 @@ int main(int argc, char *argv[])
 
 				// if (options->verbose)
 				// 	std::cerr << "Viewfinder frame " << count << std::endl;
-				std::cerr << "HERE1" << std::endl;
 				auto now = std::chrono::high_resolution_clock::now();
 				bool timeout = !options->frames && options->timeout &&
 							   (now - start_time > std::chrono::milliseconds(options->timeout));
@@ -95,25 +91,15 @@ int main(int argc, char *argv[])
 				// if (timeout || frameout || key == 'x' || key == 'X')
 				if (timeout || frameout)
 				{
-					std::cerr << "HERE2" << std::endl;
 					app.StopCamera(); // stop complains if encoder very slow to close
-					std::cerr << "HERE3" << std::endl;
 					app.StopEncoder();
-					std::cerr << "HERE4" << std::endl;
 					break;
 				}
-				std::cerr << "HERE5" << std::endl;
 				CompletedRequestPtr &completed_request = std::get<CompletedRequestPtr>(msg.payload);
 				app.EncodeBuffer(completed_request, app.VideoStream());
 				// app.ShowPreview(completed_request, app.VideoStream());
-				std::cerr << "HERE6" << std::endl;
-				}
-				catch (std::exception const &e)
-				{
-					std::cerr << "ERROR: *** " << e.what() << " ***" << std::endl;
-				}
-				
 			}
+			output->WriteOut();
 			std::cerr << "DUSTIN END" << std::endl;
 		}
 	}

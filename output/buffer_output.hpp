@@ -14,6 +14,7 @@ class BufferOutput : public Output
 	public:
 		BufferOutput();
 		~BufferOutput();
+		void WriteOut();
 
 	protected:
 		void outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint32_t flags) override;

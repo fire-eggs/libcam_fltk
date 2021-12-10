@@ -21,7 +21,22 @@ BufferOutput::BufferOutput() : Output(), buf_(), framesBuffered_(0), framesWritt
 	// t1.detach();
 }
 
-BufferOutput::~BufferOutput()
+BufferOutput::~BufferOutput() // NOT USED
+{
+	// while(framesWritten_ < framesBuffered_)
+	// {
+	// 	if (fwrite(buf_[framesWritten_], 18677760, 1, fp_) != 1) // NEED TO % 300
+	// 		std::cerr << "failed to write output bytes" << std::endl;
+	// 	else
+	// 	{
+	// 		std::cerr << "Frames Written: " << framesWritten_ << ", Frames Buffered: " << framesBuffered_ << std::endl;
+	// 		framesWritten_++;
+	// 	}
+	// }
+	// CloseFile();
+}
+
+void BufferOutput::WriteOut()
 {
 	while(framesWritten_ < framesBuffered_)
 	{
@@ -29,7 +44,7 @@ BufferOutput::~BufferOutput()
 			std::cerr << "failed to write output bytes" << std::endl;
 		else
 		{
-			std::cerr << "Frames Written: " << framesWritten_ << ", Frames Buffered: " << framesBuffered_ << std::endl;
+			std::cerr << "Frames Written: " << (framesWritten_+1) << ", Frames Buffered: " << framesBuffered_ << std::endl;
 			framesWritten_++;
 		}
 	}
@@ -61,6 +76,7 @@ void BufferOutput::CloseFile()
 
 void BufferOutput::Reset()
 {
+	std::cerr << "DUSTIN RESET" << std::endl;
 	framesWritten_ = 0;
 	framesBuffered_ = 0;
 }

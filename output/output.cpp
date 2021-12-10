@@ -45,6 +45,11 @@ void Output::Signal()
 	enable_ = !enable_;
 }
 
+void Output::WriteOut() 
+{
+
+}
+
 void Output::OutputReady(void *mem, size_t size, int64_t timestamp_us, bool keyframe)
 {
 	// When output is enabled, we may have to wait for the next keyframe.
