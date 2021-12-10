@@ -139,9 +139,7 @@ private:
 		T Wait()
 		{
 			std::unique_lock<std::mutex> lock(mutex_);
-			cond_.wait(lock, [this] { 
-				return !queue_.empty(); 
-			});
+			cond_.wait(lock, [this] { return !queue_.empty(); });
 			T msg = std::move(queue_.front());
 			queue_.pop();
 			return msg;
