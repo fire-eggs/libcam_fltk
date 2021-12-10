@@ -76,7 +76,7 @@ void BufferOutput::CloseFile()
 
 void BufferOutput::Reset()
 {
-	std::cerr << "DUSTIN RESET" << std::endl;
+	std::cerr << "RESETTING BUFFER" << std::endl;
 	framesWritten_ = 0;
 	framesBuffered_ = 0;
 }

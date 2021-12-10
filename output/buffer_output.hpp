@@ -15,13 +15,13 @@ class BufferOutput : public Output
 		BufferOutput();
 		~BufferOutput();
 		void WriteOut();
+		void Reset();
 
 	protected:
 		void outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint32_t flags) override;
 
 	private:
 		void CloseFile();
-		void Reset();
 		static void WriterThread(BufferOutput &obj);
 		std::array<std::byte[18677760], 50> buf_;
 		std::atomic_uint framesBuffered_;

@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright (C) 2020, Raspberry Pi (Trading) Ltd.
+ * Copyright (C) 2020, Raspberry Pi (Trading) Ltd. / Dustin Kerstein
  *
  * libcamera_control.cpp
  */
@@ -14,20 +14,32 @@
 #include "core/libcamera_encoder.hpp"
 #include "output/output.hpp"
 #include "image/image.hpp"
+#include "core/json.hpp"
 
 using namespace std::placeholders;
 using libcamera::Stream;
+using json = nlohmann::json;
 
 // GLOBAL HACKS UNTIL CREATION CONTROL CLASS
+json parameters;
 int global_argc;
 char **global_argv;
 pollfd p[1] = { { STDIN_FILENO, POLLIN, 0 } }; // NOT REALLY SURE WHAT THIS DOES
 
+static bool capturing;
 static int signal_received;
+static int control_signal_received;
+
 static void default_signal_handler(int signal_number)
 {
 	signal_received = signal_number;
 	std::cerr << "Received signal " << signal_number << std::endl;
+}
+
+static void control_signal_handler(int signal_number)
+{
+	control_signal_received = signal_number;
+	std::cerr << "Control received signal " << signal_number << std::endl;
 }
 
 static int get_key_or_signal(StillOptions const *options, pollfd p[1])
@@ -44,14 +56,13 @@ static int get_key_or_signal(StillOptions const *options, pollfd p[1])
 			key = user_string[0];
 		}
 	}
-	if (options->signal)
-	{
-		if (signal_received == SIGUSR1)
-			key = '\n';
-		else if (signal_received == SIGUSR2)
-			key = 'x';
-		signal_received = 0;
-	}
+
+	if (signal_received == SIGUSR1)
+		key = '\n';
+	else if (signal_received == SIGUSR2)
+		key = 'x';
+	signal_received = 0;
+
 	return key;
 }
 
@@ -69,13 +80,13 @@ static int get_key_or_signal(VideoOptions const *options, pollfd p[1])
 			key = user_string[0];
 		}
 	}
-	if (options->signal)
-	{
-		if (signal_received == SIGUSR1)
-			key = '\n';
-		else if (signal_received == SIGUSR2)
-			key = 'x';
-	}
+
+	if (signal_received == SIGUSR1)
+		key = '\n';
+	else if (signal_received == SIGUSR2)
+		key = 'x';
+	signal_received = 0;
+
 	return key;
 }
 
@@ -170,7 +181,6 @@ static void save_images(LibcameraStillApp &app, CompletedRequestPtr &payload)
 static void yuv420_save(std::vector<libcamera::Span<uint8_t>> const &mem, unsigned int w, unsigned int h,
 						unsigned int stride, std::string const &filename, StillOptions const *options)
 {
-	std::cerr << "DUSTIN yuv420_save" << std::endl;
 	if (options->encoding == "yuv420")
 	{
 		if ((w & 1) || (h & 1))
@@ -213,9 +223,8 @@ static void yuv420_save(std::vector<libcamera::Span<uint8_t>> const &mem, unsign
 }
 
 static void yuyv_save(std::vector<libcamera::Span<uint8_t>> const &mem, unsigned int w, unsigned int h,
-					  unsigned int stride, std::string const &filename, StillOptions const *options)
+					  unsigned int stride, std::string const &filename, StillOptions const *options) // UNUSED
 {
-	std::cerr << "DUSTIN yuyv_save" << std::endl;
 	if (options->encoding == "yuv420")
 	{
 		if ((w & 1) || (h & 1))
@@ -293,7 +302,6 @@ static void rgb_save(std::vector<libcamera::Span<uint8_t>> const &mem, unsigned 
 void yuv_save(std::vector<libcamera::Span<uint8_t>> const &mem, unsigned int w, unsigned int h, unsigned int stride,
 			  libcamera::PixelFormat const &pixel_format, std::string const &filename, StillOptions const *options)
 {
-	std::cerr << "DUSTIN yuv_save" << std::endl;
 	if (pixel_format == libcamera::formats::YUYV)
 		yuyv_save(mem, w, h, stride, filename, options);
 	else if (pixel_format == libcamera::formats::YUV420)
@@ -304,11 +312,39 @@ void yuv_save(std::vector<libcamera::Span<uint8_t>> const &mem, unsigned int w, 
 		throw std::runtime_error("unrecognised YUV/RGB save format");
 }
 
-static void Still() {
+static void still() {
+	std::cerr << "STILL START" << std::endl;
+	capturing = true;
 	LibcameraStillApp app;
-	// StillOptions *options = app.GetOptions();
-	StillOptions *options = app.GetOptions(); // NEED TO SET OPTIONS BASED ON FILE INPUT PARAMETERS
+	StillOptions *options = app.GetOptions();
 	options->Parse(global_argc, global_argv);
+	if (parameters.at("mode") == 1)
+	{
+		options->timelapse = parameters.at("timelapse");
+	}
+	else if (parameters.at("mode") == 3)
+	{
+		options->signal = true;
+		options->keypress = true;
+
+	}
+	options->timeout = 0;
+	options->output = parameters.at("output");
+	options->mode = parameters.at("sensor_mode"); // BROKEN CURRENTLY WITH "4056:3040:12:P" / PASS "" FOR NOW
+	options->width = parameters.at("width");
+	options->height = parameters.at("height");
+	options->shutter = parameters.at("shutter");
+	options->sharpness = parameters.at("sharpness");
+	options->sharpness = parameters.at("saturation");
+	options->sharpness = parameters.at("contrast");
+	options->sharpness = parameters.at("brightness");
+	options->gain = parameters.at("gain");
+	options->awb = parameters.at("wbmode");
+	options->denoise = parameters.at("denoise");
+	options->encoding = "yuv420";
+	options->nopreview = true;
+	options->immediate = true;
+	options->output = "-";
 	bool output = !options->output.empty() || options->datetime || options->timestamp; // output requested?
 	bool keypress = options->keypress || options->signal; // "signal" mode is much like "keypress" mode
 	unsigned int still_flags = LibcameraApp::FLAG_STILL_NONE;
@@ -332,14 +368,14 @@ static void Still() {
 	{
 		LibcameraApp::Msg msg = app.Wait();
 		if (msg.type == LibcameraApp::MsgType::Quit)
-			return;
+			break;
 		else if (msg.type != LibcameraApp::MsgType::RequestComplete)
 			throw std::runtime_error("unrecognised message!");
 
 		auto now = std::chrono::high_resolution_clock::now();
 		int key = get_key_or_signal(options, p);
 		if (key == 'x' || key == 'X')
-			return;
+			break;
 
 		// In viewfinder mode, simply run until the timeout. When that happens, switch to
 		// capture mode if an output was requested.
@@ -360,7 +396,7 @@ static void Still() {
 				if (!output || // we have no output file
 					(timed_out && options->timelapse) || // timed out in timelapse mode
 					(!keypressed && keypress)) // no key was pressed (in keypress mode)
-					return;
+					break;
 				else
 				{
 					timelapse_time = std::chrono::high_resolution_clock::now();
@@ -390,16 +426,46 @@ static void Still() {
 				app.StartCamera();
 			}
 			else
-				return;
+				break;
 		}
 	}
+	capturing = false;
+	std::cerr << "STILL END" << std::endl;
 }
 
-static void Video(std::unique_ptr<Output> & output) {
+static void video(std::unique_ptr<Output> & output) {
 	std::cerr << "VIDEO START" << std::endl;
+	capturing = true;
 	LibcameraEncoder app;
-	VideoOptions *options = app.GetOptions(); // NEED TO SET OPTIONS BASED ON FILE INPUT PARAMETERS
+	VideoOptions *options = app.GetOptions();
 	options->Parse(global_argc, global_argv);
+	if (parameters.at("mode") == 0)
+	{
+		options->mode = parameters.at("sensor_mode"); // BROKEN CURRENTLY WITH "4056:3040:12:P" / PASS "" FOR NOW
+		options->width = parameters.at("preview_width");
+		options->height = parameters.at("preview_height");
+		options->framerate = parameters.at("preview_framerate");
+	}
+	else if (parameters.at("mode") == 2)
+	{
+		options->mode = parameters.at("sensor_mode"); // BROKEN CURRENTLY WITH "4056:3040:12:P" / PASS "" FOR NOW
+		options->width = parameters.at("width");
+		options->height = parameters.at("height");
+		options->framerate = parameters.at("framerate");
+	}
+	options->output = parameters.at("output");
+	options->frames = parameters.at("frames");
+	options->shutter = parameters.at("shutter");
+	options->sharpness = parameters.at("sharpness");
+	options->sharpness = parameters.at("saturation");
+	options->sharpness = parameters.at("contrast");
+	options->sharpness = parameters.at("brightness");
+	options->gain = parameters.at("gain");
+	options->awb = parameters.at("wbmode");
+	options->denoise = parameters.at("denoise");
+	options->save_pts = parameters.at("save_pts"); // DOESN'T WORK
+	options->codec = "yuv420";
+	options->nopreview = true;
 	app.SetEncodeOutputReadyCallback(std::bind(&Output::OutputReady, output.get(), _1, _2, _3, _4));
 	app.StartEncoder();
 	app.OpenCamera();
@@ -415,8 +481,8 @@ static void Video(std::unique_ptr<Output> & output) {
 		else if (msg.type != LibcameraEncoder::MsgType::RequestComplete)
 			throw std::runtime_error("unrecognised message!");
 		int key = get_key_or_signal(options, p);
-		if (key == '\n')
-			output->Signal();
+		// if (key == '\n')
+		// 	output->Signal();
 
 		if (options->verbose)
 			std::cerr << "Viewfinder frame " << count << std::endl;
@@ -434,32 +500,42 @@ static void Video(std::unique_ptr<Output> & output) {
 		app.EncodeBuffer(completed_request, app.VideoStream());
 	}
 	output->WriteOut();
+	capturing = false;
 	std::cerr << "VIDEO END" << std::endl;
 }
 
-int main(int argc, char *argv[])
+std::string bool_as_text(bool b)
+{
+    std::stringstream converter;
+    converter << std::boolalpha << b;
+    return converter.str();
+}
+
+int main(int argc, char *argv[]) // NEED TO PASS MODE TO BUFFER_OUTPUT SO IT KNOWS TO USE THREADED WRITE FOR PREVIEW MODE
 {
 	try
 	{
 		global_argc = argc;
 		global_argv = argv;
-		signal(SIGUSR1, default_signal_handler);
-		signal(SIGUSR2, default_signal_handler);
+		signal(SIGHUP, control_signal_handler); // START NEW CAPTURE (SIGUSR2 MUST ALWAYS PRECEED SIGHUP)
+		signal(SIGUSR1, default_signal_handler); // TRIGGER CAPTURE
+		signal(SIGUSR2, default_signal_handler); // END CAPTURE
 		std::unique_ptr<Output> output = std::unique_ptr<Output>(Output::Create());
 		while (true) 
 		{
-			if (signal_received == 10) // TWO SIGNALS SHOULD BE: 1 CHECK FILE FOR MODE AND PARAMETERS, 2 STOP CURRENT CAPTURE
+			if (!capturing && control_signal_received == 1)
 			{
-				std::cerr << "HERE1" << std::endl;
-				signal_received = 0;
-				Video(output);
-			} else if (signal_received == 12)
-			{
-				std::cerr << "HERE2" << std::endl;
-				signal_received = 0;
-				Still();
+				std::cerr << "READING PARAMETERS" << std::endl;
+				std::ifstream ifs("/home/pi/parameters.json");
+				std::string content((std::istreambuf_iterator<char>(ifs)),(std::istreambuf_iterator<char>()));
+				parameters = json::parse(content);
+				std::cerr << std::setw(4) << parameters << std::endl;
+				if (parameters.at("mode") == 0 || parameters.at("mode") == 2) 
+					video(output);
+				else if (parameters.at("mode") == 1 || parameters.at("mode") == 3)
+					still();
+				control_signal_received = 0;
 			}
-			// std::cerr << "SLEEPING FOR 1 SEC" << std::endl;
 			std::this_thread::sleep_for (std::chrono::milliseconds(10));
 		}
 	}
