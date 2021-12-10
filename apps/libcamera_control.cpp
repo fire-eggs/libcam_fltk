@@ -16,7 +16,10 @@
 
 using namespace std::placeholders;
 
-// Some keypress/signal handling.
+// GLOBAL HACKS UNTIL CREATION OF CONTROL_OPTIONS AND CONTROL CLASS
+int global_argc;
+char **global_argv;
+pollfd p[1] = { { STDIN_FILENO, POLLIN, 0 } }; // NOT REALLY SURE WHAT THIS DOES
 
 static int signal_received;
 static void default_signal_handler(int signal_number)
@@ -49,22 +52,17 @@ static int get_key_or_signal(VideoOptions const *options, pollfd p[1])
 	return key;
 }
 
-static void Video(std::unique_ptr<Output> & output, int argc, char *argv[]) {
-	std::cerr << "DUSTIN START" << std::endl;
+static void Video(std::unique_ptr<Output> & output) {
+	std::cerr << "VIDEO START" << std::endl;
 	LibcameraEncoder app;
 	VideoOptions *options = app.GetOptions();
-	options->Parse(argc, argv);
+	options->Parse(global_argc, global_argv);
 	app.SetEncodeOutputReadyCallback(std::bind(&Output::OutputReady, output.get(), _1, _2, _3, _4));
 	app.StartEncoder();
 	app.OpenCamera();
 	app.ConfigureVideo();
 	app.StartCamera();
 	auto start_time = std::chrono::high_resolution_clock::now();
-
-	// Monitoring for keypresses and signals.
-	signal(SIGUSR1, default_signal_handler);
-	signal(SIGUSR2, default_signal_handler);
-	pollfd p[1] = { { STDIN_FILENO, POLLIN, 0 } };
 
 	for (unsigned int count = 0; ; count++)
 	{
@@ -90,17 +88,32 @@ static void Video(std::unique_ptr<Output> & output, int argc, char *argv[]) {
 		app.EncodeBuffer(completed_request, app.VideoStream());
 	}
 	output->WriteOut();
-	std::cerr << "DUSTIN END" << std::endl;
+	std::cerr << "VIDEO END" << std::endl;
 }
 
 int main(int argc, char *argv[])
 {
 	try
 	{
+		global_argc = argc;
+		global_argv = argv;
+		signal(SIGUSR1, default_signal_handler);
+		signal(SIGUSR2, default_signal_handler);
 		std::unique_ptr<Output> output = std::unique_ptr<Output>(Output::Create());
-		while (true) {
-			Video(output, argc, argv);
-			std::this_thread::sleep_for (std::chrono::milliseconds(1000));
+		while (true) 
+		{
+			if (signal_received == 10)
+			{
+				std::cerr << "HERE1" << std::endl;
+				signal_received = 0;
+				Video(output);
+			} else if (signal_received == 12)
+			{
+				std::cerr << "HERE2" << std::endl;
+				signal_received = 0;
+			}
+			// std::cerr << "SLEEPING FOR 1 SEC" << std::endl;
+			std::this_thread::sleep_for (std::chrono::milliseconds(10));
 		}
 	}
 	catch (std::exception const &e)
