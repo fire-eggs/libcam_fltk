@@ -18,36 +18,36 @@ using namespace std::placeholders;
 
 // Some keypress/signal handling.
 
-// static int signal_received;
-// static void default_signal_handler(int signal_number)
-// {
-// 	signal_received = signal_number;
-// 	std::cerr << "Received signal " << signal_number << std::endl;
-// }
+static int signal_received;
+static void default_signal_handler(int signal_number)
+{
+	signal_received = signal_number;
+	std::cerr << "Received signal " << signal_number << std::endl;
+}
 
-// static int get_key_or_signal(VideoOptions const *options, pollfd p[1])
-// {
-// 	int key = 0;
-// 	if (options->keypress)
-// 	{
-// 		poll(p, 1, 0);
-// 		if (p[0].revents & POLLIN)
-// 		{
-// 			char *user_string = nullptr;
-// 			size_t len;
-// 			[[maybe_unused]] size_t r = getline(&user_string, &len, stdin);
-// 			key = user_string[0];
-// 		}
-// 	}
-// 	if (options->signal)
-// 	{
-// 		if (signal_received == SIGUSR1)
-// 			key = '\n';
-// 		else if (signal_received == SIGUSR2)
-// 			key = 'x';
-// 	}
-// 	return key;
-// }
+static int get_key_or_signal(VideoOptions const *options, pollfd p[1])
+{
+	int key = 0;
+	if (options->keypress)
+	{
+		poll(p, 1, 0);
+		if (p[0].revents & POLLIN)
+		{
+			char *user_string = nullptr;
+			size_t len;
+			[[maybe_unused]] size_t r = getline(&user_string, &len, stdin);
+			key = user_string[0];
+		}
+	}
+	if (options->signal)
+	{
+		if (signal_received == SIGUSR1)
+			key = '\n';
+		else if (signal_received == SIGUSR2)
+			key = 'x';
+	}
+	return key;
+}
 
 int main(int argc, char *argv[])
 {
@@ -67,37 +67,32 @@ int main(int argc, char *argv[])
 			auto start_time = std::chrono::high_resolution_clock::now();
 
 			// Monitoring for keypresses and signals.
-			// signal(SIGUSR1, default_signal_handler);
-			// signal(SIGUSR2, default_signal_handler);
-			// pollfd p[1] = { { STDIN_FILENO, POLLIN, 0 } };
+			signal(SIGUSR1, default_signal_handler);
+			signal(SIGUSR2, default_signal_handler);
+			pollfd p[1] = { { STDIN_FILENO, POLLIN, 0 } };
 
 			for (unsigned int count = 0; ; count++)
 			{
 				LibcameraEncoder::Msg msg = app.Wait();
-				// if (msg.type == LibcameraEncoder::MsgType::Quit)
-				// 	break;
-				// else if (msg.type != LibcameraEncoder::MsgType::RequestComplete)
-				// 	throw std::runtime_error("unrecognised message!");
-				// int key = get_key_or_signal(options, p);
-				// if (key == '\n')
-				// 	output->Signal();
-
-				// if (options->verbose)
-				// 	std::cerr << "Viewfinder frame " << count << std::endl;
+				if (msg.type == LibcameraEncoder::MsgType::Quit)
+					break;
+				else if (msg.type != LibcameraEncoder::MsgType::RequestComplete)
+					throw std::runtime_error("unrecognised message!");
+				int key = get_key_or_signal(options, p);
+				if (key == '\n')
+					output->Signal();
 				auto now = std::chrono::high_resolution_clock::now();
 				bool timeout = !options->frames && options->timeout &&
 							   (now - start_time > std::chrono::milliseconds(options->timeout));
 				bool frameout = options->frames && count >= options->frames;
-				// if (timeout || frameout || key == 'x' || key == 'X')
-				if (timeout || frameout)
+				if (timeout || frameout || key == 'x' || key == 'X')
 				{
-					app.StopCamera(); // stop complains if encoder very slow to close
+					app.StopCamera();
 					app.StopEncoder();
 					break;
 				}
 				CompletedRequestPtr &completed_request = std::get<CompletedRequestPtr>(msg.payload);
 				app.EncodeBuffer(completed_request, app.VideoStream());
-				// app.ShowPreview(completed_request, app.VideoStream());
 			}
 			output->WriteOut();
 			std::cerr << "DUSTIN END" << std::endl;
