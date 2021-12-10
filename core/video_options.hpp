@@ -75,7 +75,7 @@ struct VideoOptions : public Options
 	uint32_t segment;
 	size_t circular;
 	uint32_t frames;
-	
+
 	virtual bool Parse(int argc, char *argv[]) override
 	{
 		if (Options::Parse(argc, argv) == false)

@@ -25,7 +25,7 @@ public:
 	virtual void Signal(); // a derived class might redefine what this means
 	virtual void WriteOut();
 	void OutputReady(void *mem, size_t size, int64_t timestamp_us, bool keyframe);
-	
+
 protected:
 	enum Flag
 	{
