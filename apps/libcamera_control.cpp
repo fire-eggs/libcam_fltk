@@ -34,6 +34,7 @@ static int control_signal_received;
 
 static void default_signal_handler(int signal_number)
 {
+	if (!capturing) return;
 	signal_received = signal_number;
 	std::cerr << "Received signal " << signal_number << std::endl;
 }
