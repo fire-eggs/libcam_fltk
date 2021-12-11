@@ -41,6 +41,7 @@ static void default_signal_handler(int signal_number)
 
 static void control_signal_handler(int signal_number)
 {
+	if (capturing) return;
 	control_signal_received = signal_number;
 	std::cerr << "Control received signal " << signal_number << std::endl;
 }
@@ -438,6 +439,7 @@ static void still() {
 static void video(std::unique_ptr<Output> & output) {
 	std::cerr << "VIDEO START" << std::endl;
 	capturing = true;
+	output->Reset();
 	LibcameraEncoder app;
 	VideoOptions *options = app.GetOptions();
 	options->Parse(global_argc, global_argv);

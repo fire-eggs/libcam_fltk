@@ -24,6 +24,7 @@ public:
 	virtual ~Output();
 	virtual void Signal(); // a derived class might redefine what this means
 	virtual void WriteOut();
+	virtual void Reset();
 	void OutputReady(void *mem, size_t size, int64_t timestamp_us, bool keyframe);
 
 protected:

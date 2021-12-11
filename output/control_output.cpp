@@ -42,8 +42,8 @@ void ControlOutput::WriteOut()
 				framesWritten_++;
 			}
 		}
+		Reset();
 	}
-	Reset();
 }
 
 void ControlOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint32_t flags)
