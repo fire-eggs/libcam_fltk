@@ -86,10 +86,12 @@ void ControlOutput::Reset()
 	flags = 2;
 	state_ = WAITING_KEYFRAME;
 	last_timestamp_ = 0;
-	if (fp_)
-		fclose(fp_);
-	fp_ = fopen("/home/pi/pipe", "w");
-	std::cerr << "PIPE OPENED BY CONSUMER" << std::endl; // SHOULD SIGNAL TO PYTHON THAT CAPTURE
+	// if (fp_)
+	// 	fclose(fp_);
+	if (!fp_) {
+		fp_ = fopen("/home/pi/pipe", "w");
+		std::cerr << "PIPE OPENED BY CONSUMER" << std::endl;
+	}
 	if (Control::mode == 2 && !Control::timestampsFile.empty())
 	{
 		fp_timestamps_ = fopen(Control::timestampsFile.c_str(), "w");

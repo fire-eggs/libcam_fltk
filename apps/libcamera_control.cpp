@@ -193,8 +193,7 @@ static void yuv420_save(std::vector<libcamera::Span<uint8_t>> const &mem, unsign
 			throw std::runtime_error("both width and height must be even");
 		if (mem.size() != 1)
 			throw std::runtime_error("incorrect number of planes in YUV420 data");
-		// FILE *fp = fopen(filename.c_str(), "w");
-		FILE *fp = stdout;
+		FILE *fp = fopen("/home/pi/pipe", "w");
 		if (!fp)
 			throw std::runtime_error("failed to open file " + filename);
 		try
@@ -221,7 +220,7 @@ static void yuv420_save(std::vector<libcamera::Span<uint8_t>> const &mem, unsign
 		}
 		catch (std::exception const &e)
 		{
-			// fclose(fp);
+			fclose(fp);
 			throw;
 		}
 	}
@@ -319,9 +318,10 @@ void yuv_save(std::vector<libcamera::Span<uint8_t>> const &mem, unsigned int w, 
 		throw std::runtime_error("unrecognised YUV/RGB save format");
 }
 
-static void still() {
+static void still(std::unique_ptr<Output> & output) {
 	std::cerr << "STILL START" << std::endl;
 	capturing = true;
+	output->Reset();
 	LibcameraStillApp app;
 	StillOptions *options = app.GetOptions();
 	options->Parse(global_argc, global_argv);
@@ -351,7 +351,7 @@ static void still() {
 	options->nopreview = true;
 	options->immediate = true;
 	options->output = "-";
-	bool output = !options->output.empty() || options->datetime || options->timestamp; // output requested?
+	bool fileoutput = !options->output.empty() || options->datetime || options->timestamp; // output requested?
 	bool keypress = options->keypress || options->signal; // "signal" mode is much like "keypress" mode
 	unsigned int still_flags = LibcameraApp::FLAG_STILL_NONE;
 	if (options->encoding == "rgb" || options->encoding == "png")
@@ -398,7 +398,7 @@ static void still() {
 			if (timed_out || keypressed || timelapse_timed_out)
 			{
 				// Trigger a still capture unless:
-				if (!output || // we have no output file
+				if (!fileoutput || // we have no output file
 					(timed_out && options->timelapse) || // timed out in timelapse mode
 					(!keypressed && keypress)) // no key was pressed (in keypress mode)
 					break;
@@ -538,7 +538,7 @@ int main(int argc, char *argv[])
 				if (Control::mode == 0 || Control::mode == 2) 
 					video(output);
 				else if (Control::mode == 1 || Control::mode == 3)
-					still();
+					still(output);
 				control_signal_received = 0;
 			}
 			std::this_thread::sleep_for (std::chrono::milliseconds(10));
