@@ -5,11 +5,14 @@
  * control_output.cpp
  */
 
-#include "control_output.hpp"
 #include <thread>
 #include <pthread.h>
 #include <chrono>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include "core/control.hpp"
+#include "control_output.hpp"
 using namespace std::chrono;
 
 // We're going to align the frames within the buffer to friendly byte boundaries
@@ -20,7 +23,10 @@ bool Control::enableBuffer;
 
 ControlOutput::ControlOutput() : Output(), buf_(), framesBuffered_(0), framesWritten_(0)
 {
-	fp_ = stdout;
+	char * myfifo = new char [14];
+	strcpy(myfifo, "/home/pi/pipe");
+	mkfifo(myfifo, 0666);
+	std::cerr << "PIPE CREATED" << std::endl;
 }
 
 ControlOutput::~ControlOutput()
@@ -80,6 +86,10 @@ void ControlOutput::Reset()
 	flags = 2;
 	state_ = WAITING_KEYFRAME;
 	last_timestamp_ = 0;
+	if (fp_)
+		fclose(fp_);
+	fp_ = fopen("/home/pi/pipe", "w");
+	std::cerr << "PIPE OPENED BY CONSUMER" << std::endl; // SHOULD SIGNAL TO PYTHON THAT CAPTURE
 	if (Control::mode == 2 && !Control::timestampsFile.empty())
 	{
 		fp_timestamps_ = fopen(Control::timestampsFile.c_str(), "w");

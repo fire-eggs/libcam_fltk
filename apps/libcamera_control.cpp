@@ -439,7 +439,7 @@ static void still() {
 }
 
 static void video(std::unique_ptr<Output> & output) {
-	std::cerr << "VIDEO START" << std::endl;
+	std::cerr << "VIDEO READY" << std::endl;
 	capturing = true;
 	LibcameraEncoder app;
 	VideoOptions *options = app.GetOptions();
@@ -447,6 +447,7 @@ static void video(std::unique_ptr<Output> & output) {
 	Control::frames = parameters.at("frames");
 	Control::timestampsFile = parameters.at("timestamps_file");
 	output->Reset();
+	std::cerr << "VIDEO START" << std::endl;
 	if (Control::mode== 0)
 	{
 		Control::enableBuffer = false;
@@ -523,6 +524,7 @@ int main(int argc, char *argv[])
 		signal(SIGUSR1, default_signal_handler); // TRIGGER CAPTURE
 		signal(SIGUSR2, default_signal_handler); // END CAPTURE
 		std::unique_ptr<Output> output = std::unique_ptr<Output>(Output::Create());
+		std::cerr << "BUFFER ALLOCATED AND READY TO CAPTURE" << std::endl;
 		while (true) 
 		{
 			if (!capturing && control_signal_received == 1)
