@@ -30,6 +30,9 @@ ControlOutput::~ControlOutput()
 
 void ControlOutput::WriteOut()
 {
+	if (fp_timestamps_)
+		fclose(fp_timestamps_);
+	fp_timestamps_ = nullptr;
 	if (Control::enableBuffer) 
 	{
 		while(framesWritten_ < framesBuffered_)
@@ -42,7 +45,6 @@ void ControlOutput::WriteOut()
 				framesWritten_++;
 			}
 		}
-		Reset();
 	}
 }
 
@@ -75,4 +77,14 @@ void ControlOutput::Reset()
 	std::cerr << "RESETTING BUFFER" << std::endl;
 	framesWritten_ = 0;
 	framesBuffered_ = 0;
+	flags = 2;
+	state_ = WAITING_KEYFRAME;
+	last_timestamp_ = 0;
+	if (Control::mode == 2 && !Control::timestampsFile.empty())
+	{
+		fp_timestamps_ = fopen(Control::timestampsFile.c_str(), "w");
+		if (!fp_timestamps_)
+			throw std::runtime_error("Failed to open timestamp file " + Control::timestampsFile);
+		fprintf(fp_timestamps_, "# timecode format v2\n");
+	}
 }

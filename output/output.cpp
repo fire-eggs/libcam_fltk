@@ -13,9 +13,13 @@
 #include "file_output.hpp"
 #include "net_output.hpp"
 #include "output.hpp"
+#include "core/control.hpp"
+
+std::string Control::timestampsFile;
+int Control::mode;
 
 Output::Output(VideoOptions const *options)
-	: options_(options), state_(WAITING_KEYFRAME), fp_timestamps_(nullptr), time_offset_(0), last_timestamp_(0)
+	: options_(options), fp_timestamps_(nullptr), flags(0), state_(WAITING_KEYFRAME), last_timestamp_(0), time_offset_(0)
 {
 	if (!options->save_pts.empty())
 	{
@@ -29,17 +33,8 @@ Output::Output(VideoOptions const *options)
 }
 
 Output::Output()
-	: state_(WAITING_KEYFRAME), fp_timestamps_(nullptr), time_offset_(0), last_timestamp_(0)
+	: fp_timestamps_(nullptr), flags(0), state_(WAITING_KEYFRAME), last_timestamp_(0), time_offset_(0)
 {
-	
-	if (!options->save_pts.empty())
-	{
-		fp_timestamps_ = fopen(options->save_pts.c_str(), "w");
-		if (!fp_timestamps_)
-			throw std::runtime_error("Failed to open timestamp file " + options->save_pts);
-		fprintf(fp_timestamps_, "# timecode format v2\n");
-	}
-
 	enable_ = true;
 }
 
@@ -67,7 +62,7 @@ void Output::Reset()
 void Output::OutputReady(void *mem, size_t size, int64_t timestamp_us, bool keyframe)
 {
 	// When output is enabled, we may have to wait for the next keyframe.
-	uint32_t flags = keyframe ? FLAG_KEYFRAME : FLAG_NONE;
+	flags = keyframe ? FLAG_KEYFRAME : FLAG_NONE;
 	if (!enable_)
 		state_ = DISABLED;
 	else if (state_ == DISABLED)

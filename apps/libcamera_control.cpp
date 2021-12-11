@@ -21,8 +21,10 @@ using namespace std::placeholders;
 using libcamera::Stream;
 using json = nlohmann::json;
 
+int Control::mode;
 int Control::frames;
 bool Control::enableBuffer;
+std::string Control::timestampsFile;
 json parameters;
 int global_argc;
 char **global_argv;
@@ -323,11 +325,11 @@ static void still() {
 	LibcameraStillApp app;
 	StillOptions *options = app.GetOptions();
 	options->Parse(global_argc, global_argv);
-	if (parameters.at("mode") == 1)
+	if (Control::mode == 1)
 	{
 		options->timelapse = parameters.at("timelapse");
 	}
-	else if (parameters.at("mode") == 3)
+	else if (Control::mode == 3)
 	{
 		options->signal = true;
 		options->keypress = true;
@@ -439,12 +441,13 @@ static void still() {
 static void video(std::unique_ptr<Output> & output) {
 	std::cerr << "VIDEO START" << std::endl;
 	capturing = true;
-	output->Reset();
 	LibcameraEncoder app;
 	VideoOptions *options = app.GetOptions();
 	options->Parse(global_argc, global_argv);
 	Control::frames = parameters.at("frames");
-	if (parameters.at("mode") == 0)
+	Control::timestampsFile = parameters.at("timestamps_file");
+	output->Reset();
+	if (Control::mode== 0)
 	{
 		Control::enableBuffer = false;
 		options->mode = parameters.at("sensor_mode"); // BROKEN CURRENTLY WITH "4056:3040:12:P" / PASS "" FOR NOW
@@ -453,7 +456,7 @@ static void video(std::unique_ptr<Output> & output) {
 		options->framerate = parameters.at("preview_framerate");
 		options->timeout = 0;
 	}
-	else if (parameters.at("mode") == 2)
+	else if (Control::mode == 2)
 	{
 		Control::enableBuffer = true;
 		options->mode = parameters.at("sensor_mode"); // BROKEN CURRENTLY WITH "4056:3040:12:P" / PASS "" FOR NOW
@@ -470,7 +473,6 @@ static void video(std::unique_ptr<Output> & output) {
 	options->gain = parameters.at("gain");
 	options->awb = parameters.at("wbmode");
 	options->denoise = parameters.at("denoise");
-	options->save_pts = parameters.at("save_pts"); // DOESN'T WORK
 	options->codec = "yuv420";
 	options->nopreview = true;
 	app.SetEncodeOutputReadyCallback(std::bind(&Output::OutputReady, output.get(), _1, _2, _3, _4));
@@ -530,9 +532,10 @@ int main(int argc, char *argv[])
 				std::string content((std::istreambuf_iterator<char>(ifs)),(std::istreambuf_iterator<char>()));
 				parameters = json::parse(content);
 				std::cerr << std::setw(4) << parameters << std::endl;
-				if (parameters.at("mode") == 0 || parameters.at("mode") == 2) 
+				Control::mode = parameters.at("mode");
+				if (Control::mode == 0 || Control::mode == 2) 
 					video(output);
-				else if (parameters.at("mode") == 1 || parameters.at("mode") == 3)
+				else if (Control::mode == 1 || Control::mode == 3)
 					still();
 				control_signal_received = 0;
 			}

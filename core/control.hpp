@@ -11,6 +11,8 @@ class Control
 {
 public:
 	Control() = default;
+    static int mode;
 	static bool enableBuffer;
 	static int frames;
+    static std::string timestampsFile;
 };
