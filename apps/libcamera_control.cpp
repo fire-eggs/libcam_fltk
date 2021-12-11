@@ -21,6 +21,7 @@ using namespace std::placeholders;
 using libcamera::Stream;
 using json = nlohmann::json;
 
+FILE *Control::pipe;
 int Control::mode;
 int Control::frames;
 bool Control::enableBuffer;
@@ -193,34 +194,34 @@ static void yuv420_save(std::vector<libcamera::Span<uint8_t>> const &mem, unsign
 			throw std::runtime_error("both width and height must be even");
 		if (mem.size() != 1)
 			throw std::runtime_error("incorrect number of planes in YUV420 data");
-		FILE *fp = fopen("/home/pi/pipe", "w");
-		if (!fp)
-			throw std::runtime_error("failed to open file " + filename);
+		// FILE *fp = fopen("/home/pi/pipe", "w");
+		// if (!fp)
+		// 	throw std::runtime_error("failed to open file " + filename);
 		try
 		{
 			uint8_t *Y = (uint8_t *)mem[0].data();
 			for (unsigned int j = 0; j < h; j++)
 			{
-				if (fwrite(Y + j * stride, w, 1, fp) != 1)
+				if (fwrite(Y + j * stride, w, 1, Control::pipe) != 1)
 					throw std::runtime_error("failed to write file " + filename);
 			}
 			uint8_t *U = Y + stride * h;
 			h /= 2, w /= 2, stride /= 2;
 			for (unsigned int j = 0; j < h; j++)
 			{
-				if (fwrite(U + j * stride, w, 1, fp) != 1)
+				if (fwrite(U + j * stride, w, 1, Control::pipe) != 1)
 					throw std::runtime_error("failed to write file " + filename);
 			}
 			uint8_t *V = U + stride * h;
 			for (unsigned int j = 0; j < h; j++)
 			{
-				if (fwrite(V + j * stride, w, 1, fp) != 1)
+				if (fwrite(V + j * stride, w, 1, Control::pipe) != 1)
 					throw std::runtime_error("failed to write file " + filename);
 			}
 		}
 		catch (std::exception const &e)
 		{
-			fclose(fp);
+			// fclose(fp);
 			throw;
 		}
 	}

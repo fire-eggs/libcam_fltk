@@ -18,6 +18,7 @@ using namespace std::chrono;
 // We're going to align the frames within the buffer to friendly byte boundaries
 // static constexpr int ALIGN = 16; // power of 2, please
 
+FILE *Control::pipe;
 int Control::frames;
 bool Control::enableBuffer;
 
@@ -43,7 +44,7 @@ void ControlOutput::WriteOut()
 	{
 		while(framesWritten_ < framesBuffered_)
 		{
-			if (fwrite(buf_[framesWritten_], 18677760, 1, fp_) != 1)
+			if (fwrite(buf_[framesWritten_], 18677760, 1, Control::pipe) != 1)
 				std::cerr << "failed to write output bytes" << std::endl;
 			else
 			{
@@ -59,7 +60,7 @@ void ControlOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, u
 	if (!Control::enableBuffer) 
 	{	
 		auto start = high_resolution_clock::now();
-		if (fwrite(mem, size, 1, fp_) != 1)
+		if (fwrite(mem, size, 1, Control::pipe) != 1)
 			throw std::runtime_error("failed to write output bytes");
 		else
 			framesWritten_++;
@@ -88,8 +89,8 @@ void ControlOutput::Reset()
 	last_timestamp_ = 0;
 	// if (fp_)
 	// 	fclose(fp_);
-	if (!fp_) {
-		fp_ = fopen("/home/pi/pipe", "w");
+	if (!Control::pipe) {
+		Control::pipe = fopen("/home/pi/pipe", "w");
 		std::cerr << "PIPE OPENED BY CONSUMER" << std::endl;
 	}
 	if (Control::mode == 2 && !Control::timestampsFile.empty())
