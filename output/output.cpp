@@ -31,6 +31,15 @@ Output::Output(VideoOptions const *options)
 Output::Output()
 	: state_(WAITING_KEYFRAME), fp_timestamps_(nullptr), time_offset_(0), last_timestamp_(0)
 {
+	
+	if (!options->save_pts.empty())
+	{
+		fp_timestamps_ = fopen(options->save_pts.c_str(), "w");
+		if (!fp_timestamps_)
+			throw std::runtime_error("Failed to open timestamp file " + options->save_pts);
+		fprintf(fp_timestamps_, "# timecode format v2\n");
+	}
+
 	enable_ = true;
 }
 
