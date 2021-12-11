@@ -8,7 +8,7 @@
 #include <cinttypes>
 #include <stdexcept>
 
-#include "buffer_output.hpp"
+#include "control_output.hpp"
 #include "circular_output.hpp"
 #include "file_output.hpp"
 #include "net_output.hpp"
@@ -94,5 +94,5 @@ Output *Output::Create(VideoOptions const *options)
 
 Output *Output::Create()
 {
-	return new BufferOutput();
+	return new ControlOutput();
 }

@@ -15,6 +15,7 @@
 #include "output/output.hpp"
 #include "image/image.hpp"
 #include "core/json.hpp"
+#include "core/control.hpp"
 
 using namespace std::placeholders;
 using libcamera::Stream;
@@ -438,8 +439,10 @@ static void video(std::unique_ptr<Output> & output) {
 	LibcameraEncoder app;
 	VideoOptions *options = app.GetOptions();
 	options->Parse(global_argc, global_argv);
+	Control::frames = parameters.at("frames");
 	if (parameters.at("mode") == 0)
 	{
+		Control::enableBuffer = false;
 		options->mode = parameters.at("sensor_mode"); // BROKEN CURRENTLY WITH "4056:3040:12:P" / PASS "" FOR NOW
 		options->width = parameters.at("preview_width");
 		options->height = parameters.at("preview_height");
@@ -447,6 +450,7 @@ static void video(std::unique_ptr<Output> & output) {
 	}
 	else if (parameters.at("mode") == 2)
 	{
+		Control::enableBuffer = true;
 		options->mode = parameters.at("sensor_mode"); // BROKEN CURRENTLY WITH "4056:3040:12:P" / PASS "" FOR NOW
 		options->width = parameters.at("width");
 		options->height = parameters.at("height");
@@ -502,14 +506,7 @@ static void video(std::unique_ptr<Output> & output) {
 	std::cerr << "VIDEO END" << std::endl;
 }
 
-std::string bool_as_text(bool b)
-{
-    std::stringstream converter;
-    converter << std::boolalpha << b;
-    return converter.str();
-}
-
-int main(int argc, char *argv[]) // NEED TO PASS MODE TO BUFFER_OUTPUT SO IT KNOWS TO USE THREADED WRITE FOR PREVIEW MODE
+int main(int argc, char *argv[])
 {
 	try
 	{

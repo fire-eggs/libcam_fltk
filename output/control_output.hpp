@@ -2,18 +2,18 @@
 /*
  * Copyright (C) 2021, Raspberry Pi (Trading) Ltd. / Dustin Kerstein
  *
- * buffer_output.hpp
+ * control_output.hpp
  */
 
 #pragma once
 
 #include "output.hpp"
 
-class BufferOutput : public Output
+class ControlOutput : public Output
 {
 	public:
-		BufferOutput();
-		~BufferOutput();
+		ControlOutput();
+		~ControlOutput();
 		void WriteOut();
 		void Reset();
 
@@ -21,8 +21,6 @@ class BufferOutput : public Output
 		void outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint32_t flags) override;
 
 	private:
-		void CloseFile();
-		static void WriterThread(BufferOutput &obj);
 		std::array<std::byte[18677760], 50> buf_;
 		std::atomic_uint framesBuffered_;
 		std::atomic_uint framesWritten_;
