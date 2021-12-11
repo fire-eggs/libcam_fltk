@@ -9,11 +9,14 @@
 #include <thread>
 #include <pthread.h>
 #include <chrono>
-#include "core/control_options.hpp"
+#include "core/control.hpp"
 using namespace std::chrono;
 
 // We're going to align the frames within the buffer to friendly byte boundaries
 // static constexpr int ALIGN = 16; // power of 2, please
+
+int Control::frames;
+bool Control::enableBuffer;
 
 ControlOutput::ControlOutput() : Output(), buf_(), framesBuffered_(0), framesWritten_(0)
 {

@@ -21,7 +21,8 @@ using namespace std::placeholders;
 using libcamera::Stream;
 using json = nlohmann::json;
 
-// GLOBAL HACKS UNTIL CREATION CONTROL CLASS
+int Control::frames;
+bool Control::enableBuffer;
 json parameters;
 int global_argc;
 char **global_argv;
@@ -447,6 +448,7 @@ static void video(std::unique_ptr<Output> & output) {
 		options->width = parameters.at("preview_width");
 		options->height = parameters.at("preview_height");
 		options->framerate = parameters.at("preview_framerate");
+		options->timeout = 0;
 	}
 	else if (parameters.at("mode") == 2)
 	{
@@ -455,8 +457,8 @@ static void video(std::unique_ptr<Output> & output) {
 		options->width = parameters.at("width");
 		options->height = parameters.at("height");
 		options->framerate = parameters.at("framerate");
+		options->frames = parameters.at("frames");
 	}
-	options->frames = parameters.at("frames");
 	options->shutter = parameters.at("shutter");
 	options->sharpness = parameters.at("sharpness");
 	options->sharpness = parameters.at("saturation");

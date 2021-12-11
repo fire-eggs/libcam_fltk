@@ -7,10 +7,10 @@
 
 #pragma once
 
-static class Control
+class Control
 {
 public:
-	Control() : {}
+	Control() = default;
 	static bool enableBuffer;
 	static int frames;
 };
