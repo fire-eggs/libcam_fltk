@@ -47,42 +47,7 @@ static void control_signal_handler(int signal_number)
 	std::cerr << "Control received signal " << signal_number << std::endl;
 }
 
-// static void captureStart(LibcameraEncoder &app, VideoOptions *options) {
-// 	std::cerr << "CAPTURE START" << std::endl;
-// 	app.SetEncodeOutputReadyCallback(std::bind(&Output::OutputReady, output.get(), _1, _2, _3, _4)); // MIGHT BE ABLE TO LOOP THIS RATHER THAN WHOLE METHOD
-// 	app.StartEncoder();
-// 	app.OpenCamera();
-// 	app.ConfigureVideo();
-// 	app.StartCamera();
-// 	for (unsigned int count = 0; ; count++)
-// 	{
-// 		if (Control::mode == 1 || Control::mode == 3) {
-// 			stillCapturedCount++;
-// 			std::cerr << "STILL CAPTURE COUNT: " << stillCapturedCount << std::endl;
-// 		} else {
-// 			std::cerr << "VIDEO CAPTURE COUNT: " << count << std::endl;
-// 		}
-// 		LibcameraEncoder::Msg msg = app.Wait();
-// 		if (msg.type == LibcameraEncoder::MsgType::Quit)
-// 			break;
-// 		else if (msg.type != LibcameraEncoder::MsgType::RequestComplete)
-// 			throw std::runtime_error("unrecognised message!");
-// 		bool frameout = options->frames && count >= options->frames;
-// 		if (frameout || signal_received == SIGUSR2)
-// 		{
-// 			app.StopCamera();
-// 			app.StopEncoder();
-// 			break;
-// 		}
-// 		CompletedRequestPtr &completed_request = std::get<CompletedRequestPtr>(msg.payload);
-// 		app.EncodeBuffer(completed_request, app.VideoStream());
-// 	}
-// 	signal_received = 0;
-// 	output->WriteOut();
-// 	std::cerr << "CAPTURE END" << std::endl;
-// }
-
-static void capture() {
+static void capture(bool looping) {
 	LibcameraEncoder app;
 	VideoOptions *options = app.GetOptions();
 	options->Parse(global_argc, global_argv);
@@ -100,23 +65,22 @@ static void capture() {
 	options->contrast = parameters.at("contrast");
 	options->brightness = parameters.at("brightness");
 	options->gain = parameters.at("gain");
-	// options->awb = parameters.at("wbmode"); // BROKEN
+	options->awb = "auto"; //parameters.at("wbmode"); // BROKEN
 	options->denoise = parameters.at("denoise");
 	options->nopreview = true;
 	output->Reset();
   	std::cerr << "CAPTURE READY - MODE: " << Control::mode << std::endl;
-  	int interval = static_cast<int>(std::max(options->shutter/1000, static_cast<float>(100))); // IN MILLISECONDS
 	switch(Control::mode) {
 		case 0:
 			Control::enableBuffer = false;
-			options->quality = parameters.at("quality");
-			options->codec = "mjpeg";
+			// options->quality = parameters.at("quality");
+			options->codec = "yuv420";
 			options->timeout = 0;
 			break;
 		case 1:
 			Control::enableBuffer = false;
-			options->quality = parameters.at("quality");
-			options->codec = "mjpeg";
+			// options->quality = parameters.at("quality");
+			options->codec = "yuv420";
 			options->frames = 1;
 			break;
 		case 2:
@@ -140,8 +104,6 @@ static void capture() {
 		if (Control::mode == 1 || Control::mode == 3) {
 			stillCapturedCount++;
 			std::cerr << "STILL CAPTURE COUNT: " << stillCapturedCount << std::endl;
-		} else {
-			std::cerr << "VIDEO CAPTURE COUNT: " << count << std::endl;
 		}
 		LibcameraEncoder::Msg msg = app.Wait();
 		if (msg.type == LibcameraEncoder::MsgType::Quit)
@@ -159,17 +121,18 @@ static void capture() {
 		app.EncodeBuffer(completed_request, app.VideoStream());
 	}
 	output->WriteOut();
+	int interval = static_cast<int>(std::max(options->shutter/1000, static_cast<float>(100))); // IN MILLISECONDS
 	while (Control::mode == 1 && signal_received != SIGUSR2) {
 		std::cerr << "LOOPING1" << std::endl;
 		signal_received = 0;
 		std::this_thread::sleep_for(std::chrono::milliseconds(interval));
-		capture();
+		capture(true);
 		return;
 	}
 	while (Control::mode == 3 && signal_received != SIGUSR2 && stillCapturedCount < Control::frames) { // THIS CAPTURES THE FIRST FRAME IMMEDIATELY AND THEN WAITS FOR SIGNAL
 		if (signal_received == SIGUSR1) {
 			signal_received = 0;
-			capture();
+			capture(true);
 			return;
 		}
 		std::cerr << "LOOPING2" << std::endl;
@@ -200,7 +163,7 @@ int main(int argc, char *argv[])
 				stillCapturedCount = 0;
 				capturing = true;
 				std::cerr << "CAPTURE START" << std::endl;
-				capture();
+				capture(false);
 				std::cerr << "CAPTURE END" << std::endl;
 				capturing = false;
 				control_signal_received = 0;

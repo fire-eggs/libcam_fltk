@@ -87,8 +87,8 @@ void ControlOutput::Reset()
 	flags = 2;
 	state_ = WAITING_KEYFRAME;
 	last_timestamp_ = 0;
-	// if (fp_)
-	// 	fclose(fp_);
+	// if (Control::pipe)
+	// 	fclose(Control::pipe);
 	if (!Control::pipe) {
 		Control::pipe = fopen("/home/pi/pipe", "w");
 		std::cerr << "PIPE OPENED BY CONSUMER" << std::endl;
