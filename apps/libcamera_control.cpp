@@ -163,6 +163,7 @@ int main(int argc, char *argv[])
 				} else if (signal_received == SIGUSR2) {
 					signal_received = 0;
 					capturing = false;
+					std::cerr << "STOPPING MODE 1 CAPTURE" << std::endl;
 				} 
 			} else if (capturing && Control::mode == 3) {
 				if (signal_received == SIGUSR1 && stillCapturedCount < Control::frames) {
@@ -170,9 +171,10 @@ int main(int argc, char *argv[])
 					std::this_thread::sleep_for(std::chrono::milliseconds(33));
 					signal_received = 0;
 					capture();
-				} else if (stillCapturedCount == Control::frames) {
+				} else if (stillCapturedCount == Control::frames || signal_received == SIGUSR2) {
 					signal_received = 0;
 					capturing = false;
+					std::cerr << "STOPPING MODE 3 CAPTURE" << std::endl;
 				}
 			} 
 			std::this_thread::sleep_for(std::chrono::milliseconds(10));
