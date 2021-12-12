@@ -47,7 +47,8 @@ static void control_signal_handler(int signal_number)
 	std::cerr << "Control received signal " << signal_number << std::endl;
 }
 
-static void capture(bool looping) {
+static void capture() {
+	capturing = true;
 	LibcameraEncoder app;
 	VideoOptions *options = app.GetOptions();
 	options->Parse(global_argc, global_argv);
@@ -65,21 +66,24 @@ static void capture(bool looping) {
 	options->contrast = parameters.at("contrast");
 	options->brightness = parameters.at("brightness");
 	options->gain = parameters.at("gain");
-	options->awb = "auto"; //parameters.at("wbmode"); // BROKEN
+	options->awb = "incandescent"; //parameters.at("wbmode"); // BROKEN
 	options->denoise = parameters.at("denoise");
 	options->nopreview = true;
 	output->Reset();
+	std::cerr << "AWB: " << parameters.at("wbmode") << std::endl;
   	std::cerr << "CAPTURE READY - MODE: " << Control::mode << std::endl;
 	switch(Control::mode) {
 		case 0:
 			Control::enableBuffer = false;
 			// options->quality = parameters.at("quality");
+			// options->codec = "mjpeg";
 			options->codec = "yuv420";
 			options->timeout = 0;
 			break;
 		case 1:
 			Control::enableBuffer = false;
 			// options->quality = parameters.at("quality");
+			// options->codec = "mjpeg";
 			options->codec = "yuv420";
 			options->frames = 1;
 			break;
@@ -113,6 +117,8 @@ static void capture(bool looping) {
 		bool frameout = options->frames && count >= options->frames;
 		if (frameout || signal_received == SIGUSR2)
 		{
+			if (Control::mode == 0 || Control::mode == 2)
+				capturing = false;
 			app.StopCamera();
 			app.StopEncoder();
 			break;
@@ -121,24 +127,6 @@ static void capture(bool looping) {
 		app.EncodeBuffer(completed_request, app.VideoStream());
 	}
 	output->WriteOut();
-	int interval = static_cast<int>(std::max(options->shutter/1000, static_cast<float>(100))); // IN MILLISECONDS
-	while (Control::mode == 1 && signal_received != SIGUSR2) {
-		std::cerr << "LOOPING1" << std::endl;
-		signal_received = 0;
-		std::this_thread::sleep_for(std::chrono::milliseconds(interval));
-		capture(true);
-		return;
-	}
-	while (Control::mode == 3 && signal_received != SIGUSR2 && stillCapturedCount < Control::frames) { // THIS CAPTURES THE FIRST FRAME IMMEDIATELY AND THEN WAITS FOR SIGNAL
-		if (signal_received == SIGUSR1) {
-			signal_received = 0;
-			capture(true);
-			return;
-		}
-		std::cerr << "LOOPING2" << std::endl;
-		std::this_thread::sleep_for(std::chrono::milliseconds(33));
-	}
-	signal_received = 0;
 }
 
 int main(int argc, char *argv[])
@@ -147,27 +135,46 @@ int main(int argc, char *argv[])
 	{
 		global_argc = argc;
 		global_argv = argv;
+		int interval;
 		signal(SIGHUP, control_signal_handler);  // START NEW CAPTURE (SIGUSR2 MUST ALWAYS PRECEED SIGHUP)
 		signal(SIGUSR1, default_signal_handler); // TRIGGER CAPTURE
 		signal(SIGUSR2, default_signal_handler); // END CAPTURE
 		std::cerr << "BUFFER ALLOCATED AND READY TO CAPTURE" << std::endl;
 		while (true) 
 		{
-			if (!capturing && control_signal_received == 1)
-			{
+			if (!capturing && control_signal_received == 1) {
 				std::cerr << "READING PARAMETERS" << std::endl;
 				std::ifstream ifs("/home/pi/parameters.json");
 				std::string content((std::istreambuf_iterator<char>(ifs)),(std::istreambuf_iterator<char>()));
 				parameters = json::parse(content);
 				std::cerr << std::setw(4) << parameters << std::endl;
+				// interval = static_cast<int>(std::max(parameters.at("shutter")/1000, static_cast<float>(100))); // IN MILLISECONDS
+				interval = 100;
 				stillCapturedCount = 0;
-				capturing = true;
 				std::cerr << "CAPTURE START" << std::endl;
-				capture(false);
+				capture();
 				std::cerr << "CAPTURE END" << std::endl;
-				capturing = false;
 				control_signal_received = 0;
-			}
+			} else if (capturing && Control::mode == 1) {
+				if (signal_received != SIGUSR2) {
+					std::cerr << "LOOPING1" << std::endl;
+					std::this_thread::sleep_for(std::chrono::milliseconds(interval));
+					capture();
+				} else if (signal_received == SIGUSR2) {
+					signal_received = 0;
+					capturing = false;
+				} 
+			} else if (capturing && Control::mode == 3) {
+				if (signal_received == SIGUSR1 && stillCapturedCount < Control::frames) {
+					std::cerr << "LOOPING2" << std::endl;
+					std::this_thread::sleep_for(std::chrono::milliseconds(33));
+					signal_received = 0;
+					capture();
+				} else if (stillCapturedCount == Control::frames) {
+					signal_received = 0;
+					capturing = false;
+				}
+			} 
 			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		}
 	}
