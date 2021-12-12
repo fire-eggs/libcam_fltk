@@ -72,7 +72,7 @@ void ControlOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, u
 	{
 		framesBuffered_++;
 		auto start = high_resolution_clock::now();
-		memcpy(&buf_[framesBuffered_ - 1], mem, 18677760); // NEED TO PAD/ALIGN TO 4096
+		memcpy(&buf_[framesBuffered_ - 1], mem, size); // NEED TO PAD/ALIGN TO 4096
 		auto stop = high_resolution_clock::now();
 		auto duration = duration_cast<milliseconds>(stop - start);
 		std::cerr << "Copy took: " << duration.count() << "ms, Frames Buffered: " << framesBuffered_ << std::endl;
