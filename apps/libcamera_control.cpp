@@ -30,7 +30,7 @@ bool capturing;
 int stillCapturedCount;
 int signal_received;
 int control_signal_received;
-std::string awbgains = "0,0";
+std::string awbgains;
 std::unique_ptr<Output> output = std::unique_ptr<Output>(Output::Create());
 
 static void default_signal_handler(int signal_number)
@@ -97,37 +97,41 @@ static void capture() {
 		Control::enableBuffer = true;
 	output->Reset();
   	std::cerr << "CAPTURE READY - MODE: " << Control::mode << std::endl;
-	// app.SetEncodeOutputReadyCallback(std::bind(&Output::OutputReady, output.get(), _1, _2, _3, _4)); // MIGHT BE ABLE TO LOOP THIS RATHER THAN WHOLE METHOD
-	// app.StartEncoder();
-	// app.OpenCamera();
-	// app.ConfigureVideo();
-	// app.StartCamera();
-	// for (unsigned int count = 0; ; count++)
-	// {
-	// 	LibcameraEncoder::Msg msg = app.Wait();
-	// 	if (msg.type == LibcameraEncoder::MsgType::Quit)
-	// 		break;
-	// 	else if (msg.type != LibcameraEncoder::MsgType::RequestComplete)
-	// 		throw std::runtime_error("unrecognised message!");
-	// 	bool frameout = options->frames && count >= options->frames;
-	// 	if (frameout || signal_received == SIGUSR2)
-	// 	{
-	// 		if (Control::mode == 0 || Control::mode == 2)
-	// 			capturing = false;
-	// 		app.StopCamera();
-	// 		app.StopEncoder();
-	// 		break;
-	// 	}
-	// 	CompletedRequestPtr &completed_request = std::get<CompletedRequestPtr>(msg.payload);
-	// 	app.EncodeBuffer(completed_request, app.VideoStream());
-	// }
-	// output->WriteOut();
-	// if (Control::mode == 1 || Control::mode == 3) {
-	// 	stillCapturedCount++;
-	// 	std::cerr << "CAPTURE END" << ", CAPTURE MODE: " << Control::mode << ", STILL CAPTURE COUNT: " << stillCapturedCount << ", TOTAL FRAMES REQUESTED: " << Control::frames << std::endl;
-	// } else {
-	// 	std::cerr << "CAPTURE END" << ", CAPTURE MODE: " << Control::mode << ", VIDEO CAPTURE COUNT: " << Control::frames << std::endl;
-	// }
+	app.SetEncodeOutputReadyCallback(std::bind(&Output::OutputReady, output.get(), _1, _2, _3, _4)); // MIGHT BE ABLE TO LOOP THIS RATHER THAN WHOLE METHOD
+	app.StartEncoder();
+	app.OpenCamera();
+	app.ConfigureVideo();
+	app.StartCamera();
+	for (unsigned int count = 0; ; count++)
+	{
+		LibcameraEncoder::Msg msg = app.Wait();
+		if (msg.type == LibcameraEncoder::MsgType::Quit)
+			break;
+		else if (msg.type != LibcameraEncoder::MsgType::RequestComplete)
+			throw std::runtime_error("unrecognised message!");
+		bool frameout = options->frames && count >= options->frames;
+		if (frameout || signal_received == SIGUSR2)
+		{
+			if (Control::mode == 0 || Control::mode == 2)
+				capturing = false;
+			app.StopCamera();
+			app.StopEncoder();
+			break;
+		}
+		CompletedRequestPtr &completed_request = std::get<CompletedRequestPtr>(msg.payload);
+		app.EncodeBuffer(completed_request, app.VideoStream());
+	}
+	output->WriteOut();
+	if (Control::mode == 1) {
+		awbgains = to_string(options->awb_gain_r) + "," + to_string(options->awb_gain_b); // SET AWBGAINS ON EACH PREVIEW FRAME SO IT'S AS ACCURATE AS POSSIBLE FOR WHEN IT SWITCHES TO MODE 3
+		std::cerr << "SETTING AWBGAINS: " << awbgains << std::endl;
+	}
+	if (Control::mode == 1 || Control::mode == 3) {
+		stillCapturedCount++;
+		std::cerr << "CAPTURE END" << ", CAPTURE MODE: " << Control::mode << ", STILL CAPTURE COUNT: " << stillCapturedCount << ", TOTAL FRAMES REQUESTED: " << Control::frames << std::endl;
+	} else {
+		std::cerr << "CAPTURE END" << ", CAPTURE MODE: " << Control::mode << ", VIDEO CAPTURE COUNT: " << Control::frames << std::endl;
+	}
 }
 
 int main(int argc, char *argv[])
@@ -152,6 +156,8 @@ int main(int argc, char *argv[])
 				Control::mode = parameters.at("mode");
 				Control::frames = parameters.at("frames");
 				Control::timestampsFile = parameters.at("timestamps_file");
+				if (Control::mode != 3 && awbgains != "0,0") 
+					awbgains = "0,0";
 				interval = static_cast<int>(std::max(parameters.at("shutter")/1000, static_cast<int>(100))); // IN MILLISECONDS
 				stillCapturedCount = 0;
 				std::cerr << "CAPTURE MODE: " << Control::mode << std::endl;
