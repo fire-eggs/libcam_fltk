@@ -24,6 +24,7 @@ bool Control::enableBuffer;
 std::string Control::timestampsFile;
 // SHOULD CONSIDER PUTTING SOME OR ALL OF THESE IN CONTROL.HPP
 json parameters;
+int pid;
 int global_argc;
 char** global_argv;
 bool capturing;
@@ -153,6 +154,7 @@ int main(int argc, char *argv[])
 				std::string content((std::istreambuf_iterator<char>(ifs)),(std::istreambuf_iterator<char>()));
 				parameters = json::parse(content);
 				std::cerr << std::setw(4) << parameters << std::endl;
+				pid = std::stoi(parameters.at("pid"));
 				Control::mode = parameters.at("mode");
 				Control::frames = parameters.at("frames");
 				Control::timestampsFile = parameters.at("timestamps_file");
