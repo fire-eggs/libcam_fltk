@@ -48,50 +48,55 @@ static void control_signal_handler(int signal_number)
 	std::cerr << "Control received signal " << signal_number << std::endl;
 }
 
-static void configure(int &oldc, char** &oldv) {
-	global_argc = 32;
-	char** argv = {
-		std::string("/home/pi/libcamera-apps/build/libcamera-control").data(),
-		std::string("--frames").data(),
-		parameters.at("frames").get<std::string>(),
-		std::string("--shutter").data(),
-		parameters.at("shutter").get<std::string>(),
-		std::string("--codec").data(),
-		parameters.at("codec").get<std::string>(),
-		std::string("--mode").data(),
-		parameters.at("sensor_mode").get<std::string>(),
-		std::string("--width").data(),
-		parameters.at("width").get<std::string>(),
-		std::string("--height").data(),
-		parameters.at("height").get<std::string>(),
-		std::string("--framerate").data(),
-		parameters.at("framerate").get<std::string>(),
-		std::string("--sharpness").data(),
-		parameters.at("sharpness").get<std::string>(),
-		std::string("--saturation").data(),
-		parameters.at("saturation").get<std::string>(),
-		std::string("--contrast").data(),
-		parameters.at("contrast").get<std::string>(),
-		std::string("--brightness").data(),
-		parameters.at("brightness").get<std::string>(),
-		std::string("--gain").data(),
-		parameters.at("gain").get<std::string>(),
-		std::string("--awb").data(),
-		parameters.at("awb").get<std::string>(),
-		std::string("--awbgains").data(),
-		awbgains.data(),
-		std::string("--denoise").data(),
-		parameters.at("denoise").get<std::string>(),
-		std::string("--nopreview").data()
+static void configure() {
+	std::vector<std::string> args = {"/home/pi/libcamera-apps/build/libcamera-control"};
+	args.push_back("--frames");
+	args.push_back(parameters.at("frames").get<std::string>());
+	args.push_back(std::string("--shutter"));
+	args.push_back(parameters.at("shutter").get<std::string>());
+	args.push_back(std::string("--codec"));
+	args.push_back(parameters.at("codec").get<std::string>());
+	// args.push_back(std::string("--mode"));
+	// args.push_back(parameters.at("sensor_mode").get<std::string>()); // BROKEN CURRENTLY
+	args.push_back(std::string("--width"));
+	args.push_back(parameters.at("width").get<std::string>());
+	args.push_back(std::string("--height"));
+	args.push_back(parameters.at("height").get<std::string>());
+	args.push_back(std::string("--framerate"));
+	args.push_back(parameters.at("framerate").get<std::string>());
+	args.push_back(std::string("--sharpness"));
+	args.push_back(parameters.at("sharpness").get<std::string>());
+	args.push_back(std::string("--saturation"));
+	args.push_back(parameters.at("saturation").get<std::string>());
+	args.push_back(std::string("--contrast"));
+	args.push_back(parameters.at("contrast").get<std::string>());
+	args.push_back(std::string("--brightness"));
+	args.push_back(parameters.at("brightness").get<std::string>());
+	args.push_back(std::string("--gain"));
+	args.push_back(parameters.at("gain").get<std::string>());
+	args.push_back(std::string("--awb"));
+	args.push_back(parameters.at("awb").get<std::string>());
+	args.push_back(std::string("--awbgains"));
+	args.push_back(awbgains);
+	args.push_back(std::string("--denoise"));
+	args.push_back(parameters.at("denoise").get<std::string>());
+	args.push_back(std::string("--nopreview"));
+	args.push_back(std::string("on"));
+	std::vector<char *> argv;
+	for(std::string &s: args) argv.push_back(&s[0]);
+	argv.push_back(NULL);
+	global_argc = args.size();
+	global_argv = argv.data();
+	for (int i = 0; i < global_argc; i++) {
+		printf("%s ", global_argv[i]);
 	}
-	global_argv = argv;
 } 
 
 static void capture() {
 	std::cerr << "CAPTURE START" << std::endl;
 	capturing = true;
 	LibcameraEncoder app;
-	configure(global_argc, global_argv);
+	configure();
 	VideoOptions *options = app.GetOptions();
 	options->Parse(global_argc, global_argv);
 	if (Control::mode == 2)
@@ -124,7 +129,7 @@ static void capture() {
 	}
 	output->WriteOut();
 	if (Control::mode == 1) {
-		awbgains = to_string(options->awb_gain_r) + "," + to_string(options->awb_gain_b); // SET AWBGAINS ON EACH PREVIEW FRAME SO IT'S AS ACCURATE AS POSSIBLE FOR WHEN IT SWITCHES TO MODE 3
+		awbgains = std::to_string(options->awb_gain_r) + "," + std::to_string(options->awb_gain_b); // SET AWBGAINS ON EACH PREVIEW FRAME SO IT'S AS ACCURATE AS POSSIBLE FOR WHEN IT SWITCHES TO MODE 3
 		std::cerr << "SETTING AWBGAINS: " << awbgains << std::endl;
 	}
 	if (Control::mode == 1 || Control::mode == 3) {
@@ -139,8 +144,6 @@ int main(int argc, char *argv[])
 {
 	try
 	{
-		global_argc = argc;
-		global_argv = argv;
 		int interval;
 		signal(SIGHUP, control_signal_handler);  // START NEW CAPTURE (SIGUSR2 MUST ALWAYS PRECEED SIGHUP)
 		signal(SIGUSR1, default_signal_handler); // TRIGGER CAPTURE
@@ -154,13 +157,13 @@ int main(int argc, char *argv[])
 				std::string content((std::istreambuf_iterator<char>(ifs)),(std::istreambuf_iterator<char>()));
 				parameters = json::parse(content);
 				std::cerr << std::setw(4) << parameters << std::endl;
-				pid = std::stoi(parameters.at("pid"));
-				Control::mode = parameters.at("mode");
-				Control::frames = parameters.at("frames");
-				Control::timestampsFile = parameters.at("timestamps_file");
+				pid = 1;//std::stoi(parameters.at("pid").get<std::string>());
+				Control::mode = 0;//std::stoi(parameters.at("mode").get<std::string>());
+				Control::frames = 240;//std::stoi(parameters.at("frames").get<std::string>());
+				// Control::timestampsFile = parameters.at("timestamps_file");
 				if (Control::mode != 3 && awbgains != "0,0") 
 					awbgains = "0,0";
-				interval = static_cast<int>(std::max(parameters.at("shutter")/1000, static_cast<int>(100))); // IN MILLISECONDS
+				interval = 100;//static_cast<int>(std::max(std::stoi(parameters.at("shutter").get<std::string>())/1000, static_cast<int>(100))); // IN MILLISECONDS
 				stillCapturedCount = 0;
 				std::cerr << "CAPTURE MODE: " << Control::mode << std::endl;
 				capture();
