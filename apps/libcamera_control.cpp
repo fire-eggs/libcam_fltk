@@ -51,7 +51,7 @@ static void control_signal_handler(int signal_number)
 static void configure(int &oldc, char** &oldv) {
 	global_argc = 32;
 	char** argv = {
-		char* std::string("/home/pi/libcamera-apps/build/libcamera-control").data();
+		char* std::string("/home/pi/libcamera-apps/build/libcamera-control").data(),
 		char* std::string("--frames").data(),
 		char* parameters.at("frames").get<std::string>(),
 		char* std::string("--shutter").data(),
