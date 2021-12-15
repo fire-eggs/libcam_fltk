@@ -12,6 +12,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "control_output.hpp"
+#include "core/control.hpp"
 using namespace std::chrono;
 
 // We're going to align the frames within the buffer to friendly byte boundaries
