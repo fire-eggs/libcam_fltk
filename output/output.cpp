@@ -15,8 +15,9 @@
 #include "output.hpp"
 #include "core/control.hpp"
 
-std::string Control::timestampsFile;
 int Control::mode;
+bool Control::enableBuffer;
+std::string Control::timestampsFile;
 
 Output::Output(VideoOptions const *options)
 	: options_(options), fp_timestamps_(nullptr), flags(0), state_(WAITING_KEYFRAME), last_timestamp_(0), time_offset_(0)

@@ -18,19 +18,19 @@
 using namespace std::placeholders;
 using json = nlohmann::json;
 
-FILE *Control::pipe;
 int Control::mode;
 int Control::frames;
 bool Control::enableBuffer;
 std::string Control::timestampsFile;
+// SHOULD CONSIDER PUTTING SOME OR ALL OF THESE IN CONTROL.HPP
 json parameters;
 int global_argc;
-char **global_argv;
-bool captureReady;
+char** global_argv;
 bool capturing;
 int stillCapturedCount;
 int signal_received;
 int control_signal_received;
+std::string awbgains = "0,0";
 std::unique_ptr<Output> output = std::unique_ptr<Output>(Output::Create());
 
 static void default_signal_handler(int signal_number)
@@ -47,86 +47,87 @@ static void control_signal_handler(int signal_number)
 	std::cerr << "Control received signal " << signal_number << std::endl;
 }
 
+static void configure(int &oldc, char** &oldv) {
+	global_argc = 32;
+	char** argv = {
+		char* std::string("/home/pi/libcamera-apps/build/libcamera-control").data();
+		char* std::string("--frames").data(),
+		char* parameters.at("frames").get<std::string>(),
+		char* std::string("--shutter").data(),
+		char* parameters.at("shutter").get<std::string>(),
+		char* std::string("--codec").data(),
+		char* parameters.at("codec").get<std::string>(),
+		char* std::string("--mode").data(),
+		char* parameters.at("sensor_mode").get<std::string>(),
+		char* std::string("--width").data(),
+		char* parameters.at("width").get<std::string>(),
+		char* std::string("--height").data(),
+		char* parameters.at("height").get<std::string>(),
+		char* std::string("--framerate").data(),
+		char* parameters.at("framerate").get<std::string>(),
+		char* std::string("--sharpness").data(),
+		char* parameters.at("sharpness").get<std::string>(),
+		char* std::string("--saturation").data(),
+		char* parameters.at("saturation").get<std::string>(),
+		char* std::string("--contrast").data(),
+		char* parameters.at("contrast").get<std::string>(),
+		char* std::string("--brightness").data(),
+		char* parameters.at("brightness").get<std::string>(),
+		char* std::string("--gain").data(),
+		char* parameters.at("gain").get<std::string>(),
+		char* std::string("--awb").data(),
+		char* parameters.at("awb").get<std::string>(),
+		char* std::string("--awbgains").data(),
+		char* awbgains.data(),
+		char* std::string("--denoise").data(),
+		char* parameters.at("denoise").get<std::string>(),
+		char* std::string("--nopreview").data()
+	}
+	global_argv = argv;
+} 
+
 static void capture() {
+	std::cerr << "CAPTURE START" << std::endl;
 	capturing = true;
 	LibcameraEncoder app;
+	configure(global_argc, global_argv);
 	VideoOptions *options = app.GetOptions();
 	options->Parse(global_argc, global_argv);
-	Control::mode = parameters.at("mode");
-	std::cerr << "CAPTURE MODE: " << Control::mode << std::endl;
-	Control::frames = parameters.at("frames");
-	Control::timestampsFile = parameters.at("timestamps_file");
-	options->shutter = parameters.at("shutter");
-	options->mode = parameters.at("sensor_mode"); // BROKEN CURRENTLY WITH "4056:3040:12:P" / PASS "" FOR NOW
-	options->width = parameters.at("width");
-	options->height = parameters.at("height");
-	options->framerate = parameters.at("framerate");
-	options->sharpness = parameters.at("sharpness");
-	options->saturation = parameters.at("saturation");
-	options->contrast = parameters.at("contrast");
-	options->brightness = parameters.at("brightness");
-	options->gain = parameters.at("gain");
-	options->awb = "incandescent"; //parameters.at("wbmode"); // BROKEN
-	options->denoise = parameters.at("denoise");
-	options->nopreview = true;
+	if (Control::mode == 2)
+		Control::enableBuffer = true;
 	output->Reset();
-	std::cerr << "AWB: " << parameters.at("wbmode") << std::endl;
   	std::cerr << "CAPTURE READY - MODE: " << Control::mode << std::endl;
-	switch(Control::mode) {
-		case 0:
-			Control::enableBuffer = false;
-			// options->quality = parameters.at("quality");
-			// options->codec = "mjpeg";
-			options->codec = "yuv420";
-			options->timeout = 0;
-			break;
-		case 1:
-			Control::enableBuffer = false;
-			// options->quality = parameters.at("quality");
-			// options->codec = "mjpeg";
-			options->codec = "yuv420";
-			options->frames = 1;
-			break;
-		case 2:
-			Control::enableBuffer = true;
-			options->frames = parameters.at("frames");
-			options->codec = "yuv420";
-			break;
-		case 3:
-			Control::enableBuffer = false;
-			options->codec = "yuv420";
-			options->frames = 1;
-			break;
-  	}
-	app.SetEncodeOutputReadyCallback(std::bind(&Output::OutputReady, output.get(), _1, _2, _3, _4)); // MIGHT BE ABLE TO LOOP THIS RATHER THAN WHOLE METHOD
-	app.StartEncoder();
-	app.OpenCamera();
-	app.ConfigureVideo();
-	app.StartCamera();
-	for (unsigned int count = 0; ; count++)
-	{
-		if (Control::mode == 1 || Control::mode == 3) {
-			stillCapturedCount++;
-			std::cerr << "STILL CAPTURE COUNT: " << stillCapturedCount << std::endl;
-		}
-		LibcameraEncoder::Msg msg = app.Wait();
-		if (msg.type == LibcameraEncoder::MsgType::Quit)
-			break;
-		else if (msg.type != LibcameraEncoder::MsgType::RequestComplete)
-			throw std::runtime_error("unrecognised message!");
-		bool frameout = options->frames && count >= options->frames;
-		if (frameout || signal_received == SIGUSR2)
-		{
-			if (Control::mode == 0 || Control::mode == 2)
-				capturing = false;
-			app.StopCamera();
-			app.StopEncoder();
-			break;
-		}
-		CompletedRequestPtr &completed_request = std::get<CompletedRequestPtr>(msg.payload);
-		app.EncodeBuffer(completed_request, app.VideoStream());
-	}
-	output->WriteOut();
+	// app.SetEncodeOutputReadyCallback(std::bind(&Output::OutputReady, output.get(), _1, _2, _3, _4)); // MIGHT BE ABLE TO LOOP THIS RATHER THAN WHOLE METHOD
+	// app.StartEncoder();
+	// app.OpenCamera();
+	// app.ConfigureVideo();
+	// app.StartCamera();
+	// for (unsigned int count = 0; ; count++)
+	// {
+	// 	LibcameraEncoder::Msg msg = app.Wait();
+	// 	if (msg.type == LibcameraEncoder::MsgType::Quit)
+	// 		break;
+	// 	else if (msg.type != LibcameraEncoder::MsgType::RequestComplete)
+	// 		throw std::runtime_error("unrecognised message!");
+	// 	bool frameout = options->frames && count >= options->frames;
+	// 	if (frameout || signal_received == SIGUSR2)
+	// 	{
+	// 		if (Control::mode == 0 || Control::mode == 2)
+	// 			capturing = false;
+	// 		app.StopCamera();
+	// 		app.StopEncoder();
+	// 		break;
+	// 	}
+	// 	CompletedRequestPtr &completed_request = std::get<CompletedRequestPtr>(msg.payload);
+	// 	app.EncodeBuffer(completed_request, app.VideoStream());
+	// }
+	// output->WriteOut();
+	// if (Control::mode == 1 || Control::mode == 3) {
+	// 	stillCapturedCount++;
+	// 	std::cerr << "CAPTURE END" << ", CAPTURE MODE: " << Control::mode << ", STILL CAPTURE COUNT: " << stillCapturedCount << ", TOTAL FRAMES REQUESTED: " << Control::frames << std::endl;
+	// } else {
+	// 	std::cerr << "CAPTURE END" << ", CAPTURE MODE: " << Control::mode << ", VIDEO CAPTURE COUNT: " << Control::frames << std::endl;
+	// }
 }
 
 int main(int argc, char *argv[])
@@ -148,17 +149,18 @@ int main(int argc, char *argv[])
 				std::string content((std::istreambuf_iterator<char>(ifs)),(std::istreambuf_iterator<char>()));
 				parameters = json::parse(content);
 				std::cerr << std::setw(4) << parameters << std::endl;
-				// interval = static_cast<int>(std::max(parameters.at("shutter")/1000, static_cast<float>(100))); // IN MILLISECONDS
-				interval = 100;
+				Control::mode = parameters.at("mode");
+				Control::frames = parameters.at("frames");
+				Control::timestampsFile = parameters.at("timestamps_file");
+				interval = static_cast<int>(std::max(parameters.at("shutter")/1000, static_cast<int>(100))); // IN MILLISECONDS
 				stillCapturedCount = 0;
-				std::cerr << "CAPTURE START" << std::endl;
+				std::cerr << "CAPTURE MODE: " << Control::mode << std::endl;
 				capture();
-				std::cerr << "CAPTURE END" << std::endl;
 				control_signal_received = 0;
 			} else if (capturing && Control::mode == 1) {
 				if (signal_received != SIGUSR2) {
-					std::cerr << "LOOPING1" << std::endl;
-					std::this_thread::sleep_for(std::chrono::milliseconds(interval));
+					std::cerr << "CAPTURE MODE 1 LOOPING" << std::endl;
+					std::this_thread::sleep_for(std::chrono::milliseconds(interval)); // THIS DOESN'T TAKE INTO ACCOUNT 10MS SLEEP
 					capture();
 				} else if (signal_received == SIGUSR2) {
 					signal_received = 0;
@@ -167,9 +169,8 @@ int main(int argc, char *argv[])
 				} 
 			} else if (capturing && Control::mode == 3) {
 				if (signal_received == SIGUSR1 && stillCapturedCount < Control::frames) {
-					std::cerr << "LOOPING2" << std::endl;
-					std::this_thread::sleep_for(std::chrono::milliseconds(33));
 					signal_received = 0;
+					std::cerr << "CAPTURE MODE 2 LOOPING" << std::endl;
 					capture();
 				} else if (stillCapturedCount == Control::frames || signal_received == SIGUSR2) {
 					signal_received = 0;

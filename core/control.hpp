@@ -15,5 +15,4 @@ public:
 	static bool enableBuffer;
 	static int frames;
     static std::string timestampsFile;
-    static FILE *pipe;
 };
