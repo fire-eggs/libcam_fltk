@@ -157,13 +157,13 @@ int main(int argc, char *argv[])
 				std::string content((std::istreambuf_iterator<char>(ifs)),(std::istreambuf_iterator<char>()));
 				parameters = json::parse(content);
 				std::cerr << std::setw(4) << parameters << std::endl;
-				pid = 1;//std::stoi(parameters.at("pid").get<std::string>());
-				Control::mode = 0;//std::stoi(parameters.at("mode").get<std::string>());
-				Control::frames = 240;//std::stoi(parameters.at("frames").get<std::string>());
-				// Control::timestampsFile = parameters.at("timestamps_file");
+				pid = std::stoi(parameters.at("pid").get<std::string>());
+				Control::mode = std::stoi(parameters.at("mode").get<std::string>());
+				Control::frames = std::stoi(parameters.at("frames").get<std::string>());
+				Control::timestampsFile = parameters.at("timestamps_file");
 				if (Control::mode != 3 && awbgains != "0,0") 
 					awbgains = "0,0";
-				interval = 100;//static_cast<int>(std::max(std::stoi(parameters.at("shutter").get<std::string>())/1000, static_cast<int>(100))); // IN MILLISECONDS
+				interval = static_cast<int>(std::max(std::stoi(parameters.at("shutter").get<std::string>())/1000, static_cast<int>(100))); // IN MILLISECONDS
 				stillCapturedCount = 0;
 				std::cerr << "CAPTURE MODE: " << Control::mode << std::endl;
 				capture();
