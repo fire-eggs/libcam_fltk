@@ -103,7 +103,7 @@ static void capture() {
 		Control::enableBuffer = true;
 	output->Reset();
   	std::cerr << "CAPTURE READY - MODE: " << Control::mode << std::endl;
-	app.SetEncodeOutputReadyCallback(std::bind(&Output::OutputReady, output.get(), _1, _2, _3, _4)); // MIGHT BE ABLE TO LOOP THIS RATHER THAN WHOLE METHOD
+	app.SetEncodeOutputReadyCallback(std::bind(&Output::OutputReady, output.get(), _1, _2, _3, _4));
 	app.StartEncoder();
 	app.OpenCamera();
 	app.ConfigureVideo();
@@ -152,6 +152,8 @@ int main(int argc, char *argv[])
 		while (true) 
 		{
 			if (!capturing && control_signal_received == 1) {
+				signal_received = 0;
+				control_signal_received = 0;
 				std::cerr << "READING PARAMETERS" << std::endl;
 				std::ifstream ifs("/home/pi/parameters.json");
 				std::string content((std::istreambuf_iterator<char>(ifs)),(std::istreambuf_iterator<char>()));
@@ -167,7 +169,6 @@ int main(int argc, char *argv[])
 				stillCapturedCount = 0;
 				std::cerr << "CAPTURE MODE: " << Control::mode << std::endl;
 				capture();
-				control_signal_received = 0;
 			} else if (capturing && Control::mode == 1) {
 				if (signal_received != SIGUSR2) {
 					std::cerr << "CAPTURE MODE 1 LOOPING" << std::endl;
