@@ -45,6 +45,7 @@ static int get_key_or_signal(VideoOptions const *options, pollfd p[1])
 			key = '\n';
 		else if (signal_received == SIGUSR2)
 			key = 'x';
+		signal_received = 0;
 	}
 	return key;
 }
@@ -56,10 +57,10 @@ static void event_loop(LibcameraEncoder &app)
 	VideoOptions const *options = app.GetOptions();
 	std::unique_ptr<Output> output = std::unique_ptr<Output>(Output::Create(options));
 	app.SetEncodeOutputReadyCallback(std::bind(&Output::OutputReady, output.get(), _1, _2, _3, _4));
-	app.StartEncoder();
 
 	app.OpenCamera();
 	app.ConfigureVideo();
+	app.StartEncoder();
 	app.StartCamera();
 	auto start_time = std::chrono::high_resolution_clock::now();
 
