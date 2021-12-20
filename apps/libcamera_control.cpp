@@ -93,8 +93,6 @@ static void configure() {
 } 
 
 static void capture() {
-	std::cerr << "CAPTURE START" << std::endl;
-	capturing = true;
 	LibcameraEncoder app;
 	configure();
 	VideoOptions *options = app.GetOptions();
@@ -108,6 +106,8 @@ static void capture() {
 	app.OpenCamera();
 	app.ConfigureVideo();
 	app.StartCamera();
+	std::cerr << "CAPTURE START" << std::endl;
+	capturing = true;
 	for (unsigned int count = 0; ; count++)
 	{
 		LibcameraEncoder::Msg msg = app.Wait();
@@ -128,15 +128,23 @@ static void capture() {
 		app.EncodeBuffer(completed_request, app.VideoStream());
 	}
 	output->WriteOut();
-	if (Control::mode == 1) {
-		awbgains = std::to_string(options->awb_gain_r) + "," + std::to_string(options->awb_gain_b); // SET AWBGAINS ON EACH PREVIEW FRAME SO IT'S AS ACCURATE AS POSSIBLE FOR WHEN IT SWITCHES TO MODE 3
-		std::cerr << "SETTING AWBGAINS: " << awbgains << std::endl;
-	}
-	if (Control::mode == 1 || Control::mode == 3) {
-		stillCapturedCount++;
-		std::cerr << "CAPTURE END" << ", CAPTURE MODE: " << Control::mode << ", STILL CAPTURE COUNT: " << stillCapturedCount << ", TOTAL FRAMES REQUESTED: " << Control::frames << std::endl;
-	} else {
-		std::cerr << "CAPTURE END" << ", CAPTURE MODE: " << Control::mode << ", VIDEO CAPTURE COUNT: " << Control::frames << std::endl;
+	switch(Control::mode) {
+		case 0:
+			std::cerr << "CAPTURE END" << ", CAPTURE MODE: " << Control::mode << ", VIDEO CAPTURE COUNT: " << Control::frames << std::endl;
+			break;
+		case 1:
+			stillCapturedCount++;
+			awbgains = std::to_string(options->awb_gain_r) + "," + std::to_string(options->awb_gain_b); // SET AWBGAINS ON EACH PREVIEW FRAME SO IT'S AS ACCURATE AS POSSIBLE FOR WHEN IT SWITCHES TO MODE 3
+			std::cerr << "CAPTURE END" << ", CAPTURE MODE: " << Control::mode << " AWBGAINS: " << awbgains << ", STILL CAPTURE COUNT: " << stillCapturedCount << ", TOTAL FRAMES REQUESTED: " << Control::frames << std::endl;
+			break;
+  		case 2:
+			std::cerr << "CAPTURE END" << ", CAPTURE MODE: " << Control::mode << ", VIDEO CAPTURE COUNT: " << Control::frames << std::endl;
+			break;
+		case 3:
+			stillCapturedCount++;
+			std::cerr << "CAPTURE END" << ", CAPTURE MODE: " << Control::mode << " AWBGAINS: " << awbgains << ", STILL CAPTURE COUNT: " << stillCapturedCount << ", TOTAL FRAMES REQUESTED: " << Control::frames << std::endl;
+			std::system("pkill -f -SIGUSR1 camera_server.py");
+			break;
 	}
 }
 
@@ -183,7 +191,7 @@ int main(int argc, char *argv[])
 			} else if (capturing && Control::mode == 3) {
 				if (signal_received == SIGUSR1 && stillCapturedCount < Control::frames) {
 					signal_received = 0;
-					std::cerr << "CAPTURE MODE 2 LOOPING" << std::endl;
+					std::cerr << "CAPTURE MODE 3 LOOPING" << std::endl;
 					capture();
 				} else if (stillCapturedCount == Control::frames || signal_received == SIGUSR2) {
 					signal_received = 0;
