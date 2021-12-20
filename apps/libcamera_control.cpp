@@ -144,6 +144,7 @@ int main(int argc, char *argv[])
 {
 	try
 	{
+		std::system("pkill -f -SIGHUP camera_server.py");
 		int interval;
 		signal(SIGHUP, control_signal_handler);  // START NEW CAPTURE (SIGUSR2 MUST ALWAYS PRECEED SIGHUP)
 		signal(SIGUSR1, default_signal_handler); // TRIGGER CAPTURE
