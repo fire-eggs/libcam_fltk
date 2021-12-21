@@ -23,7 +23,7 @@ ControlOutput::ControlOutput() : Output(), buf_(), framesBuffered_(0), framesWri
 	char * myfifo = new char [14];
 	strcpy(myfifo, "/home/pi/pipe");
 	mkfifo(myfifo, 0666);
-	std::cerr << "PIPE CREATED" << std::endl;
+	std::cerr << "LIBCAMERA: PIPE CREATED" << std::endl;
 }
 
 ControlOutput::~ControlOutput()
@@ -41,10 +41,10 @@ void ControlOutput::WriteOut()
 		while(framesWritten_ < framesBuffered_)
 		{
 			if (fwrite(buf_[framesWritten_], 18677760, 1, fp_) != 1)
-				std::cerr << "failed to write output bytes" << std::endl;
+				std::cerr << "LIBCAMERA: failed to write output bytes" << std::endl;
 			else
 			{
-				std::cerr << "Frames Written: " << (framesWritten_+1) << ", Frames Buffered: " << framesBuffered_ << std::endl;
+				std::cerr << "LIBCAMERA: Frames Written: " << (framesWritten_+1) << ", Frames Buffered: " << framesBuffered_ << std::endl;
 				framesWritten_++;
 			}
 		}
@@ -62,7 +62,7 @@ void ControlOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, u
 			framesWritten_++;
 		auto stop = high_resolution_clock::now();
 		auto duration = duration_cast<milliseconds>(stop - start);
-		std::cerr << "Write took: " << duration.count() << "ms" << std::endl;
+		std::cerr << "LIBCAMERA: Write took: " << duration.count() << "ms" << std::endl;
 	}
 	else 
 	{
@@ -71,13 +71,13 @@ void ControlOutput::outputBuffer(void *mem, size_t size, int64_t timestamp_us, u
 		memcpy(&buf_[framesBuffered_ - 1], mem, size); // NEED TO PAD/ALIGN TO 4096
 		auto stop = high_resolution_clock::now();
 		auto duration = duration_cast<milliseconds>(stop - start);
-		std::cerr << "Copy took: " << duration.count() << "ms, Frames Buffered: " << framesBuffered_ << std::endl;
+		std::cerr << "LIBCAMERA: Copy took: " << duration.count() << "ms, Frames Buffered: " << framesBuffered_ << std::endl;
 	}
 }
 
 void ControlOutput::Reset()
 {
-	std::cerr << "RESETTING BUFFER" << std::endl;
+	std::cerr << "LIBCAMERA: RESETTING BUFFER" << std::endl;
 	framesWritten_ = 0;
 	framesBuffered_ = 0;
 	flags = 2;
@@ -87,13 +87,13 @@ void ControlOutput::Reset()
 	// 	fclose(fp_);
 	if (!fp_) {
 		fp_ = fopen("/home/pi/pipe", "w");
-		std::cerr << "PIPE OPENED BY CONSUMER" << std::endl;
+		std::cerr << "LIBCAMERA: PIPE OPENED BY CONSUMER" << std::endl;
 	}
 	if (Control::mode == 2 && !Control::timestampsFile.empty())
 	{
 		fp_timestamps_ = fopen(Control::timestampsFile.c_str(), "w");
 		if (!fp_timestamps_)
-			throw std::runtime_error("Failed to open timestamp file " + Control::timestampsFile);
+			throw std::runtime_error("LIBCAMERA: Failed to open timestamp file " + Control::timestampsFile);
 		fprintf(fp_timestamps_, "# timecode format v2\n");
 	}
 }
