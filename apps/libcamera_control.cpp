@@ -38,14 +38,14 @@ static void default_signal_handler(int signal_number)
 {
 	if (!capturing) return;
 	signal_received = signal_number;
-	std::cerr << "Received signal " << signal_number << std::endl;
+	std::cerr << "LIBCAMERA: Received signal " << signal_number << std::endl;
 }
 
 static void control_signal_handler(int signal_number)
 {
 	if (capturing) return;
 	control_signal_received = signal_number;
-	std::cerr << "Control received signal " << signal_number << std::endl;
+	std::cerr << "LIBCAMERA: Control received signal " << signal_number << std::endl;
 }
 
 static void configure() {
@@ -100,13 +100,13 @@ static void capture() {
 	if (Control::mode == 2)
 		Control::enableBuffer = true;
 	output->Reset();
-  	std::cerr << "CAPTURE READY - MODE: " << Control::mode << std::endl;
+  	std::cerr << "LIBCAMERA: CAPTURE READY - MODE: " << Control::mode << std::endl;
 	app.SetEncodeOutputReadyCallback(std::bind(&Output::OutputReady, output.get(), _1, _2, _3, _4));
 	app.OpenCamera();
 	app.ConfigureVideo();
 	app.StartEncoder();
 	app.StartCamera();
-	std::cerr << "CAPTURE START" << std::endl;
+	std::cerr << "LIBCAMERA: CAPTURE START" << std::endl;
 	capturing = true;
 	for (unsigned int count = 0; ; count++)
 	{
@@ -130,19 +130,19 @@ static void capture() {
 	output->WriteOut();
 	switch(Control::mode) {
 		case 0:
-			std::cerr << "CAPTURE END" << ", CAPTURE MODE: " << Control::mode << ", VIDEO CAPTURE COUNT: " << Control::frames << std::endl;
+			std::cerr << "LIBCAMERA: CAPTURE END" << ", CAPTURE MODE: " << Control::mode << ", VIDEO CAPTURE COUNT: " << Control::frames << std::endl;
 			break;
 		case 1:
 			stillCapturedCount++;
 			awbgains = std::to_string(options->awb_gain_r) + "," + std::to_string(options->awb_gain_b); // SET AWBGAINS ON EACH PREVIEW FRAME SO IT'S AS ACCURATE AS POSSIBLE FOR WHEN IT SWITCHES TO MODE 3
-			std::cerr << "CAPTURE END" << ", CAPTURE MODE: " << Control::mode << " AWBGAINS: " << awbgains << ", STILL CAPTURE COUNT: " << stillCapturedCount << ", TOTAL FRAMES REQUESTED: " << Control::frames << std::endl;
+			std::cerr << "LIBCAMERA: CAPTURE END" << ", CAPTURE MODE: " << Control::mode << " AWBGAINS: " << awbgains << ", STILL CAPTURE COUNT: " << stillCapturedCount << ", TOTAL FRAMES REQUESTED: " << Control::frames << std::endl;
 			break;
   		case 2:
-			std::cerr << "CAPTURE END" << ", CAPTURE MODE: " << Control::mode << ", VIDEO CAPTURE COUNT: " << Control::frames << std::endl;
+			std::cerr << "LIBCAMERA: CAPTURE END" << ", CAPTURE MODE: " << Control::mode << ", VIDEO CAPTURE COUNT: " << Control::frames << std::endl;
 			break;
 		case 3:
 			stillCapturedCount++;
-			std::cerr << "CAPTURE END" << ", CAPTURE MODE: " << Control::mode << " AWBGAINS: " << awbgains << ", STILL CAPTURE COUNT: " << stillCapturedCount << ", TOTAL FRAMES REQUESTED: " << Control::frames << std::endl;
+			std::cerr << "LIBCAMERA: CAPTURE END" << ", CAPTURE MODE: " << Control::mode << " AWBGAINS: " << awbgains << ", STILL CAPTURE COUNT: " << stillCapturedCount << ", TOTAL FRAMES REQUESTED: " << Control::frames << std::endl;
 			std::system("pkill -f -SIGUSR1 camera_server.py");
 			break;
 	}
@@ -157,13 +157,13 @@ int main(int argc, char *argv[])
 		signal(SIGHUP, control_signal_handler);  // START NEW CAPTURE (SIGUSR2 MUST ALWAYS PRECEED SIGHUP)
 		signal(SIGUSR1, default_signal_handler); // TRIGGER CAPTURE
 		signal(SIGUSR2, default_signal_handler); // END CAPTURE
-		std::cerr << "BUFFER ALLOCATED AND READY TO CAPTURE" << std::endl;
+		std::cerr << "LIBCAMERA: BUFFER ALLOCATED AND READY TO CAPTURE" << std::endl;
 		while (true) 
 		{
 			if (!capturing && control_signal_received == 1) {
 				signal_received = 0;
 				control_signal_received = 0;
-				std::cerr << "READING PARAMETERS" << std::endl;
+				std::cerr << "LIBCAMERA: READING PARAMETERS" << std::endl;
 				std::ifstream ifs("/home/pi/parameters.json");
 				std::string content((std::istreambuf_iterator<char>(ifs)),(std::istreambuf_iterator<char>()));
 				parameters = json::parse(content);
@@ -176,27 +176,27 @@ int main(int argc, char *argv[])
 					awbgains = "0,0";
 				interval = static_cast<int>(std::max(std::stoi(parameters.at("shutter").get<std::string>())/1000, static_cast<int>(100))); // IN MILLISECONDS
 				stillCapturedCount = 0;
-				std::cerr << "CAPTURE MODE: " << Control::mode << std::endl;
+				std::cerr << "LIBCAMERA: CAPTURE MODE: " << Control::mode << std::endl;
 				capture();
 			} else if (capturing && Control::mode == 1) {
 				if (signal_received != SIGUSR2) {
-					std::cerr << "CAPTURE MODE 1 LOOPING" << std::endl;
+					std::cerr << "LIBCAMERA: CAPTURE MODE 1 LOOPING" << std::endl;
 					std::this_thread::sleep_for(std::chrono::milliseconds(interval)); // THIS DOESN'T TAKE INTO ACCOUNT 10MS SLEEP
 					capture();
 				} else if (signal_received == SIGUSR2) {
 					signal_received = 0;
 					capturing = false;
-					std::cerr << "STOPPING MODE 1 CAPTURE" << std::endl;
+					std::cerr << "LIBCAMERA: STOPPING MODE 1 CAPTURE" << std::endl;
 				} 
 			} else if (capturing && Control::mode == 3) {
 				if (signal_received == SIGUSR1 && stillCapturedCount < Control::frames) {
 					signal_received = 0;
-					std::cerr << "CAPTURE MODE 3 LOOPING" << std::endl;
+					std::cerr << "LIBCAMERA: CAPTURE MODE 3 LOOPING" << std::endl;
 					capture();
 				} else if (stillCapturedCount == Control::frames || signal_received == SIGUSR2) {
 					signal_received = 0;
 					capturing = false;
-					std::cerr << "STOPPING MODE 3 CAPTURE" << std::endl;
+					std::cerr << "LIBCAMERA: STOPPING MODE 3 CAPTURE" << std::endl;
 				}
 			} 
 			std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -204,7 +204,7 @@ int main(int argc, char *argv[])
 	}
 	catch (std::exception const &e)
 	{
-		std::cerr << "ERROR: *** " << e.what() << " ***" << std::endl;
+		std::cerr << "LIBCAMERA: ERROR: *** " << e.what() << " ***" << std::endl;
 		return -1;
 	}
 	return 0;
