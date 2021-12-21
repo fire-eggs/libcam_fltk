@@ -115,7 +115,7 @@ static void capture() {
 			break;
 		case 3:
 			options->frames = 1;
-			Control::enableBuffer = false;
+			Control::enableBuffer = true;
 			break;
 		default:
 			options->frames = std::stoi(parameters.at("frames").get<std::string>()); // THIS SHOULDN'T BE NECESSARY - HACK
