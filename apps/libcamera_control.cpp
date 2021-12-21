@@ -30,22 +30,17 @@ char** global_argv;
 bool capturing;
 int stillCapturedCount;
 int signal_received;
-int control_signal_received;
 std::string awbgains;
 std::unique_ptr<Output> output = std::unique_ptr<Output>(Output::Create());
 
-static void default_signal_handler(int signal_number)
+static void signal_handler(int signal_number)
 {
-	if (!capturing) return;
 	signal_received = signal_number;
 	std::cerr << "LIBCAMERA: Received signal " << signal_number << std::endl;
-}
-
-static void control_signal_handler(int signal_number)
-{
-	if (capturing) return;
-	control_signal_received = signal_number;
-	std::cerr << "LIBCAMERA: Control received signal " << signal_number << std::endl;
+	if (!capturing && signal_received == 12) {
+		std::system("pkill -f -SIGHUP camera_server.py");
+		std::cerr << "LIBCAMERA: SENDING FIRST SIGHUP, CAPTUREREADY" << std::endl;
+	}
 }
 
 static void configure() {
@@ -157,15 +152,14 @@ int main(int argc, char *argv[])
 	{
 		std::system("pkill -f -SIGHUP camera_server.py");
 		int interval;
-		signal(SIGHUP, control_signal_handler);  // START NEW CAPTURE (SIGUSR2 MUST ALWAYS PRECEED SIGHUP)
-		signal(SIGUSR1, default_signal_handler); // TRIGGER CAPTURE
-		signal(SIGUSR2, default_signal_handler); // END CAPTURE
+		signal(SIGHUP, signal_handler);  // START NEW CAPTURE (SIGUSR2 MUST ALWAYS PRECEED SIGHUP)
+		signal(SIGUSR1, signal_handler); // TRIGGER CAPTURE
+		signal(SIGUSR2, signal_handler); // END CAPTURE
 		std::cerr << "LIBCAMERA: BUFFER ALLOCATED AND READY TO CAPTURE" << std::endl;
 		while (true) 
 		{
-			if (!capturing && control_signal_received == 1) {
+			if (!capturing && signal_received == SIGHUP) {
 				signal_received = 0;
-				control_signal_received = 0;
 				std::cerr << "LIBCAMERA: READING PARAMETERS" << std::endl;
 				std::ifstream ifs("/home/pi/parameters.json");
 				std::string content((std::istreambuf_iterator<char>(ifs)),(std::istreambuf_iterator<char>()));
