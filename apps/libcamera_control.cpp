@@ -49,7 +49,7 @@ static void control_signal_handler(int signal_number)
 }
 
 static void configure() {
-	std::vector<std::string> args = {"/home/pi/libcamera-apps/build/libcamera-control"};
+	std::vector<std::string> args = {"/home/pi/GitHub/libcamera-apps/build/libcamera-control"};
 	args.push_back("--frames");
 	args.push_back(parameters.at("frames").get<std::string>());
 	args.push_back(std::string("--shutter"));
