@@ -105,8 +105,11 @@ static void capture() {
 		options->frames = std::stoi(parameters.at("frames").get<std::string>());
 	}
 	std::cerr << "LIBCAMERA: FORCE FRAMES: " << options->frames << " TIMEOUT: " << options->timeout << std::endl;
-	if (Control::mode == 2)
+	if (Control::mode == 2) {
 		Control::enableBuffer = true;
+	} else {
+		Control::enableBuffer = false;
+	}
 	output->Reset();
   	std::cerr << "LIBCAMERA: CAPTURE READY - MODE: " << Control::mode << std::endl;
 	app.SetEncodeOutputReadyCallback(std::bind(&Output::OutputReady, output.get(), _1, _2, _3, _4));
