@@ -102,9 +102,9 @@ static void capture() {
 	output->Reset();
   	std::cerr << "CAPTURE READY - MODE: " << Control::mode << std::endl;
 	app.SetEncodeOutputReadyCallback(std::bind(&Output::OutputReady, output.get(), _1, _2, _3, _4));
-	app.StartEncoder();
 	app.OpenCamera();
 	app.ConfigureVideo();
+	app.StartEncoder();
 	app.StartCamera();
 	std::cerr << "CAPTURE START" << std::endl;
 	capturing = true;
