@@ -156,14 +156,17 @@ static void capture() {
 	switch(Control::mode) {
 		case 0:
 			std::cerr << "LIBCAMERA: CAPTURE END" << ", CAPTURE MODE: " << Control::mode << ", VIDEO CAPTURE COUNT: " << Control::frames << std::endl;
+			std::system("pkill -f -SIGHUP camera_server.py");
+			std::cerr << "LIBCAMERA: SENDING SIGHUP, CAPTUREREADY" << std::endl;
 			break;
 		case 1:
 			stillCapturedCount++;
-			// AWBGAIN doesn't work
-			// awbgains = std::to_string(options->awb_gain_r) + "," + std::to_string(options->awb_gain_b); // SET AWBGAINS ON EACH PREVIEW FRAME SO IT'S AS ACCURATE AS POSSIBLE FOR WHEN IT SWITCHES TO MODE 3
+			// awbgains = std::to_string(options->awb_gain_r) + "," + std::to_string(options->awb_gain_b); // DOESN'T WORK!!! - NEED TO DIG INTO LIBCAMERA - SET AWBGAINS ON EACH PREVIEW FRAME SO IT'S AS ACCURATE AS POSSIBLE FOR WHEN IT SWITCHES TO MODE 3
 			std::cerr << "LIBCAMERA: options->awb_gain_r: " << options->awb_gain_r << std::endl;
 			std::cerr << "LIBCAMERA: options->awb_gain_b: " << options->awb_gain_b << std::endl;
 			std::cerr << "LIBCAMERA: CAPTURE END" << ", CAPTURE MODE: " << Control::mode << " AWBGAINS: " << awbgains << ", STILL CAPTURE COUNT: " << stillCapturedCount << ", TOTAL FRAMES REQUESTED: " << Control::frames << std::endl;
+			std::system("pkill -f -SIGHUP camera_server.py");
+			std::cerr << "LIBCAMERA: SENDING SIGHUP, CAPTUREREADY" << std::endl;
 			break;
   		case 2:
 			std::cerr << "LIBCAMERA: CAPTURE END" << ", CAPTURE MODE: " << Control::mode << ", VIDEO CAPTURE COUNT: " << Control::frames << std::endl;
@@ -174,8 +177,6 @@ static void capture() {
 			std::system("pkill -f -SIGUSR1 camera_server.py");
 			break;
 	}
-	std::system("pkill -f -SIGHUP camera_server.py");
-	std::cerr << "LIBCAMERA: SENDING SIGHUP, CAPTUREREADY" << std::endl;
 }
 
 int main(int argc, char *argv[])
