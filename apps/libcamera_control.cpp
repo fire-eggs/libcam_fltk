@@ -120,7 +120,7 @@ static void capture() {
 		{
 			if (Control::mode == 0 || Control::mode == 2)
 				capturing = false;
-			std::cerr << "LIBCAMERA: FRAMEOUT or SIGUSR2 RECEIVED,  CAPTURE MODE: " << Control::mode << ", CAPTURING: " << capturing << std::endl;
+			std::cerr << "LIBCAMERA: FRAMEOUT or SIGUSR2 received,  CAPTURE MODE: " << Control::mode << ", CAPTURING: " << capturing << std::endl;
 			app.StopCamera();
 			app.StopEncoder();
 			break;
@@ -147,6 +147,8 @@ static void capture() {
 			std::system("pkill -f -SIGUSR1 camera_server.py");
 			break;
 	}
+	std::system("pkill -f -SIGHUP camera_server.py");
+	std::cerr << "LIBCAMERA: SENDING SIGHUP, CAPTUREREADY" << std::endl;
 }
 
 int main(int argc, char *argv[])
