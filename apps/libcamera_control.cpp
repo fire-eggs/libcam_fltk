@@ -45,12 +45,18 @@ static void signal_handler(int signal_number)
 
 static void configure() {
 	std::vector<std::string> args = {"/home/pi/GitHub/libcamera-apps/build/libcamera-control"};
-	if (Control::mode == 0) {
-		args.push_back(std::string("--timeout"));
-		args.push_back(parameters.at("timeout").get<std::string>());
-	} else {
-		args.push_back(std::string("--frames"));
-		args.push_back(parameters.at("frames").get<std::string>());	
+	switch(Control::mode) {
+		case 0:
+			args.push_back(std::string("--timeout"));
+			args.push_back(parameters.at("timeout").get<std::string>());
+			break;
+		case 3:
+			args.push_back(std::string("--frames"));
+			args.push_back(std::string("1"));
+			break;
+		default:
+			args.push_back(std::string("--frames"));
+			args.push_back(parameters.at("frames").get<std::string>());	
 	}
 	args.push_back(std::string("--shutter"));
 	args.push_back(parameters.at("shutter").get<std::string>());
@@ -99,17 +105,23 @@ static void capture() {
 	configure();
 	VideoOptions *options = app.GetOptions();
 	options->Parse(global_argc, global_argv);
-	if (Control::mode == 0) {
-		options->timeout = std::stoi(parameters.at("timeout").get<std::string>());
-	} else {
-		options->frames = std::stoi(parameters.at("frames").get<std::string>());
+	switch(Control::mode) {
+		case 0:
+			options->timeout = std::stoi(parameters.at("timeout").get<std::string>()); // THIS SHOULDN'T BE NECESSARY - HACK
+			Control::enableBuffer = false;
+			break;
+		case 2:
+			Control::enableBuffer = true;
+			break;
+		case 3:
+			options->frames = 1;
+			Control::enableBuffer = false;
+			break;
+		default:
+			options->frames = std::stoi(parameters.at("frames").get<std::string>()); // THIS SHOULDN'T BE NECESSARY - HACK
+			Control::enableBuffer = false;
 	}
-	std::cerr << "LIBCAMERA: FORCE FRAMES: " << options->frames << " TIMEOUT: " << options->timeout << std::endl;
-	if (Control::mode == 2) {
-		Control::enableBuffer = true;
-	} else {
-		Control::enableBuffer = false;
-	}
+	std::cerr << "LIBCAMERA: FORCE FRAMES: " << options->frames << " FORCE TIMEOUT: " << options->timeout << std::endl;
 	output->Reset();
   	std::cerr << "LIBCAMERA: CAPTURE READY - MODE: " << Control::mode << std::endl;
 	app.SetEncodeOutputReadyCallback(std::bind(&Output::OutputReady, output.get(), _1, _2, _3, _4));
