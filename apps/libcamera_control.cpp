@@ -45,10 +45,13 @@ static void signal_handler(int signal_number)
 
 static void configure() {
 	std::vector<std::string> args = {"/home/pi/GitHub/libcamera-apps/build/libcamera-control"};
-	args.push_back(std::string("--frames"));
-	args.push_back(parameters.at("frames").get<std::string>());
-	args.push_back(std::string("--timeout"));
-	args.push_back(parameters.at("timeout").get<std::string>());
+	if (Control::mode == 0) {
+		args.push_back(std::string("--timeout"));
+		args.push_back(parameters.at("timeout").get<std::string>());
+	} else {
+		args.push_back(std::string("--frames"));
+		args.push_back(parameters.at("frames").get<std::string>());	
+	}
 	args.push_back(std::string("--shutter"));
 	args.push_back(parameters.at("shutter").get<std::string>());
 	args.push_back(std::string("--codec"));
