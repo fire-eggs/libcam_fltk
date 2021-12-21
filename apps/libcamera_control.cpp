@@ -99,6 +99,8 @@ static void capture() {
 	configure();
 	VideoOptions *options = app.GetOptions();
 	options->Parse(global_argc, global_argv);
+	options->frames = std::stoi(parameters.at("frames").get<std::string>());
+	std::cerr << "LIBCAMERA: FORCE FRAMES: " << options->frames << std::endl;
 	if (Control::mode == 2)
 		Control::enableBuffer = true;
 	output->Reset();
