@@ -113,6 +113,7 @@ static void capture() {
 		else if (msg.type != LibcameraEncoder::MsgType::RequestComplete)
 			throw std::runtime_error("unrecognised message!");
 		bool frameout = options->frames && count >= options->frames;
+		std::cerr << "LIBCAMERA: options->frames: " << options->frames << ", count: " << count << " frameout: " << frameout << std::endl;
 		if (frameout || signal_received == SIGUSR2)
 		{
 			if (Control::mode == 0 || Control::mode == 2)
