@@ -147,7 +147,10 @@ static void capture() {
 			break;
 		case 1:
 			stillCapturedCount++;
-			awbgains = std::to_string(options->awb_gain_r) + "," + std::to_string(options->awb_gain_b); // SET AWBGAINS ON EACH PREVIEW FRAME SO IT'S AS ACCURATE AS POSSIBLE FOR WHEN IT SWITCHES TO MODE 3
+			// AWBGAIN doesn't work
+			// awbgains = std::to_string(options->awb_gain_r) + "," + std::to_string(options->awb_gain_b); // SET AWBGAINS ON EACH PREVIEW FRAME SO IT'S AS ACCURATE AS POSSIBLE FOR WHEN IT SWITCHES TO MODE 3
+			std::cerr << "LIBCAMERA: options->awb_gain_r: " << options->awb_gain_r << std::endl;
+			std::cerr << "LIBCAMERA: options->awb_gain_b: " << options->awb_gain_b << std::endl;
 			std::cerr << "LIBCAMERA: CAPTURE END" << ", CAPTURE MODE: " << Control::mode << " AWBGAINS: " << awbgains << ", STILL CAPTURE COUNT: " << stillCapturedCount << ", TOTAL FRAMES REQUESTED: " << Control::frames << std::endl;
 			break;
   		case 2:
