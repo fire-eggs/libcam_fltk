@@ -51,6 +51,8 @@ static void configure() {
 	args.push_back(parameters.at("shutter").get<std::string>());
 	args.push_back(std::string("--codec"));
 	args.push_back(parameters.at("codec").get<std::string>());
+	args.push_back(std::string("--quality"));
+	args.push_back(parameters.at("quality").get<std::string>());
 	// args.push_back(std::string("--mode"));
 	// args.push_back(parameters.at("sensor_mode").get<std::string>()); // BROKEN CURRENTLY
 	args.push_back(std::string("--width"));
