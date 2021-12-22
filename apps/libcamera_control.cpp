@@ -180,9 +180,10 @@ static void capture() {
 			break;
 		case 3:
 			stillCapturedCount++;
-			if (stillCapturedCount == Control::frames)
-					output->WriteOut();
-					output->Reset();
+			if (stillCapturedCount == Control::frames) {
+				output->WriteOut();
+				output->Reset();
+			}
 			std::cerr << "LIBCAMERA: CAPTURE END" << ", CAPTURE MODE: " << Control::mode << " AWBGAINS: " << awbgains << ", STILL CAPTURE COUNT: " << stillCapturedCount << ", TOTAL FRAMES REQUESTED: " << Control::frames << std::endl;
 			std::system("pkill -f -SIGUSR1 camera_server.py");
 			break;
