@@ -242,9 +242,8 @@ int main(int argc, char *argv[])
 					std::cerr << "LIBCAMERA: MODE 3 CAPTURE COMPLTE AND EXITING LIBCAMERA-CONTROL" << std::endl;
 					break;
 				}
-			} else if (!capturing) {
-				std::this_thread::sleep_for(std::chrono::milliseconds(10));
 			}
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		}
 	}
 	catch (std::exception const &e)
