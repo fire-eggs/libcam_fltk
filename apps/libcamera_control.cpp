@@ -28,6 +28,7 @@ int pid;
 int global_argc;
 char** global_argv;
 bool capturing;
+bool exit;
 int stillCapturedCount;
 int signal_received;
 std::string awbgains;
@@ -228,9 +229,13 @@ int main(int argc, char *argv[])
 				if (signal_received == SIGUSR1 && stillCapturedCount < Control::frames) {
 					std::cerr << "LIBCAMERA: CAPTURE MODE 3 LOOPING" << std::endl;
 					capture();
-				} else if (stillCapturedCount == Control::frames || signal_received == SIGUSR2) {
+				} else if (signal_received == SIGUSR2) {
 					capturing = false;
 					std::cerr << "LIBCAMERA: STOPPING MODE 3 CAPTURE" << std::endl;
+				} else if (stillCapturedCount == Control::frames) {
+					capturing = false;
+					std::cerr << "LIBCAMERA: MODE 3 CAPTURE COMPLTE AND EXITING LIBCAMERA-CONTROL" << std::endl;
+					break;
 				}
 			} else if (!capturing) {
 				std::this_thread::sleep_for(std::chrono::milliseconds(10));
