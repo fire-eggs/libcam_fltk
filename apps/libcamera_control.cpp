@@ -49,14 +49,26 @@ static void configure() {
 		case 0:
 			args.push_back(std::string("--timeout"));
 			args.push_back(parameters.at("timeout").get<std::string>());
+			args.push_back(std::string("--awb"));
+			args.push_back(parameters.at("awb").get<std::string>());
+			break;
+		case 1:
+			args.push_back(std::string("--frames"));
+			args.push_back(parameters.at("frames").get<std::string>());
+			args.push_back(std::string("--awb"));
+			args.push_back(parameters.at("awb").get<std::string>());
+		case 2:
+			args.push_back(std::string("--frames"));
+			args.push_back(parameters.at("frames").get<std::string>());
+			args.push_back(std::string("--awbgains"));
+			args.push_back(awbgains);
 			break;
 		case 3:
 			args.push_back(std::string("--frames"));
 			args.push_back(std::string("1"));
+			args.push_back(std::string("--awbgains"));
+			args.push_back(awbgains);
 			break;
-		default:
-			args.push_back(std::string("--frames"));
-			args.push_back(parameters.at("frames").get<std::string>());	
 	}
 	args.push_back(std::string("--shutter"));
 	args.push_back(parameters.at("shutter").get<std::string>());
@@ -82,10 +94,6 @@ static void configure() {
 	args.push_back(parameters.at("brightness").get<std::string>());
 	args.push_back(std::string("--gain"));
 	args.push_back(parameters.at("gain").get<std::string>());
-	args.push_back(std::string("--awb"));
-	args.push_back(parameters.at("awb").get<std::string>());
-	args.push_back(std::string("--awbgains"));
-	args.push_back(awbgains);
 	args.push_back(std::string("--denoise"));
 	args.push_back(parameters.at("denoise").get<std::string>());
 	args.push_back(std::string("--nopreview"));
@@ -154,15 +162,14 @@ static void capture() {
 		}
 		CompletedRequestPtr &completed_request = std::get<CompletedRequestPtr>(msg.payload);
 		app.EncodeBuffer(completed_request, app.VideoStream());
-		switch(Control::mode) {
-			case 1:
-				libcamera::Span<const float> gains = completed_request->metadata.get(libcamera::controls::ColourGains);
-				std::stringstream red;
-				std::stringstream blue;
-				red << std::fixed << std::setprecision(2) << gains[0];
-				blue << std::fixed << std::setprecision(2) << gains[1];
-				awbgains = red.str() + "," + blue.str();
-				break;
+		// SHOULD CHECK TIME COST OF THIS
+		if (Control::mode <= 1) {
+			libcamera::Span<const float> gains = completed_request->metadata.get(libcamera::controls::ColourGains);
+			std::stringstream red;
+			std::stringstream blue;
+			red << std::fixed << std::setprecision(2) << gains[0];
+			blue << std::fixed << std::setprecision(2) << gains[1];
+			awbgains = red.str() + "," + blue.str();
 		}
 	}
 	switch(Control::mode) {
@@ -184,7 +191,7 @@ static void capture() {
   		case 2:
   			output->WriteOut();
   			output->Reset();
-			std::cerr << "LIBCAMERA: CAPTURE END" << ", CAPTURE MODE: " << Control::mode << ", VIDEO CAPTURE COUNT: " << Control::frames << std::endl;
+			std::cerr << "LIBCAMERA: CAPTURE END" << ", CAPTURE MODE: " << Control::mode << " AWBGAINS: " << awbgains << ", VIDEO CAPTURE COUNT: " << Control::frames << std::endl;
 			break;
 		case 3:
 			stillCapturedCount++;
@@ -220,8 +227,6 @@ int main(int argc, char *argv[])
 				Control::mode = std::stoi(parameters.at("mode").get<std::string>());
 				Control::frames = std::stoi(parameters.at("frames").get<std::string>());
 				Control::timestampsFile = parameters.at("timestamps_file");
-				if (Control::mode != 3 && awbgains != "0,0") 
-					awbgains = "0,0";
 				stillCapturedCount = 0;
 				std::cerr << "LIBCAMERA: CAPTURE MODE: " << Control::mode << std::endl;
 				capture();
