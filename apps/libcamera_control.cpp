@@ -201,6 +201,8 @@ int main(int argc, char *argv[])
 		std::system("pkill -f -SIGHUP camera_server.py");
 		while (true) 
 		{
+			std::cerr << "HERE..." << std::endl;
+
 			if (!capturing && signal_received == SIGHUP) {
 				std::cerr << "LIBCAMERA: READING PARAMETERS" << std::endl;
 				std::ifstream ifs("/home/pi/parameters.json");
