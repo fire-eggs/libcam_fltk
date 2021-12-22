@@ -28,7 +28,6 @@ int pid;
 int global_argc;
 char** global_argv;
 bool capturing;
-bool exit;
 int stillCapturedCount;
 int signal_received;
 std::string awbgains;
