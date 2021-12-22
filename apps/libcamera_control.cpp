@@ -221,7 +221,7 @@ int main(int argc, char *argv[])
 			} else if (capturing && Control::mode == 1) {
 				if (signal_received != SIGUSR2) {
 					std::cerr << "LIBCAMERA: CAPTURE MODE 1 LOOPING" << std::endl;
-					std::this_thread::sleep_for(std::chrono::milliseconds(interval)); // THIS DOESN'T TAKE INTO ACCOUNT 10MS SLEEP
+					std::this_thread::sleep_for(std::chrono::milliseconds(interval));
 					capture();
 				} else if (signal_received == SIGUSR2) {
 					capturing = false;
@@ -237,7 +237,7 @@ int main(int argc, char *argv[])
 				}
 			}
 			signal_received = 0;
-			if !(capturing && Control::mode == 1)
+			if (!capturing && Control::mode != 1)
 				std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		}
 	}
