@@ -157,7 +157,11 @@ static void capture() {
 		switch(Control::mode) {
 			case 1:
 				libcamera::Span<const float> gains = completed_request->metadata.get(libcamera::controls::ColourGains);
-				awbgains = std::to_string(std::format("{:.2f}", std::ceil(gains[0] * 100.0) / 100.0)) + "," + std::to_string(std::format("{:.2f}", std::ceil(gains[1] * 100.0) / 100.0));
+				std::stringstream red;
+				std::stringstream blue;
+				red << std::fixed << std::setprecision(2) << gains[0];
+				blue << std::fixed << std::setprecision(2) << gains[1];
+				awbgains = red.str() + "," + blue.str();
 				break;
 		}
 	}
