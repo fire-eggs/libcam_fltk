@@ -156,7 +156,6 @@ static void capture() {
 		app.EncodeBuffer(completed_request, app.VideoStream());
 		switch(Control::mode) {
 			case 1:
-				std::array<float, 2> colour_gains;
 				libcamera::Span<const float> gains = completed_request->metadata.get(libcamera::controls::ColourGains);
 				awbgains = std::to_string(gains[0]) + "," + std::to_string(gains[1]);
 				break;
