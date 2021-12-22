@@ -57,6 +57,7 @@ static void configure() {
 			args.push_back(parameters.at("frames").get<std::string>());
 			args.push_back(std::string("--awb"));
 			args.push_back(parameters.at("awb").get<std::string>());
+			break;
 		case 2:
 			args.push_back(std::string("--frames"));
 			args.push_back(parameters.at("frames").get<std::string>());
