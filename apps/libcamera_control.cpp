@@ -112,10 +112,11 @@ static void capture() {
 			Control::enableBuffer = false;
 			break;
 		case 1:
-			options->frames = std::stoi(parameters.at("frames").get<std::string>()); // THIS SHOULDN'T BE NECESSARY - HACK
+			options->frames = 1;
 			Control::enableBuffer = false;
 			break;
 		case 2:
+			options->frames = std::stoi(parameters.at("frames").get<std::string>()); // THIS SHOULDN'T BE NECESSARY - HACK
 			output->ConfigTimestamp();
 			Control::enableBuffer = true;
 			break;
