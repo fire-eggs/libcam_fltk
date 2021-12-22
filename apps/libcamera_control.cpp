@@ -203,7 +203,6 @@ int main(int argc, char *argv[])
 		while (true) 
 		{
 			if (!capturing && signal_received == SIGHUP) {
-				signal_received = 0;
 				std::cerr << "LIBCAMERA: READING PARAMETERS" << std::endl;
 				std::ifstream ifs("/home/pi/parameters.json");
 				std::string content((std::istreambuf_iterator<char>(ifs)),(std::istreambuf_iterator<char>()));
@@ -225,22 +224,21 @@ int main(int argc, char *argv[])
 					std::this_thread::sleep_for(std::chrono::milliseconds(interval)); // THIS DOESN'T TAKE INTO ACCOUNT 10MS SLEEP
 					capture();
 				} else if (signal_received == SIGUSR2) {
-					signal_received = 0;
 					capturing = false;
 					std::cerr << "LIBCAMERA: STOPPING MODE 1 CAPTURE" << std::endl;
 				} 
 			} else if (capturing && Control::mode == 3) {
 				if (signal_received == SIGUSR1 && stillCapturedCount < Control::frames) {
-					signal_received = 0;
 					std::cerr << "LIBCAMERA: CAPTURE MODE 3 LOOPING" << std::endl;
 					capture();
 				} else if (stillCapturedCount == Control::frames || signal_received == SIGUSR2) {
-					signal_received = 0;
 					capturing = false;
 					std::cerr << "LIBCAMERA: STOPPING MODE 3 CAPTURE" << std::endl;
 				}
-			} 
-			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+			}
+			signal_received = 0;
+			if !(capturing && Control::mode == 1)
+				std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		}
 	}
 	catch (std::exception const &e)
