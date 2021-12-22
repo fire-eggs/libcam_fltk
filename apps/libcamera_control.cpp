@@ -176,7 +176,7 @@ static void capture() {
 		case 0:
 			output->WriteOut();
 			output->Reset();
-			std::cerr << "LIBCAMERA: CAPTURE END" << ", CAPTURE MODE: " << Control::mode << ", VIDEO CAPTURE COUNT: " << Control::frames << std::endl;
+			std::cerr << "LIBCAMERA: CAPTURE END" << ", CAPTURE MODE: " << Control::mode << " AWBGAINS: " << awbgains << ", VIDEO CAPTURE COUNT: " << Control::frames << std::endl;
 			std::system("pkill -f -SIGHUP camera_server.py");
 			std::cerr << "LIBCAMERA: SENDING SIGHUP, CAPTUREREADY" << std::endl;
 			break;
