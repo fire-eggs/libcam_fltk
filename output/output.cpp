@@ -15,7 +15,6 @@
 #include "output.hpp"
 #include "core/control.hpp"
 
-int Control::mode;
 bool Control::enableBuffer;
 std::string Control::timestampsFile;
 
@@ -56,6 +55,16 @@ void Output::WriteOut()
 }
 
 void Output::Reset()
+{
+
+}
+
+void Output::Initialize()
+{
+
+}
+
+void Output::ConfigTimestamp()
 {
 
 }

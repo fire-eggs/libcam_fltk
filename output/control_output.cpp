@@ -83,13 +83,19 @@ void ControlOutput::Reset()
 	flags = 2;
 	state_ = WAITING_KEYFRAME;
 	last_timestamp_ = 0;
-	// if (fp_)
-	// 	fclose(fp_);
+}
+
+void ControlOutput::Initialize()
+{
 	if (!fp_) {
 		fp_ = fopen("/home/pi/pipe", "w");
 		std::cerr << "LIBCAMERA: PIPE OPENED BY CONSUMER" << std::endl;
 	}
-	if (Control::mode == 2 && !Control::timestampsFile.empty())
+}
+
+void ControlOutput::ConfigTimestamp()
+{
+	if (!Control::timestampsFile.empty())
 	{
 		fp_timestamps_ = fopen(Control::timestampsFile.c_str(), "w");
 		if (!fp_timestamps_)

@@ -16,6 +16,7 @@ class ControlOutput : public Output
 		~ControlOutput();
 		void WriteOut();
 		void Reset();
+		void Initialize();
 
 	protected:
 		void outputBuffer(void *mem, size_t size, int64_t timestamp_us, uint32_t flags) override;

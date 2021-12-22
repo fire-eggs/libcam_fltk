@@ -105,24 +105,26 @@ static void capture() {
 	configure();
 	VideoOptions *options = app.GetOptions();
 	options->Parse(global_argc, global_argv);
+	output->Initialize();
 	switch(Control::mode) {
 		case 0:
 			options->timeout = std::stoi(parameters.at("timeout").get<std::string>()); // THIS SHOULDN'T BE NECESSARY - HACK
 			Control::enableBuffer = false;
 			break;
+		case 1:
+			options->frames = std::stoi(parameters.at("frames").get<std::string>()); // THIS SHOULDN'T BE NECESSARY - HACK
+			Control::enableBuffer = false;
+			break;
 		case 2:
+			output->ConfigTimestamp();
 			Control::enableBuffer = true;
 			break;
 		case 3:
 			options->frames = 1;
 			Control::enableBuffer = true;
 			break;
-		default:
-			options->frames = std::stoi(parameters.at("frames").get<std::string>()); // THIS SHOULDN'T BE NECESSARY - HACK
-			Control::enableBuffer = false;
 	}
 	std::cerr << "LIBCAMERA: FORCE FRAMES: " << options->frames << " FORCE TIMEOUT: " << options->timeout << std::endl;
-	output->Reset();
   	std::cerr << "LIBCAMERA: CAPTURE READY - MODE: " << Control::mode << std::endl;
 	app.SetEncodeOutputReadyCallback(std::bind(&Output::OutputReady, output.get(), _1, _2, _3, _4));
 	app.OpenCamera();
@@ -155,11 +157,13 @@ static void capture() {
 	output->WriteOut();
 	switch(Control::mode) {
 		case 0:
+			output->Reset();
 			std::cerr << "LIBCAMERA: CAPTURE END" << ", CAPTURE MODE: " << Control::mode << ", VIDEO CAPTURE COUNT: " << Control::frames << std::endl;
 			std::system("pkill -f -SIGHUP camera_server.py");
 			std::cerr << "LIBCAMERA: SENDING SIGHUP, CAPTUREREADY" << std::endl;
 			break;
 		case 1:
+			output->Reset();
 			stillCapturedCount++;
 			// awbgains = std::to_string(options->awb_gain_r) + "," + std::to_string(options->awb_gain_b); // DOESN'T WORK!!! - NEED TO DIG INTO LIBCAMERA - SET AWBGAINS ON EACH PREVIEW FRAME SO IT'S AS ACCURATE AS POSSIBLE FOR WHEN IT SWITCHES TO MODE 3
 			std::cerr << "LIBCAMERA: options->awb_gain_r: " << options->awb_gain_r << std::endl;
@@ -169,10 +173,13 @@ static void capture() {
 			std::cerr << "LIBCAMERA: SENDING SIGHUP, CAPTUREREADY" << std::endl;
 			break;
   		case 2:
+  			output->Reset();
 			std::cerr << "LIBCAMERA: CAPTURE END" << ", CAPTURE MODE: " << Control::mode << ", VIDEO CAPTURE COUNT: " << Control::frames << std::endl;
 			break;
 		case 3:
 			stillCapturedCount++;
+			if (stillCapturedCount == Control::frames)
+					output->Reset();
 			std::cerr << "LIBCAMERA: CAPTURE END" << ", CAPTURE MODE: " << Control::mode << " AWBGAINS: " << awbgains << ", STILL CAPTURE COUNT: " << stillCapturedCount << ", TOTAL FRAMES REQUESTED: " << Control::frames << std::endl;
 			std::system("pkill -f -SIGUSR1 camera_server.py");
 			break;
