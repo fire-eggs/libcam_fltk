@@ -154,6 +154,13 @@ static void capture() {
 		}
 		CompletedRequestPtr &completed_request = std::get<CompletedRequestPtr>(msg.payload);
 		app.EncodeBuffer(completed_request, app.VideoStream());
+		switch(Control::mode) {
+			case 1:
+				std::array<float, 2> colour_gains;
+				libcamera::Span<const float> gains = completed_request->metadata.get(libcamera::controls::ColourGains);
+				awbgains = std::to_string(gains[0]) + "," + std::to_string(gains[1]);
+				break;
+		}
 	}
 	switch(Control::mode) {
 		case 0:
@@ -167,9 +174,6 @@ static void capture() {
 			output->WriteOut();
 			output->Reset();
 			stillCapturedCount++;
-			// awbgains = std::to_string(options->awb_gain_r) + "," + std::to_string(options->awb_gain_b); // DOESN'T WORK!!! - NEED TO DIG INTO LIBCAMERA - SET AWBGAINS ON EACH PREVIEW FRAME SO IT'S AS ACCURATE AS POSSIBLE FOR WHEN IT SWITCHES TO MODE 3
-			std::cerr << "LIBCAMERA: options->awb_gain_r: " << options->awb_gain_r << std::endl;
-			std::cerr << "LIBCAMERA: options->awb_gain_b: " << options->awb_gain_b << std::endl;
 			std::cerr << "LIBCAMERA: CAPTURE END" << ", CAPTURE MODE: " << Control::mode << " AWBGAINS: " << awbgains << ", STILL CAPTURE COUNT: " << stillCapturedCount << ", TOTAL FRAMES REQUESTED: " << Control::frames << std::endl;
 			std::system("pkill -f -SIGHUP camera_server.py");
 			std::cerr << "LIBCAMERA: SENDING SIGHUP, CAPTUREREADY" << std::endl;
