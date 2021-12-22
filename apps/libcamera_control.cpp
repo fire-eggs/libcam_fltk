@@ -194,12 +194,11 @@ int main(int argc, char *argv[])
 {
 	try
 	{
-		std::system("pkill -f -SIGHUP camera_server.py");
-		int interval;
 		signal(SIGHUP, signal_handler);  // START NEW CAPTURE (SIGUSR2 MUST ALWAYS PRECEED SIGHUP)
 		signal(SIGUSR1, signal_handler); // TRIGGER CAPTURE
 		signal(SIGUSR2, signal_handler); // END CAPTURE
 		std::cerr << "LIBCAMERA: BUFFER ALLOCATED AND READY TO CAPTURE" << std::endl;
+		std::system("pkill -f -SIGHUP camera_server.py");
 		while (true) 
 		{
 			if (!capturing && signal_received == SIGHUP) {
@@ -214,14 +213,12 @@ int main(int argc, char *argv[])
 				Control::timestampsFile = parameters.at("timestamps_file");
 				if (Control::mode != 3 && awbgains != "0,0") 
 					awbgains = "0,0";
-				interval = static_cast<int>(std::max(std::stoi(parameters.at("shutter").get<std::string>())/1000, static_cast<int>(100))); // IN MILLISECONDS
 				stillCapturedCount = 0;
 				std::cerr << "LIBCAMERA: CAPTURE MODE: " << Control::mode << std::endl;
 				capture();
 			} else if (capturing && Control::mode == 1) {
 				if (signal_received != SIGUSR2) {
 					std::cerr << "LIBCAMERA: CAPTURE MODE 1 LOOPING" << std::endl;
-					std::this_thread::sleep_for(std::chrono::milliseconds(interval));
 					capture();
 				} else if (signal_received == SIGUSR2) {
 					capturing = false;
@@ -235,10 +232,10 @@ int main(int argc, char *argv[])
 					capturing = false;
 					std::cerr << "LIBCAMERA: STOPPING MODE 3 CAPTURE" << std::endl;
 				}
+			} else if (!capturing) {
+				std::this_thread::sleep_for(std::chrono::milliseconds(10));
 			}
 			signal_received = 0;
-			if (!capturing && Control::mode != 1)
-				std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		}
 	}
 	catch (std::exception const &e)
