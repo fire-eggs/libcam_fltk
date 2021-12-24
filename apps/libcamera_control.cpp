@@ -47,8 +47,6 @@ static void configure() {
 	std::vector<std::string> args = {"/home/pi/GitHub/libcamera-apps/build/libcamera-control"};
 	switch(Control::mode) {
 		case 0:
-			args.push_back(std::string("--timeout"));
-			args.push_back(parameters.at("timeout").get<std::string>());
 			args.push_back(std::string("--awb"));
 			args.push_back(parameters.at("awb").get<std::string>());
 			break;
@@ -71,6 +69,8 @@ static void configure() {
 			args.push_back(awbgains);
 			break;
 	}
+	args.push_back(std::string("--timeout"));
+	args.push_back(parameters.at("timeout").get<std::string>());
 	args.push_back(std::string("--shutter"));
 	args.push_back(parameters.at("shutter").get<std::string>());
 	args.push_back(std::string("--codec"));
