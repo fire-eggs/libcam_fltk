@@ -663,9 +663,11 @@ void LibcameraApp::setupCapture()
 			{
 				const FrameBuffer::Plane &plane = buffer->planes()[i];
 				buffer_size += plane.length;
-				if (i == buffer->planes().size() - 1 || plane.fd.get() != buffer->planes()[i + 1].fd.get())
+				// KBR if (i == buffer->planes().size() - 1 || plane.fd.get() != buffer->planes()[i + 1].fd.get())
+				if (i == buffer->planes().size() - 1 || plane.fd.fd() != buffer->planes()[i + 1].fd.fd())
 				{
-					void *memory = mmap(NULL, buffer_size, PROT_READ | PROT_WRITE, MAP_SHARED, plane.fd.get(), 0);
+					// KBR void *memory = mmap(NULL, buffer_size, PROT_READ | PROT_WRITE, MAP_SHARED, plane.fd.get(), 0);
+					void *memory = mmap(NULL, buffer_size, PROT_READ | PROT_WRITE, MAP_SHARED, plane.fd.fd(), 0);
 					mapped_buffers_[buffer.get()].push_back(
 						libcamera::Span<uint8_t>(static_cast<uint8_t *>(memory), buffer_size));
 					buffer_size = 0;
@@ -798,7 +800,8 @@ void LibcameraApp::previewThread()
 		frame_info.fps = item.completed_request->framerate;
 		frame_info.sequence = item.completed_request->sequence;
 
-		int fd = buffer->planes()[0].fd.get();
+		// KBR int fd = buffer->planes()[0].fd.get();
+		int fd = buffer->planes()[0].fd.fd();
 		{
 			std::lock_guard<std::mutex> lock(preview_mutex_);
 			// the reference to the shared_ptr moves to the map here
