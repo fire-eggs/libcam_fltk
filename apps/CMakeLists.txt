@@ -8,6 +8,14 @@ project(libcamera-vid)
 add_executable(libcamera-vid libcamera_vid.cpp)
 target_link_libraries(libcamera-vid libcamera_app encoders outputs)
 
+project(libcam_v)
+add_executable(libcam_v libcam_v.cpp)
+target_link_libraries(libcam_v libcamera_app encoders outputs)
+
+project(libcam_fltk)
+add_executable(libcam_fltk libcam_fltk.cpp camThread.cpp)
+target_link_libraries(libcam_fltk libcamera_app encoders outputs fltk dl Xext m fontconfig Xrender Xcursor Xfixes Xinerama Xft)
+
 project(libcamera-hello)
 add_executable(libcamera-hello libcamera_hello.cpp)
 target_link_libraries(libcamera-hello libcamera_app)
@@ -20,7 +28,7 @@ project(libcamera-jpeg)
 add_executable(libcamera-jpeg libcamera_jpeg.cpp)
 target_link_libraries(libcamera-jpeg libcamera_app images)
 
-set(EXECUTABLES libcamera-still libcamera-vid libcamera-hello libcamera-raw libcamera-jpeg)
+set(EXECUTABLES libcamera-still libcamera-vid libcamera-hello libcamera-raw libcamera-jpeg libcam_v libcam_fltk)
 
 if (ENABLE_TFLITE)
     project(libcamera-detect)
