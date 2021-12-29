@@ -28,6 +28,9 @@ using namespace std::placeholders;
 // brute-force inter-process communication.
 extern bool stateChange;
 
+extern bool _hflip; // state of user request for horizontal flip
+extern bool _vflip; // state of user request for vertical flip
+
 // the camera "app"
 LibcameraEncoder *_app;
 
@@ -43,34 +46,55 @@ void* proc_func(void *p)
 	_app->StartEncoder();
 	_app->StartCamera();
 
-	//auto start_time = std::chrono::high_resolution_clock::now();
-
 	for (unsigned int count = 0; ; count++)
 	{
-		bool flipper = false;
-
 		LibcameraEncoder::Msg msg = _app->Wait();
 		if (msg.type == LibcameraEncoder::MsgType::Quit)
 			return nullptr;
 		else if (msg.type != LibcameraEncoder::MsgType::RequestComplete)
 			throw std::runtime_error("unrecognised message!");
 			
-		bool timeout = false; // KBR run forever
+        // check if state has changed
+        if (stateChange)
+        {
+            if (_hflip)
+                std::cerr << "HORIZONTAL FLIP" << std::endl;
+            if (_vflip)
+                std::cerr << "VERTICAL FLIP" << std::endl;
+
+            _app->StopCamera();
+			_app->StopEncoder();
+            _app->Teardown();
+		    VideoOptions *newopt = _app->GetOptions();
+
+            // Horizontal and vertical flip implemented via transforms
+            newopt->transform = libcamera::Transform::Identity;
+            if (_vflip)
+                newopt->transform = libcamera::Transform::VFlip * newopt->transform;
+            if (_hflip)
+                newopt->transform = libcamera::Transform::HFlip * newopt->transform;
+                
+            _app->ConfigureVideo();
+	        _app->StartEncoder();
+            _app->StartCamera();
+        }
 
 		bool frameout = options->frames && count >= options->frames;
-		if (timeout || frameout) // || key == 'x' || key == 'X')
+		if (frameout)
 		{
 			_app->StopCamera(); // stop complains if encoder very slow to close
 			_app->StopEncoder();
 			return nullptr;
 		}
 
-		if (!flipper)
+		if (!stateChange)
 		{
 			CompletedRequestPtr &completed_request = std::get<CompletedRequestPtr>(msg.payload);
 			_app->EncodeBuffer(completed_request, _app->VideoStream());
 			_app->ShowPreview(completed_request, _app->VideoStream());
 		}
+        
+        stateChange = false; // TODO possibility of collision?
 	}
 
     return nullptr;
