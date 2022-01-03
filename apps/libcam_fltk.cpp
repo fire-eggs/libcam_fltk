@@ -22,6 +22,10 @@ using namespace std::placeholders;
 
 #include <FL/Fl_Window.H>
 #include <FL/Fl_Check_Button.H>
+#include <FL/Fl_Slider.H>
+#include <FL/Fl_Value_Slider.H>
+
+#include "SliderInput.h"
 
 bool stateChange;
 
@@ -29,6 +33,12 @@ extern void fire_proc_thread(int argc, char ** argv);
 
 bool _hflip;
 bool _vflip;
+float bright;
+float saturate;
+float sharp;
+float contrast;
+float evComp;
+
 
 void onHflip(Fl_Widget *w, void *)
 {
@@ -42,24 +52,81 @@ void onVflip(Fl_Widget *w, void *)
     stateChange = true;
 }
 
+void onSharp(Fl_Widget *w, void *)
+{
+    sharp = ((Fl_Value_Slider *)w)->value();
+    
+	std::cerr << "sharp: " << sharp << std::endl;
+    
+}
+
+void onContrast(Fl_Widget *w, void *)
+{
+    contrast = ((Fl_Value_Slider *)w)->value();
+    
+	std::cerr << "contrast: " << contrast << std::endl;
+    
+}
+
+void onSaturate(Fl_Widget *w, void *)
+{
+    saturate = ((Fl_Value_Slider *)w)->value();
+    
+	std::cerr << "saturation: " << saturate << std::endl;
+    
+}
+
+void onBright(Fl_Widget *w, void *)
+{
+    bright = ((Fl_Value_Slider *)w)->value();
+    
+	std::cerr << "brightness: " << bright << std::endl;
+    
+}
+void onEvComp(Fl_Widget *w, void *)
+{
+    evComp = ((Fl_Value_Slider *)w)->value();
+    
+	std::cerr << "ev comp: " << evComp << std::endl;
+    
+}
+
+
+Fl_Widget *makeSlider(int x, int y, const char *label, int min, int max, int def)
+{
+    Fl_Value_Slider* o = new Fl_Value_Slider(x, y, 200, 20, label);
+    o->type(5);
+    o->box(FL_DOWN_BOX);
+    o->bounds(min, max);
+    o->value(def);
+    o->labelsize(12);
+    o->align(FL_ALIGN_LEFT | FL_ALIGN_TOP);
+    return o;
+}
+
 int main(int argc, char *argv[])
 {
 	libcamera::logSetTarget(libcamera::LoggingTargetNone);
 
-	Fl_Window *window = new Fl_Window (300, 180);
-    Fl_Check_Button *btn = new Fl_Check_Button(20, 40, 200, 50, "Horizontal Flip");
+	Fl_Window *window = new Fl_Window (300, 300);
+    Fl_Check_Button *btn = new Fl_Check_Button(20, 20, 200, 20, "Horizontal Flip");
+    btn->box(FL_DOWN_BOX);
     btn->callback(onHflip);
-    Fl_Check_Button *btn2 = new Fl_Check_Button(20, 20, 200, 20, "Vertical Flip");
+    Fl_Check_Button *btn2 = new Fl_Check_Button(20, 40, 200, 20, "Vertical Flip");
+    btn2->box(FL_DOWN_BOX);
     btn2->callback(onVflip);
-
-/*    
-    Fl_Box *box = new Fl_Box (20, 40, 260, 100, "Hello World!");
-
-  box->box (FL_UP_BOX);
-  box->labelsize (36);
-  box->labelfont (FL_BOLD+FL_ITALIC);
-  box->labeltype (FL_SHADOW_LABEL);
-*/
+    
+    auto s = makeSlider(20, 80, "Sharpness", 0, 5, 1);
+    s->callback(onSharp);
+    s = makeSlider(20, 120, "Saturation", 0, 5, 1);
+    s->callback(onSaturate);
+    s = makeSlider(20, 160, "Contrast", 0, 5, 1);
+    s->callback(onContrast);
+    s = makeSlider(20, 200, "Brightness", -1, 1, 0);
+    s->callback(onBright);
+    s = makeSlider(20, 240, "EV Compensation", -10, 10, 0);
+    s->callback(onEvComp);
+       
   window->end ();
   window->show (); 
 
