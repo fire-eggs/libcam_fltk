@@ -30,6 +30,11 @@ extern bool stateChange;
 
 extern bool _hflip; // state of user request for horizontal flip
 extern bool _vflip; // state of user request for vertical flip
+extern double _bright;
+extern double _sharp;
+extern double _contrast;
+extern double _saturate;
+extern double _evComp;
 
 // the camera "app"
 LibcameraEncoder *_app;
@@ -57,11 +62,6 @@ void* proc_func(void *p)
         // check if state has changed
         if (stateChange)
         {
-            if (_hflip)
-                std::cerr << "HORIZONTAL FLIP" << std::endl;
-            if (_vflip)
-                std::cerr << "VERTICAL FLIP" << std::endl;
-
             _app->StopCamera();
 			_app->StopEncoder();
             _app->Teardown();
@@ -74,6 +74,12 @@ void* proc_func(void *p)
             if (_hflip)
                 newopt->transform = libcamera::Transform::HFlip * newopt->transform;
                 
+            newopt->brightness = _bright;
+            newopt->contrast   = _contrast;
+            newopt->saturation = _saturate;
+            newopt->sharpness  = _sharp;
+            newopt->ev         = _evComp;
+            
             _app->ConfigureVideo();
 	        _app->StartEncoder();
             _app->StartCamera();

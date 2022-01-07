@@ -14,22 +14,30 @@
 #include <FL/Fl_File_Chooser.H>
 #include <FL/Fl_Tabs.H>
 #include <FL/Fl_Value_Slider.H>
+#include "prefs.h"
 
+#include "core/libcamera_encoder.hpp"
+#include "output/output.hpp"
+#include "libcamera/logging.h"
+#include <libcamera/transform.h>
+
+Prefs *_prefs;
 Fl_Menu_Bar *_menu;
 char *_loadfile;
 
 // Camera settings
-bool hflip;
-bool vflip;
-double bright;
-double saturate;
-double sharp;
-double contrast;
-double evComp;
+bool _hflip;
+bool _vflip;
+double _bright;
+double _saturate;
+double _sharp;
+double _contrast;
+double _evComp;
 
 // Inter-thread communication
 bool stateChange;
 extern void fire_proc_thread(int argc, char ** argv);
+bool OKTOSAVE;
 
 static void onReset(Fl_Widget *, void *);
 
@@ -47,47 +55,78 @@ static Fl_Value_Slider *makeSlider(int x, int y, const char *label, int min, int
     return o;
 }
 
+static void onStateChange(bool save=true)
+{
+    if (OKTOSAVE)
+    {
+        Prefs *setP = _prefs->getSubPrefs("camera");
+
+        setP->set("bright", _bright);
+        setP->set("contrast", _contrast);
+        setP->set("sharp", _sharp);
+        setP->set("evcomp", _evComp);
+        setP->set("saturate", _saturate);
+        setP->set("hflip", (int)_hflip);
+        setP->set("vflip", (int)_vflip);
+    }
+    stateChange = true;
+}
+
 static void onBright(Fl_Widget *w, void *)
 {
-    bright = ((Fl_Value_Slider *)w)->value();
-    std::cerr << "brightness: " << bright << std::endl;
-    stateChange = true;
+    _bright = ((Fl_Value_Slider *)w)->value();
+#ifdef NOISY    
+    std::cerr << "brightness: " << _bright << std::endl;
+#endif
+    onStateChange();
 }
 static void onContrast(Fl_Widget *w, void *)
 {
-    contrast = ((Fl_Value_Slider *)w)->value();
-    std::cerr << "contrast: " << contrast << std::endl;
-    stateChange = true;
+    _contrast = ((Fl_Value_Slider *)w)->value();
+#ifdef NOISY    
+    std::cerr << "contrast: " << _contrast << std::endl;
+#endif
+    onStateChange();
 }
 static void onSharp(Fl_Widget *w, void *)
 {
-    sharp = ((Fl_Value_Slider *)w)->value();
-    std::cerr << "sharpness: " << sharp << std::endl;
-    stateChange = true;
+    _sharp = ((Fl_Value_Slider *)w)->value();
+#ifdef NOISY    
+    std::cerr << "sharpness: " << _sharp << std::endl;
+#endif
+    onStateChange();
 }
 static void onSaturate(Fl_Widget *w, void *)
 {
-    saturate = ((Fl_Value_Slider *)w)->value();
-    std::cerr << "saturation: " << saturate << std::endl;
-    stateChange = true;
+    _saturate = ((Fl_Value_Slider *)w)->value();
+#ifdef NOISY    
+    std::cerr << "saturation: " << _saturate << std::endl;
+#endif
+    onStateChange();
 }
 static void onEvComp(Fl_Widget *w, void *)
 {
-    evComp = ((Fl_Value_Slider *)w)->value();
-    std::cerr << "Ev comp: " << evComp << std::endl;
-    stateChange = true;
+    _evComp = ((Fl_Value_Slider *)w)->value();
+#ifdef NOISY    
+    std::cerr << "Ev comp: " << _evComp << std::endl;
+#endif
+    onStateChange();
 }
 static void onHFlip(Fl_Widget*w, void *)
 {
-    hflip = ((Fl_Check_Button *)w)->value();
-    std::cerr << "H-Flip: " << hflip << std::endl;
-    stateChange = true;
+    _hflip = ((Fl_Check_Button *)w)->value();
+#ifdef NOISY    
+    std::cerr << "H-Flip: " << _hflip << std::endl;
+#endif
+    onStateChange();
 }
 static void onVFlip(Fl_Widget*w, void *)
 {
-    vflip = ((Fl_Check_Button *)w)->value();
-    std::cerr << "V-Flip: " << vflip << std::endl;
-    stateChange = true;
+    _vflip = ((Fl_Check_Button *)w)->value();
+#ifdef NOISY    
+    std::cerr << "V-Flip: " << _vflip << std::endl;
+#endif
+    onStateChange();
 }
 
 #define KBR_UPD_PREVIEW 1001
@@ -120,11 +159,16 @@ public:
 
         Fl_Tabs *tabs = new Fl_Tabs(10, MAGIC_Y, magicW, magicH);
         magicH -= 25;
-        Fl_Group *t1 = makeSettingsTab(magicW, magicH);
-        Fl_Group *t5 = makeZoomTab(magicW, magicH);
-        Fl_Group *t2 = makeCaptureTab(magicW, magicH);
-        Fl_Group *t3 = makeVideoTab(magicW, magicH);
-        Fl_Group *t4 = makeTimelapseTab(magicW, magicH);
+        //Fl_Group *t1 = 
+        makeSettingsTab(magicW, magicH);
+        //Fl_Group *t5 = 
+        makeZoomTab(magicW, magicH);
+        //Fl_Group *t2 = 
+        makeCaptureTab(magicW, magicH);
+        //Fl_Group *t3 = 
+        makeVideoTab(magicW, magicH);
+        //Fl_Group *t4 = 
+        makeTimelapseTab(magicW, magicH);
         tabs->end();
         //Fl_Group::current()->resizable(tabs);
 
@@ -137,16 +181,61 @@ public:
         resizable(this);
     }
 
+    void loadSavedSettings()
+    {
+        Prefs *setP = _prefs->getSubPrefs("camera");
+
+        // TODO range check
+        double brightVal  = setP->get("bright",   0.0);
+        double saturateVal= setP->get("saturate", 1.0);
+        double sharpVal   = setP->get("sharp",    1.0);
+        double contrastVal= setP->get("contrast", 1.0);
+        double evCompVal  = setP->get("evcomp",   0.0);
+        bool hflipval     = setP->get("hflip",    false);
+        bool vflipval     = setP->get("vflip",    false);
+        
+        m_chkHflip->value(hflipval);
+        m_chkVflip->value(vflipval);
+        m_slBright->value(brightVal);
+        m_slContrast->value(contrastVal);
+        m_slSaturate->value(saturateVal);
+        m_slSharp->value(sharpVal);
+        m_slevComp->value(evCompVal);
+        
+_hflip = hflipval;
+_vflip = vflipval;
+_bright= brightVal;
+_saturate = saturateVal;
+_sharp = sharpVal;
+_contrast = contrastVal;
+_evComp = evCompVal;
+        
+    }
+    
+
     Fl_Group *makeSettingsTab(int w, int h)
     {
+        Prefs *setP = _prefs->getSubPrefs("camera");
+
+        // TODO range check
+        double brightVal  = setP->get("bright",   0.0);
+        double saturateVal= setP->get("saturate", 1.0);
+        double sharpVal   = setP->get("sharp",    1.0);
+        double contrastVal= setP->get("contrast", 1.0);
+        double evCompVal  = setP->get("evcomp",   0.0);
+        bool hflipval     = setP->get("hflip",    false);
+        bool vflipval     = setP->get("vflip",    false);
+
         Fl_Group *o = new Fl_Group(10,MAGIC_Y+25,w,h, "Settings");
         o->tooltip("Configure camera settings");
 
         m_chkHflip = new Fl_Check_Button(270, MAGIC_Y+60, 150, 20, "Horizontal Flip");
         m_chkHflip->callback(onHFlip);
+        m_chkHflip->value(hflipval);
         m_chkHflip->tooltip("Flip camera image horizontally");
         m_chkVflip = new Fl_Check_Button(270, MAGIC_Y+90, 150, 20, "Vertical Flip");
         m_chkVflip->callback(onVFlip);
+        m_chkVflip->value(vflipval);
         m_chkVflip->tooltip("Flip camera image vertically");
 
         Fl_Button *bReset = new Fl_Button(270, MAGIC_Y+200, 100, 25, "Reset");
@@ -156,25 +245,35 @@ public:
         int slidX = 40;
         int slidY = MAGIC_Y + 60;
         int yStep = 50;
-        m_slBright = makeSlider(slidX, slidY, "Brightness", -1, 1, 0);
+        m_slBright = makeSlider(slidX, slidY, "Brightness", -1, 1, brightVal);
         m_slBright->callback(onBright);
+        m_slBright->value(brightVal);
         m_slBright->tooltip("-1.0: black; 1.0: white; 0.0: standard");
+        m_slBright->when(FL_WHEN_RELEASE);  // no change until slider stops
         slidY += yStep;
-        m_slContrast = makeSlider(slidX, slidY, "Contrast", 0, 5, 1);
+        m_slContrast = makeSlider(slidX, slidY, "Contrast", 0, 5, contrastVal);
         m_slContrast->callback(onContrast);
+        m_slContrast->value(contrastVal);
         m_slContrast->tooltip("0: minimum; 1: default; 1+: extra contrast");
+        m_slContrast->when(FL_WHEN_RELEASE);
         slidY += yStep;
-        m_slSaturate = makeSlider(slidX, slidY, "Saturation", 0, 5, 1);
+        m_slSaturate = makeSlider(slidX, slidY, "Saturation", 0, 5, saturateVal);
         m_slSaturate->callback(onSaturate);
+        m_slSaturate->value(saturateVal);
         m_slSaturate->tooltip("0: minimum; 1: default; 1+: extra color saturation");
+        m_slSaturate->when(FL_WHEN_RELEASE);
         slidY += yStep;
-        m_slSharp = makeSlider(slidX, slidY, "Sharpness", 0, 5, 1);
+        m_slSharp = makeSlider(slidX, slidY, "Sharpness", 0, 5, sharpVal);
         m_slSharp->callback(onSharp);
+        m_slSharp->value(sharpVal);
         m_slSharp->tooltip("0: minimum; 1: default; 1+: extra sharp");
+        m_slSharp->when(FL_WHEN_RELEASE);
         slidY += yStep;
-        m_slevComp = makeSlider(slidX, slidY, "EV Compensation", -10, 10, 0);
+        m_slevComp = makeSlider(slidX, slidY, "EV Compensation", -10, 10, evCompVal);
         m_slevComp->callback(onEvComp);
+        m_slevComp->value(evCompVal);
         m_slevComp->tooltip("-10 to 10 stops");
+        m_slevComp->when(FL_WHEN_RELEASE);
         slidY += yStep;
 
         o->end();
@@ -190,7 +289,7 @@ public:
         Fl_Button *bStill = new Fl_Button(50, MAGIC_Y+60, 150, 30, "Still Capture");
         bStill->tooltip("Single still image");
         Fl_Button *bBurst = new Fl_Button(50, MAGIC_Y+100, 150, 30, "Burst Capture");
-        bStill->tooltip("Capture multiple still images");
+        bBurst->tooltip("Capture multiple still images");
 
         o->end();
         Fl_Group::current()->resizable(o);
@@ -240,15 +339,15 @@ static void onReset(Fl_Widget *w, void *d)
     mw->m_chkHflip->value(false);
     mw->m_chkVflip->value(false);
 
-    bright = 0.0;
-    contrast = 1.0;
-    sharp = 1.0;
-    saturate = 1.0;
-    evComp = 0.0;
-    hflip = false;
-    vflip = false;
-
-    stateChange = true;
+    _bright = 0.0;
+    _contrast = 1.0;
+    _sharp = 1.0;
+    _saturate = 1.0;
+    _evComp = 0.0;
+    _hflip = false;
+    _vflip = false;
+    
+    onStateChange(OKTOSAVE); // hack force not save
 }
 
 MainWin* _window;
@@ -259,12 +358,14 @@ void MainWin::resize(int x, int y, int w, int h)
     int oldh = this->h();
     Fl_Double_Window::resize(x, y, w, h);
     if (w == oldw && h == oldh)
-        return; // merely moving window
-
-    _menu->size(w, 25);
+        ; //return; // merely moving window
+    else {
+        _menu->size(w, 25);
+    }
     //grp->size(w, h-25);
     //_crop->size(w/2,h-25);
     //_preview->size(w/2,h-25);
+    _prefs->setWinRect("MainWin",x, y, w, h);
 }
 
 static void popup(Fl_File_Chooser* filechooser) // TODO stolen from FLTK source... genericize?
@@ -298,6 +399,9 @@ void load_cb(Fl_Widget* , void* )
 
 void quit_cb(Fl_Widget* , void* )
 {
+    // TODO how to kill camera thread?
+    // TODO grab preview window size/pos
+    _window->hide();
     exit(0);
 }
 
@@ -307,12 +411,12 @@ void save_cb(Fl_Widget*, void*) {
 
 Fl_Menu_Item mainmenuItems[] =
 {
-    {"&File", 0, 0, 0, FL_SUBMENU},
-    {"&Load...", 0, load_cb},
-    {"Save", 0, save_cb},
-    {"E&xit", 0, quit_cb},
-    {0},
-    {0},
+    {"&File", 0, 0, 0, FL_SUBMENU, 0, 0, 0, 0},
+    {"&Load...", 0, load_cb, 0, 0, 0, 0, 0, 0},
+    {"Save", 0, save_cb, 0, 0, 0, 0, 0, 0},
+    {"E&xit", 0, quit_cb, 0, 0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0, 0},
 };
 
 int handleSpecial(int event)
@@ -330,14 +434,19 @@ int handleSpecial(int event)
 
 int main(int argc, char** argv)
 {
-#if 0
+
     libcamera::logSetTarget(libcamera::LoggingTargetNone);
-#endif
+
 
     Fl::lock();
 
+    // Use remembered main window size/pos
+    int x, y, w, h;
+    _prefs = new Prefs();
+    _prefs->getWinRect("MainWin", x, y, w, h);
+
     // TODO : use actual size when building controls?
-    MainWin window(100, 100, 500, 500);
+    MainWin window(x, y, w, h);
 
     _menu = new Fl_Menu_Bar(0, 0, window.w(), 25);
     _menu->copy(mainmenuItems);
@@ -349,13 +458,31 @@ int main(int argc, char** argv)
 
     window.show();
 
-#if 0
-    fire_proc_thread(argc, argv);
-#endif
 
+    fire_proc_thread(argc, argv);
+    
+    OKTOSAVE = false;
+    
+//    sleep(1); // wait for camera to 'settle'
+    
+    onReset(nullptr,_window); // init camera to defaults [hack: force no save]
+    
+    _window->loadSavedSettings();
+    onStateChange();
+
+    OKTOSAVE = true;
+//    sleep(1); // wait for camera to 'settle'
+        
     return Fl::run();   
 }
 
 #ifdef __CLION_IDE__
 #pragma clang diagnostic pop
 #endif
+
+// options->preview_x
+// options->preview_y
+// options->preview_width
+// options->preview_height
+// May need to query actual physical window to get position at shutdown
+
