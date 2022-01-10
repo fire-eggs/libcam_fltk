@@ -633,3 +633,80 @@ void jpeg_save(std::vector<libcamera::Span<uint8_t>> const &mem, StreamInfo cons
 		throw;
 	}
 }
+
+void jpeg_save(std::vector<libcamera::Span<uint8_t>> const &mem, StreamInfo const &info,
+			   ControlList const &metadata, std::string const &filename,
+			   std::string const &cam_name, Options const *options)
+{
+	FILE *fp = nullptr;
+	uint8_t *thumb_buffer = nullptr;
+	unsigned char *exif_buffer = nullptr;
+	uint8_t *jpeg_buffer = nullptr;
+
+	try
+	{
+		if ((info.width & 1) || (info.height & 1))
+			throw std::runtime_error("both width and height must be even");
+		if (mem.size() != 1)
+			throw std::runtime_error("only single plane YUV supported");
+
+		// Make all the EXIF data, which includes the thumbnail.
+
+		jpeg_mem_len_t thumb_len = 0; // stays zero if no thumbnail
+		unsigned int exif_len = 0;
+		//create_exif_data(mem, info, metadata, cam_name, options, exif_buffer, exif_len,
+		//				 thumb_buffer, thumb_len);
+
+		// Make the full size JPEG (could probably be more efficient if we had
+		// YUV422 or YUV420 planar format).
+
+		jpeg_mem_len_t jpeg_len;
+		YUV_to_JPEG((uint8_t *)(mem[0].data()), info, info.width, info.height, 93,
+					0, jpeg_buffer, jpeg_len);
+		if (options->verbose)
+			std::cerr << "JPEG size is " << jpeg_len << std::endl;
+
+		// Write everything out.
+
+		fp = filename == "-" ? stdout : fopen(filename.c_str(), "w");
+		if (!fp)
+			throw std::runtime_error("failed to open file " + options->output);
+
+		if (options->verbose)
+			std::cerr << "EXIF data len " << exif_len << std::endl;
+
+        int res = fwrite(exif_header, sizeof(exif_header), 1, fp);
+        res = fputc((exif_len + thumb_len + 2) >> 8, fp);
+        res = fputc((exif_len + thumb_len + 2) & 0xff, fp);
+        //res = fwrite(exif_buffer, exif_len, 1, fp);
+		res = fwrite(jpeg_buffer + exif_image_offset, jpeg_len - exif_image_offset, 1, fp);
+
+/*        
+		if (fwrite(exif_header, sizeof(exif_header), 1, fp) != 1 || fputc((exif_len + thumb_len + 2) >> 8, fp) == EOF ||
+			fputc((exif_len + thumb_len + 2) & 0xff, fp) == EOF || fwrite(exif_buffer, exif_len, 1, fp) != 1 ||
+			(thumb_len && fwrite(thumb_buffer, thumb_len, 1, fp) != 1) ||
+			fwrite(jpeg_buffer + exif_image_offset, jpeg_len - exif_image_offset, 1, fp) != 1)
+			throw std::runtime_error("failed to write file - output probably corrupt");
+*/
+
+		if (fp != stdout)
+			fclose(fp);
+		fp = nullptr;
+
+		free(exif_buffer);
+		exif_buffer = nullptr;
+		free(thumb_buffer);
+		thumb_buffer = nullptr;
+		free(jpeg_buffer);
+		jpeg_buffer = nullptr;
+	}
+	catch (std::exception const &e)
+	{
+		if (fp)
+			fclose(fp);
+		free(exif_buffer);
+		free(thumb_buffer);
+		free(jpeg_buffer);
+		throw;
+	}
+}

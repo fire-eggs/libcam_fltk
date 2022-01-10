@@ -36,6 +36,8 @@ double _evComp;
 
 // Inter-thread communication
 bool stateChange;
+bool doCapture;
+
 extern void fire_proc_thread(int argc, char ** argv);
 bool OKTOSAVE;
 
@@ -130,6 +132,11 @@ static void onVFlip(Fl_Widget*w, void *)
 }
 
 #define KBR_UPD_PREVIEW 1001
+
+static void onCapture(Fl_Widget *w, void *)
+{
+    doCapture = true;
+}
 
 class MainWin : public Fl_Double_Window
 {
@@ -288,6 +295,7 @@ _evComp = evCompVal;
 
         Fl_Button *bStill = new Fl_Button(50, MAGIC_Y+60, 150, 30, "Still Capture");
         bStill->tooltip("Single still image");
+        bStill->callback(onCapture);
         Fl_Button *bBurst = new Fl_Button(50, MAGIC_Y+100, 150, 30, "Burst Capture");
         bBurst->tooltip("Capture multiple still images");
 
