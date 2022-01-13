@@ -43,6 +43,22 @@ bool OKTOSAVE;
 
 static void onReset(Fl_Widget *, void *);
 
+static void popup(Fl_File_Chooser* filechooser)
+{
+    filechooser->show();
+
+    // deactivate Fl::grab(), because it is incompatible with modal windows
+    Fl_Window* g = Fl::grab();
+    if (g) Fl::grab(0);
+
+    while (filechooser->shown())
+        Fl::wait();
+
+    if (g) // regrab the previous popup menu, if there was one
+        Fl::grab(g);
+}
+
+// TODO goes in class?
 static Fl_Value_Slider *makeSlider(int x, int y, const char *label, int min, int max, int def)
 {
     // TODO how to change the size of the "value" label?
@@ -131,7 +147,44 @@ static void onVFlip(Fl_Widget*w, void *)
     onStateChange();
 }
 
+// HACK made static for access via callback
+static Fl_Input* inpFileNameDisplay = nullptr;
+
+static void capFolderPick(Fl_Widget* w, void *)
+{
+    // TODO existing folder
+    // TODO native dialog
+
+    // show folder picker dialog
+    Fl_File_Chooser* choose = new Fl_File_Chooser(nullptr,nullptr,Fl_File_Chooser::DIRECTORY,"Choose a folder");
+    choose->preview(false); // force preview off
+    popup(choose);
+    char *loaddir = (char*)choose->value();
+
+    // update input field with picked folder
+    inpFileNameDisplay->value(loaddir);
+}
+
 #define KBR_UPD_PREVIEW 1001
+
+Fl_Menu_Item menu_cmbSize[] =
+        {
+                {" 640 x  480", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+                {"1024 x  768", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+                {"1280 x  960", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+                {"1920 x 1080", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+                {"2272 x 1704", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+                {"3072 x 2304", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+                {"4056 x 3040", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+                {0,     0, 0, 0, 0,                      0, 0,  0, 0}
+        };
+
+Fl_Menu_Item menu_cmbFormat[] =
+        {
+                {"JPG", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+                {"PNG", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+                {0,     0, 0, 0, 0,                      0, 0,  0, 0}
+        };
 
 static void onCapture(Fl_Widget *w, void *)
 {
@@ -142,6 +195,7 @@ class MainWin : public Fl_Double_Window
 {
 public:
 
+    // Camera settings
     Fl_Value_Slider *m_slBright;
     Fl_Value_Slider *m_slContrast;
     Fl_Value_Slider *m_slSaturate;
@@ -149,6 +203,10 @@ public:
     Fl_Value_Slider *m_slevComp;
     Fl_Check_Button *m_chkHflip;
     Fl_Check_Button *m_chkVflip;
+
+    // Capture settings
+    Fl_Choice *cmbSize = nullptr;
+    Fl_Choice *cmbFormat = nullptr;
 
     static const int MAGIC_Y = 30;
     // TODO "25" is font height? label height?
@@ -290,6 +348,14 @@ _evComp = evCompVal;
 
     Fl_Group *makeCaptureTab(int w, int h)
     {
+        Prefs *setP = _prefs->getSubPrefs("capture");
+        int sizeChoice = setP->get("size", 1);
+        int formChoice = setP->get("format", 0);
+        char * foldBuffer;
+        setP->_prefs->get("folder", foldBuffer, "/home/pi/Pictures");
+        // TODO check for valid folder
+
+
         Fl_Group *o = new Fl_Group(10,MAGIC_Y+25,w,h, "Capture");
         o->tooltip("Image Capture");
 
@@ -298,6 +364,35 @@ _evComp = evCompVal;
         bStill->callback(onCapture);
         Fl_Button *bBurst = new Fl_Button(50, MAGIC_Y+100, 150, 30, "Burst Capture");
         bBurst->tooltip("Capture multiple still images");
+
+
+        Fl_Group *sGroup = new Fl_Group(220, MAGIC_Y+60, 270, 250, "Settings");
+        sGroup->box(FL_ENGRAVED_FRAME);
+        sGroup->align(Fl_Align(FL_ALIGN_TOP_LEFT));
+        
+        cmbSize = new Fl_Choice(230, MAGIC_Y+85, 150, 25, "Image Size:");
+        cmbSize->down_box(FL_BORDER_BOX);
+        cmbSize->align(Fl_Align(FL_ALIGN_TOP_LEFT));
+        cmbSize->menu(menu_cmbSize);
+        cmbSize->value(sizeChoice);
+
+        cmbFormat = new Fl_Choice(230, MAGIC_Y+140, 150, 25, "File Format:");
+        cmbFormat->down_box(FL_BORDER_BOX);
+        cmbFormat->align(Fl_Align(FL_ALIGN_TOP_LEFT));
+        cmbFormat->menu(menu_cmbFormat);
+        cmbFormat->value(formChoice);
+
+        // Quality? (for jpg)
+
+        Fl_Input* inp= new Fl_Input(230, MAGIC_Y+200, 200, 25, "Folder:");
+        inp->align(Fl_Align(FL_ALIGN_TOP_LEFT));
+        inp->value(foldBuffer);
+        if (foldBuffer) free(foldBuffer);
+        inp->readonly(true);
+        inpFileNameDisplay = inp;
+
+        Fl_Button* btn = new Fl_Button(435, MAGIC_Y+200, 50, 25, "Pick");
+        btn->callback(capFolderPick);
 
         o->end();
         Fl_Group::current()->resizable(o);
@@ -332,7 +427,9 @@ _evComp = evCompVal;
     }
 
     void resize(int, int, int, int) override;
-};
+    void save_capture_settings();
+
+}; // end class MainWin
 
 static void onReset(Fl_Widget *w, void *d)
 {
@@ -376,37 +473,23 @@ void MainWin::resize(int x, int y, int w, int h)
     _prefs->setWinRect("MainWin",x, y, w, h);
 }
 
-static void popup(Fl_File_Chooser* filechooser) // TODO stolen from FLTK source... genericize?
+void MainWin::save_capture_settings()
 {
-    filechooser->show();
-
-    // deactivate Fl::grab(), because it is incompatible with modal windows
-    Fl_Window* g = Fl::grab();
-    if (g) Fl::grab(0);
-
-    while (filechooser->shown())
-        Fl::wait();
-
-    if (g) // regrab the previous popup menu, if there was one
-        Fl::grab(g);
+    Prefs *setP = _prefs->getSubPrefs("capture");
+    setP->set("size", cmbSize->value());
+    setP->set("format", cmbFormat->value());
+    const char *val = inpFileNameDisplay->value();
+    setP->_prefs->set("folder", val);
+    setP->_prefs->flush();
 }
 
-void load_cb(Fl_Widget* , void* )
-{
-    char filename[1024] = "";
-    Fl_File_Chooser* choose = new Fl_File_Chooser(filename, "*.*", 0, "Open image file");
-    choose->preview(false); // force preview off
-    popup(choose);
-    _loadfile = (char*)choose->value();
-    if (!_loadfile)
-        return;
-
-  //Fl_Image *i = loadFile(_loadfile, nullptr);
-  //_window->setImage(i);
+void load_cb(Fl_Widget*, void*) {
 }
 
 void quit_cb(Fl_Widget* , void* )
 {
+    _window->save_capture_settings();
+
     // TODO how to kill camera thread?
     // TODO grab preview window size/pos
     _window->hide();
@@ -455,6 +538,7 @@ int main(int argc, char** argv)
 
     // TODO : use actual size when building controls?
     MainWin window(x, y, w, h);
+    window.callback(quit_cb);
 
     _menu = new Fl_Menu_Bar(0, 0, window.w(), 25);
     _menu->copy(mainmenuItems);
