@@ -147,6 +147,19 @@ static void onVFlip(Fl_Widget*w, void *)
     onStateChange();
 }
 
+static void onPanH(Fl_Widget *w, void *d)
+{
+    std::cerr << "panH: " << ((Fl_Value_Slider *)w)->value() << std::endl;
+}
+static void onPanV(Fl_Widget *w, void *d)
+{
+    std::cerr << "panV: " << ((Fl_Value_Slider *)w)->value() << std::endl;
+}
+static void onZoom(Fl_Widget *w, void *d)
+{
+    std::cerr << "Zoom: " << ((Fl_Value_Slider *)w)->value() << std::endl;
+}
+
 // HACK made static for access via callback
 static Fl_Input* inpFileNameDisplay = nullptr;
 
@@ -207,6 +220,11 @@ public:
     // Capture settings
     Fl_Choice *cmbSize = nullptr;
     Fl_Choice *cmbFormat = nullptr;
+
+    // Zoom settings
+    Fl_Value_Slider *m_slPanH;
+    Fl_Value_Slider *m_slPanV;
+    Fl_Value_Slider *m_slZoom;
 
     static const int MAGIC_Y = 30;
     // TODO "25" is font height? label height?
@@ -422,6 +440,29 @@ _evComp = evCompVal;
         Fl_Group *o = new Fl_Group(10,MAGIC_Y+25,w,h, "Zoom");
         o->tooltip("Adjust dynamic zoom");
 
+        int slidX = 50;
+        int slidY = MAGIC_Y+100;
+        m_slPanH = makeSlider(slidX, slidY, "Pan Horizontally", -1, 1, 0);
+        m_slPanH->callback(onPanH);
+        m_slPanH->tooltip("non functional unless zoomed");
+        m_slPanH->when(FL_WHEN_RELEASE);  // no change until slider stops
+        slidY += 50;
+
+        m_slPanV = makeSlider(slidX, slidY, "Pan Vertically", -1, 1, 0);
+        m_slPanV->callback(onPanV);
+        m_slPanV->tooltip("non functional unless zoomed");
+        m_slPanV->when(FL_WHEN_RELEASE);  // no change until slider stops
+        slidY += 50;
+
+        m_slZoom = makeSlider(slidX, slidY, "Zoom", 0, 1, 1);
+        m_slZoom->callback(onZoom);
+        m_slZoom->tooltip("digital zoom");
+        m_slZoom->when(FL_WHEN_RELEASE);  // no change until slider stops
+        slidY += 50;
+
+
+        // TODO reset button
+        // TODO fine control
         o->end();
         return o;
     }
