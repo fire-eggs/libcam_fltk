@@ -34,6 +34,11 @@ double _sharp;
 double _contrast;
 double _evComp;
 
+// Zoom settings
+double _zoom;
+double _panH;
+double _panV;
+
 // Inter-thread communication
 bool stateChange;
 bool doCapture;
@@ -46,7 +51,10 @@ const char *_captureFolder;
 extern void fire_proc_thread(int argc, char ** argv);
 bool OKTOSAVE;
 
+// pre-declare those callbacks which reference MainWin members
 static void onReset(Fl_Widget *, void *);
+static void onZoomReset(Fl_Widget *, void *);
+static void onZoom(Fl_Widget *, void *);
 
 static void popup(Fl_File_Chooser* filechooser)
 {
@@ -154,15 +162,17 @@ static void onVFlip(Fl_Widget*w, void *)
 
 static void onPanH(Fl_Widget *w, void *d)
 {
-    std::cerr << "panH: " << ((Fl_Value_Slider *)w)->value() << std::endl;
+    // TODO range check?
+    _panH = ((Fl_Value_Slider *)w)->value();
+    std::cerr << "panH: " << _panH << std::endl;
+    onStateChange();
 }
 static void onPanV(Fl_Widget *w, void *d)
 {
-    std::cerr << "panV: " << ((Fl_Value_Slider *)w)->value() << std::endl;
-}
-static void onZoom(Fl_Widget *w, void *d)
-{
-    std::cerr << "Zoom: " << ((Fl_Value_Slider *)w)->value() << std::endl;
+    // TODO range check?
+    _panV = ((Fl_Value_Slider *)w)->value();
+    std::cerr << "panV: " << _panV << std::endl;
+    onStateChange();
 }
 
 // HACK made static for access via callback
@@ -449,22 +459,32 @@ _evComp = evCompVal;
         int slidY = MAGIC_Y+100;
         m_slPanH = makeSlider(slidX, slidY, "Pan Horizontally", -1, 1, 0);
         m_slPanH->callback(onPanH);
-        m_slPanH->tooltip("non functional unless zoomed");
+        m_slPanH->tooltip("Move the zoom center left or right");
         m_slPanH->when(FL_WHEN_RELEASE);  // no change until slider stops
         slidY += 50;
 
         m_slPanV = makeSlider(slidX, slidY, "Pan Vertically", -1, 1, 0);
         m_slPanV->callback(onPanV);
-        m_slPanV->tooltip("non functional unless zoomed");
+        m_slPanV->tooltip("Move the zoom center up or down");
         m_slPanV->when(FL_WHEN_RELEASE);  // no change until slider stops
         slidY += 50;
 
         m_slZoom = makeSlider(slidX, slidY, "Zoom", 0, 1, 1);
-        m_slZoom->callback(onZoom);
+        m_slZoom->callback(onZoom, this);
         m_slZoom->tooltip("digital zoom");
         m_slZoom->when(FL_WHEN_RELEASE);  // no change until slider stops
         slidY += 50;
 
+        Fl_Button *bReset = new Fl_Button(slidX, slidY, 100, 25, "Reset");
+        bReset->tooltip("Reset all zoom settings to default");
+        bReset->callback(onZoomReset, this);
+        
+        
+        _zoom = 1.0;
+        _panH = 0.0;
+        _panV = 0.0;
+        m_slPanH ->deactivate();
+        m_slPanV ->deactivate();
 
         // TODO reset button
         // TODO fine control
@@ -499,6 +519,47 @@ static void onReset(Fl_Widget *w, void *d)
     _vflip = false;
     
     onStateChange(OKTOSAVE); // hack force not save
+}
+
+static void onZoomReset(Fl_Widget *, void *d)
+{
+        MainWin *mw = (MainWin *)d;
+        _zoom = 1.0;
+        _panH = 0.0;
+        _panV = 0.0;
+        mw->m_slZoom->value(_zoom);
+        mw->m_slPanH ->deactivate();
+        mw->m_slPanV ->deactivate();
+        onStateChange(OKTOSAVE);
+}
+
+static void onZoom(Fl_Widget *w, void *d)
+{
+   MainWin *mw = (MainWin *)d;
+   _zoom = ((Fl_Value_Slider *)w)->value();
+    std::cerr << "Zoom: " <<  _zoom << std::endl;
+
+    if (_zoom == 1.0)
+    {
+        mw->m_slPanH->deactivate();
+        mw->m_slPanV->deactivate();
+        _panH = 0.0;
+        _panV = 0.0;        
+    }
+    else
+    {
+        double pHval = mw->m_slPanH->value();
+        double pVval = mw->m_slPanV->value();
+        
+        // TODO does the current value need to be adjusted?
+        double range = (1.0 - _zoom ) / 2.0;
+        mw->m_slPanH->range(-range, range);
+        mw->m_slPanV->range(-range, range);
+        
+        mw->m_slPanH->activate();
+        mw->m_slPanV->activate();        
+    }
+    onStateChange();
 }
 
 MainWin* _window;

@@ -41,6 +41,10 @@ extern double _contrast;
 extern double _saturate;
 extern double _evComp;
 
+extern double _zoom;
+extern double _panH;
+extern double _panV;
+
 // the camera "app"
 LibcameraEncoder *_app;
 
@@ -182,6 +186,11 @@ void* proc_func(void *p)
                 newopt->saturation = _saturate;
                 newopt->sharpness  = _sharp;
                 newopt->ev         = _evComp;
+                
+                newopt->roi_x = _panH + (1.0-_zoom) / 2.0;  // pan values are relative to 'center'
+                newopt->roi_y = _panV + (1.0-_zoom) / 2.0;
+                newopt->roi_height = _zoom;
+                newopt->roi_width = _zoom;
                 
                 _app->ConfigureVideo();
                 _app->StartEncoder();
