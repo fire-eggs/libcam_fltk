@@ -44,10 +44,16 @@ extern double _evComp;
 // the camera "app"
 LibcameraEncoder *_app;
 
+extern const char *_captureFolder;
+extern bool _capturePNG;
+extern int _captureH;
+extern int _captureW;
+
 static std::string generate_filename(Options const *options)
 {
 	char filename[256];
-	std::string folder = options->output; // sometimes "output" is used as a folder name
+	//std::string folder = options->output; // sometimes "output" is used as a folder name
+	std::string folder = _captureFolder;
 	if (!folder.empty() && folder.back() != '/')
 		folder += "/";
     
@@ -58,7 +64,7 @@ static std::string generate_filename(Options const *options)
 		char time_string[32];
 		std::tm *time_info = std::localtime(&raw_time);
 		std::strftime(time_string, sizeof(time_string), "%m%d%H%M%S", time_info);
-		snprintf(filename, sizeof(filename), "%s%s.%s", folder.c_str(), time_string, "jpg"); // options->encoding.c_str());
+		snprintf(filename, sizeof(filename), "%s%s.%s", folder.c_str(), time_string, _capturePNG ? "png" : "jpg"); // options->encoding.c_str());
 	}
 /*	
 	else if (options->timestamp)
@@ -77,10 +83,15 @@ static void save_image(CompletedRequestPtr &payload, Stream *stream,
 	Options const *options = _app->GetOptions();
 	StreamInfo info = _app->GetStreamInfo(stream);
 	const std::vector<libcamera::Span<uint8_t>> mem = _app->Mmap(payload->buffers[stream]);
+    
+    if (_capturePNG)
+		png_save(mem, info, filename, options);
+    else        
+		jpeg_save(mem, info, payload->metadata, filename, _app->CameraId(), options);
 //	if (stream == _app->RawStream())
 //		dng_save(mem, info, payload->metadata, filename, app.CameraId(), options);
 //	else if (options->encoding == "jpg")
-		jpeg_save(mem, info, payload->metadata, filename, _app->CameraId(), options);
+//		jpeg_save(mem, info, payload->metadata, filename, _app->CameraId(), options);
 //	else if (options->encoding == "png")
 //		png_save(mem, info, filename, options);
 //	else if (options->encoding == "bmp")
@@ -88,7 +99,7 @@ static void save_image(CompletedRequestPtr &payload, Stream *stream,
 //	else
 //		yuv_save(mem, info, filename, options);
 //	if (options->verbose)
-//		std::cerr << "Saved image " << info.width << " x " << info.height << " to file " << filename << std::endl;
+    std::cerr << "Saved image " << info.width << " x " << info.height << " to file " << filename << std::endl;
 }
 
 static void save_images(CompletedRequestPtr &payload)
@@ -141,7 +152,15 @@ void* proc_func(void *p)
                 _app->StopCamera();
                 _app->StopEncoder();
                 _app->Teardown();
-                _app->ConfigureStill();
+                
+                options->width  = _captureW;
+                options->height = _captureH;
+                
+                _app->ConfigureStill( _capturePNG ? LibcameraApp::FLAG_STILL_BGR : LibcameraApp::FLAG_STILL_NONE ); // save to PNG needs BGR
+                
+//                _app->configuration_->at(0).size.width = _captureW;
+//                _app->configuration_->at(0).size.height = _captureH;
+                
                 _app->StartCamera();
             }
             else if (stateChange) // user has made settings change

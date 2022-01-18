@@ -38,6 +38,11 @@ double _evComp;
 bool stateChange;
 bool doCapture;
 
+int _captureW;
+int _captureH;
+bool _capturePNG;
+const char *_captureFolder;
+
 extern void fire_proc_thread(int argc, char ** argv);
 bool OKTOSAVE;
 
@@ -167,6 +172,9 @@ static void capFolderPick(Fl_Widget* w, void *)
 
 #define KBR_UPD_PREVIEW 1001
 
+static int captureWVals[] = {640,1024,1280,1920,2272,3072,4056};
+static int captureHVals[]  = {480,768,960,1080,1704,2304,3040};
+
 Fl_Menu_Item menu_cmbSize[] =
         {
                 {" 640 x  480", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
@@ -186,11 +194,8 @@ Fl_Menu_Item menu_cmbFormat[] =
                 {0,     0, 0, 0, 0,                      0, 0,  0, 0}
         };
 
-static void onCapture(Fl_Widget *w, void *)
-{
-    doCapture = true;
-}
-
+static void onCapture(Fl_Widget *,void*); // forward decl
+        
 class MainWin : public Fl_Double_Window
 {
 public:
@@ -345,7 +350,7 @@ _evComp = evCompVal;
         //Fl_Group::current()->resizable(o);
         return o;
     }
-
+    
     Fl_Group *makeCaptureTab(int w, int h)
     {
         Prefs *setP = _prefs->getSubPrefs("capture");
@@ -456,6 +461,17 @@ static void onReset(Fl_Widget *w, void *d)
 }
 
 MainWin* _window;
+
+static void onCapture(Fl_Widget *w, void *)
+{
+    _capturePNG = _window->cmbFormat->value() == 1;
+    int sizeVal = _window->cmbSize->value();
+    _captureH = captureHVals[sizeVal];
+    _captureW = captureWVals[sizeVal];
+    _captureFolder = inpFileNameDisplay->value();
+    
+    doCapture = true;
+}
 
 void MainWin::resize(int x, int y, int w, int h)
 {
