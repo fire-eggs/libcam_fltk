@@ -239,8 +239,8 @@ public:
     Fl_Choice *cmbFormat = nullptr;
 
     // Zoom settings
-    Fl_Value_Slider *m_slPanH;
-    Fl_Value_Slider *m_slPanV;
+//    Fl_Value_Slider *m_slPanH;
+//    Fl_Value_Slider *m_slPanV;
     Fl_Roller *m_rlPanH;
     Fl_Roller *m_rlPanV;
     Fl_Choice *cmbZoom = nullptr;
@@ -462,29 +462,36 @@ _evComp = evCompVal;
         Fl_Group *o = new Fl_Group(10,MAGIC_Y+25,w,h, "Zoom");
         o->tooltip("Adjust dynamic zoom");
 
-        int slidX = 50;
-        int slidY = MAGIC_Y+100;
+        int slidX = 40;
+        int slidY = MAGIC_Y+75;
+
+        m_rlPanH = new Fl_Roller(slidX, slidY, 200, 25, "Pan horizontally");
+        m_rlPanH->when(FL_WHEN_CHANGED);
+        m_rlPanH->callback(onPanH, this);
+        m_rlPanH->type(1);
+        m_rlPanH->tooltip("Move the zoom center left or right");
+        
+/*        
         m_slPanH = makeSlider(slidX, slidY, "Pan Horizontally", -1, 1, 0);
         m_slPanH->callback(onPanH, this);
         m_slPanH->tooltip("Move the zoom center left or right");
         m_slPanH->when(FL_WHEN_RELEASE);  // no change until slider stops
         //slidY += 50;
-
+*/
+/*        
         m_slPanV = makeSlider(slidX + 250, slidY, "Pan Vertically", -1, 1, 0, true);
         m_slPanV->callback(onPanV, this);
         m_slPanV->tooltip("Move the zoom center up or down");
         m_slPanV->when(FL_WHEN_RELEASE);  // no change until slider stops
+*/
 
-        m_rlPanV = new Fl_Roller(slidX + 300, slidY, 25, 200);
+        m_rlPanV = new Fl_Roller(slidX + 220, slidY, 25, 200, "Pan vertically");
         m_rlPanV->when(FL_WHEN_CHANGED);
         m_rlPanV->callback(onPanV, this);
-        slidY += 50;
+        m_rlPanV->tooltip("Move the zoom center up or down");
+        slidY += 70;
 
-        m_rlPanH = new Fl_Roller(slidX, slidY, 200, 25);
-        m_rlPanH->when(FL_WHEN_CHANGED);
-        m_rlPanH->callback(onPanH, this);
-        m_rlPanH->type(1);
-        slidY += 50;
+//        slidY += 50;
 
         cmbZoom = new Fl_Choice(slidX, slidY, 150, 25, "Zoom:");
         cmbZoom->down_box(FL_BORDER_BOX);
@@ -494,8 +501,8 @@ _evComp = evCompVal;
         cmbZoom->callback(onZoomChange, this);
         slidY += 50;
 
-        m_chkLever = new Fl_Check_Button(slidX, slidY, 150, 25, "Lever");
-        m_chkLever->tooltip("Pan as if using a stick to move the camera");
+        m_chkLever = new Fl_Check_Button(slidX, slidY, 150, 25, "Tripod panning");
+        m_chkLever->tooltip("Pan as if using a tripod lever to move the camera");
         m_chkLever->value(false);
         slidY += 50;
 
@@ -508,8 +515,8 @@ _evComp = evCompVal;
         _zoom = 1.0;
         _panH = 0.0;
         _panV = 0.0;
-        m_slPanH ->deactivate();
-        m_slPanV ->deactivate();
+        //m_slPanH ->deactivate();
+        //m_slPanV ->deactivate();
         m_rlPanH ->deactivate();
         m_rlPanV ->deactivate();
 
@@ -554,12 +561,12 @@ static void onZoomReset(Fl_Widget *, void *d)
         _panH = 0.0;
         _panV = 0.0;
         mw->cmbZoom->value(0);
-        mw->m_slPanH->value(_panH);
-        mw->m_slPanV->value(_panV);
+        //mw->m_slPanH->value(_panH);
+        //mw->m_slPanV->value(_panV);
         mw->m_rlPanH->value(_panH);
         mw->m_rlPanV->value(_panV);
-        mw->m_slPanH ->deactivate();
-        mw->m_slPanV ->deactivate();
+        //mw->m_slPanH ->deactivate();
+        //mw->m_slPanV ->deactivate();
         mw->m_rlPanH ->deactivate();
         mw->m_rlPanV ->deactivate();
         onStateChange(OKTOSAVE);
@@ -575,29 +582,29 @@ static void onZoomChange(Fl_Widget *w, void *d)
         onZoomReset(nullptr, d);
     else
     {
-        double pHval = mw->m_slPanH->value();
-        double pVval = mw->m_slPanV->value();
+        double pHval = mw->m_rlPanH->value();
+        double pVval = mw->m_rlPanV->value();
         
         double range = (1.0 - _zoom ) / 2.0;
-        mw->m_slPanH->bounds(-range, range);
-        mw->m_slPanV->bounds(-range, range);
+        //mw->m_slPanH->bounds(-range, range);
+        //mw->m_slPanV->bounds(-range, range);
 
         mw->m_rlPanH->bounds(-range, range);
         mw->m_rlPanV->bounds(-range, range);
 
-        _panV = mw->m_slPanV->clamp(pVval);
-        mw->m_slPanV->value(_panV);
+        _panV = mw->m_rlPanV->clamp(pVval);
+        //mw->m_slPanV->value(_panV);
         mw->m_rlPanV->value(_panV);
-        _panH = mw->m_slPanH->clamp(pHval);
-        mw->m_slPanH->value(_panH);
+        _panH = mw->m_rlPanH->clamp(pHval);
+        //mw->m_slPanH->value(_panH);
         mw->m_rlPanH->value(_panH);
         
-        mw->m_slPanH->activate();
-        mw->m_slPanV->activate();        
+        //mw->m_slPanH->activate();
+        //mw->m_slPanV->activate();        
         mw->m_rlPanH->activate();
         mw->m_rlPanV->activate();
 
-        if (mw->m_chkLever)
+        if (mw->m_chkLever->value())
         {
             _panV = -_panV;
             _panH = -_panH;
@@ -608,14 +615,18 @@ static void onZoomChange(Fl_Widget *w, void *d)
 
 static void onPanH(Fl_Widget *w, void *d)
 {
-    _panH = ((Fl_Value_Slider *)w)->value();
+    //_panH = ((Fl_Value_Slider *)w)->value();
+    _panH = ((Fl_Roller *)w)->value();
+    
+#ifdef NOISY       
     std::cerr << "panH: " << _panH << std::endl;
-
+#endif
+    
     MainWin *mw = (MainWin *)d;
-    mw->m_slPanH->value(_panH);
+    //mw->m_slPanH->value(_panH);
     mw->m_rlPanH->value(_panH);
 
-    if (mw->m_chkLever)
+    if (mw->m_chkLever->value())
     {
         _panH = -_panH;
     }
@@ -625,14 +636,18 @@ static void onPanH(Fl_Widget *w, void *d)
 
 static void onPanV(Fl_Widget *w, void *d)
 {
-    _panV = ((Fl_Value_Slider *)w)->value();
-    std::cerr << "panV: " << _panV << std::endl;
-
+    //_panV = ((Fl_Value_Slider *)w)->value();
+    _panV = ((Fl_Roller *)w)->value();
+    
+#ifdef NOISY       
+        std::cerr << "panV: " << _panV << std::endl;
+#endif
+        
     MainWin *mw = (MainWin *)d;
-    mw->m_slPanV->value(_panV);
+    //mw->m_slPanV->value(_panV);
     mw->m_rlPanV->value(_panV);
 
-    if (mw->m_chkLever)
+    if (mw->m_chkLever->value())
     {
         _panV = -_panV;
     }
