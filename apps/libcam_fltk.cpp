@@ -14,6 +14,7 @@
 #include <FL/Fl_File_Chooser.H>
 #include <FL/Fl_Tabs.H>
 #include <FL/Fl_Value_Slider.H>
+#include <FL/Fl_Roller.H>
 #include "prefs.h"
 
 #include "core/libcamera_encoder.hpp"
@@ -54,7 +55,9 @@ bool OKTOSAVE;
 // pre-declare those callbacks which reference MainWin members
 static void onReset(Fl_Widget *, void *);
 static void onZoomReset(Fl_Widget *, void *);
-static void onZoom(Fl_Widget *, void *);
+static void onZoomChange(Fl_Widget *w, void *d);
+static void onPanH(Fl_Widget *w, void *d);
+static void onPanV(Fl_Widget *w, void *d);
 
 static void popup(Fl_File_Chooser* filechooser)
 {
@@ -72,12 +75,12 @@ static void popup(Fl_File_Chooser* filechooser)
 }
 
 // TODO goes in class?
-static Fl_Value_Slider *makeSlider(int x, int y, const char *label, int min, int max, int def)
+static Fl_Value_Slider *makeSlider(int x, int y, const char *label, int min, int max, int def, bool vert=false)
 {
     // TODO how to change the size of the "value" label?
 
-    Fl_Value_Slider* o = new Fl_Value_Slider(x, y, 200, 20, label);
-    o->type(5);
+    Fl_Value_Slider* o = new Fl_Value_Slider(x, y, vert ? 35 : 200, vert ? 200 : 25, label);
+    o->type(vert ? FL_VERT_NICE_SLIDER : FL_HOR_NICE_SLIDER);
     o->box(FL_DOWN_BOX);
     o->bounds(min, max);
     o->value(def);
@@ -160,21 +163,6 @@ static void onVFlip(Fl_Widget*w, void *)
     onStateChange();
 }
 
-static void onPanH(Fl_Widget *w, void *d)
-{
-    // TODO range check?
-    _panH = ((Fl_Value_Slider *)w)->value();
-    std::cerr << "panH: " << _panH << std::endl;
-    onStateChange();
-}
-static void onPanV(Fl_Widget *w, void *d)
-{
-    // TODO range check?
-    _panV = ((Fl_Value_Slider *)w)->value();
-    std::cerr << "panV: " << _panV << std::endl;
-    onStateChange();
-}
-
 // HACK made static for access via callback
 static Fl_Input* inpFileNameDisplay = nullptr;
 
@@ -197,6 +185,7 @@ static void capFolderPick(Fl_Widget* w, void *)
 
 static int captureWVals[] = {640,1024,1280,1920,2272,3072,4056};
 static int captureHVals[]  = {480,768,960,1080,1704,2304,3040};
+static double zoomVals[] = {1.0, 0.8, 0.66667, 0.5, 0.4, 0.33333, 0.25, 0.2 };
 
 Fl_Menu_Item menu_cmbSize[] =
         {
@@ -214,6 +203,19 @@ Fl_Menu_Item menu_cmbFormat[] =
         {
                 {"JPG", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
                 {"PNG", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+                {0,     0, 0, 0, 0,                      0, 0,  0, 0}
+        };
+
+Fl_Menu_Item menu_cmbZoom[] =
+        {
+                {"100%", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+                {"125%", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+                {"150%", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+                {"200%", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+                {"250%", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+                {"300%", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+                {"400%", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+                {"500%", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
                 {0,     0, 0, 0, 0,                      0, 0,  0, 0}
         };
 
@@ -239,7 +241,10 @@ public:
     // Zoom settings
     Fl_Value_Slider *m_slPanH;
     Fl_Value_Slider *m_slPanV;
-    Fl_Value_Slider *m_slZoom;
+    Fl_Roller *m_rlPanH;
+    Fl_Roller *m_rlPanV;
+    Fl_Choice *cmbZoom = nullptr;
+    Fl_Check_Button *m_chkLever;
 
     static const int MAGIC_Y = 30;
     // TODO "25" is font height? label height?
@@ -342,7 +347,7 @@ _evComp = evCompVal;
 
         int slidX = 40;
         int slidY = MAGIC_Y + 60;
-        int yStep = 50;
+        int yStep = 60;
         m_slBright = makeSlider(slidX, slidY, "Brightness", -1, 1, brightVal);
         m_slBright->callback(onBright);
         m_slBright->value(brightVal);
@@ -452,42 +457,63 @@ _evComp = evCompVal;
 
     Fl_Group *makeZoomTab(int w, int h)
     {
+        // TODO restore saved values
+
         Fl_Group *o = new Fl_Group(10,MAGIC_Y+25,w,h, "Zoom");
         o->tooltip("Adjust dynamic zoom");
 
         int slidX = 50;
         int slidY = MAGIC_Y+100;
         m_slPanH = makeSlider(slidX, slidY, "Pan Horizontally", -1, 1, 0);
-        m_slPanH->callback(onPanH);
+        m_slPanH->callback(onPanH, this);
         m_slPanH->tooltip("Move the zoom center left or right");
         m_slPanH->when(FL_WHEN_RELEASE);  // no change until slider stops
-        slidY += 50;
+        //slidY += 50;
 
-        m_slPanV = makeSlider(slidX, slidY, "Pan Vertically", -1, 1, 0);
-        m_slPanV->callback(onPanV);
+        m_slPanV = makeSlider(slidX + 250, slidY, "Pan Vertically", -1, 1, 0, true);
+        m_slPanV->callback(onPanV, this);
         m_slPanV->tooltip("Move the zoom center up or down");
         m_slPanV->when(FL_WHEN_RELEASE);  // no change until slider stops
+
+        m_rlPanV = new Fl_Roller(slidX + 300, slidY, 25, 200);
+        m_rlPanV->when(FL_WHEN_CHANGED);
+        m_rlPanV->callback(onPanV, this);
         slidY += 50;
 
-        m_slZoom = makeSlider(slidX, slidY, "Zoom", 0, 1, 1);
-        m_slZoom->callback(onZoom, this);
-        m_slZoom->tooltip("digital zoom");
-        m_slZoom->when(FL_WHEN_RELEASE);  // no change until slider stops
+        m_rlPanH = new Fl_Roller(slidX, slidY, 200, 25);
+        m_rlPanH->when(FL_WHEN_CHANGED);
+        m_rlPanH->callback(onPanH, this);
+        m_rlPanH->type(1);
+        slidY += 50;
+
+        cmbZoom = new Fl_Choice(slidX, slidY, 150, 25, "Zoom:");
+        cmbZoom->down_box(FL_BORDER_BOX);
+        cmbZoom->align(Fl_Align(FL_ALIGN_TOP_LEFT));
+        cmbZoom->menu(menu_cmbZoom);
+        cmbZoom->value(0);
+        cmbZoom->callback(onZoomChange, this);
+        slidY += 50;
+
+        m_chkLever = new Fl_Check_Button(slidX, slidY, 150, 25, "Lever");
+        m_chkLever->tooltip("Pan as if using a stick to move the camera");
+        m_chkLever->value(false);
         slidY += 50;
 
         Fl_Button *bReset = new Fl_Button(slidX, slidY, 100, 25, "Reset");
         bReset->tooltip("Reset all zoom settings to default");
         bReset->callback(onZoomReset, this);
         
+        slidY += 50;
         
         _zoom = 1.0;
         _panH = 0.0;
         _panV = 0.0;
         m_slPanH ->deactivate();
         m_slPanV ->deactivate();
+        m_rlPanH ->deactivate();
+        m_rlPanV ->deactivate();
 
-        // TODO reset button
-        // TODO fine control
+        // TODO fine control?
         o->end();
         return o;
     }
@@ -527,38 +553,90 @@ static void onZoomReset(Fl_Widget *, void *d)
         _zoom = 1.0;
         _panH = 0.0;
         _panV = 0.0;
-        mw->m_slZoom->value(_zoom);
+        mw->cmbZoom->value(0);
+        mw->m_slPanH->value(_panH);
+        mw->m_slPanV->value(_panV);
+        mw->m_rlPanH->value(_panH);
+        mw->m_rlPanV->value(_panV);
         mw->m_slPanH ->deactivate();
         mw->m_slPanV ->deactivate();
+        mw->m_rlPanH ->deactivate();
+        mw->m_rlPanV ->deactivate();
         onStateChange(OKTOSAVE);
 }
 
-static void onZoom(Fl_Widget *w, void *d)
+static void onZoomChange(Fl_Widget *w, void *d)
 {
    MainWin *mw = (MainWin *)d;
-   _zoom = ((Fl_Value_Slider *)w)->value();
-    std::cerr << "Zoom: " <<  _zoom << std::endl;
+    int zoomdex = ((Fl_Choice *)w)->value();
+    _zoom = zoomVals[zoomdex];
 
-    if (_zoom == 1.0)
-    {
-        mw->m_slPanH->deactivate();
-        mw->m_slPanV->deactivate();
-        _panH = 0.0;
-        _panV = 0.0;        
-    }
+    if (zoomdex == 0)
+        onZoomReset(nullptr, d);
     else
     {
         double pHval = mw->m_slPanH->value();
         double pVval = mw->m_slPanV->value();
         
-        // TODO does the current value need to be adjusted?
         double range = (1.0 - _zoom ) / 2.0;
-        mw->m_slPanH->range(-range, range);
-        mw->m_slPanV->range(-range, range);
+        mw->m_slPanH->bounds(-range, range);
+        mw->m_slPanV->bounds(-range, range);
+
+        mw->m_rlPanH->bounds(-range, range);
+        mw->m_rlPanV->bounds(-range, range);
+
+        _panV = mw->m_slPanV->clamp(pVval);
+        mw->m_slPanV->value(_panV);
+        mw->m_rlPanV->value(_panV);
+        _panH = mw->m_slPanH->clamp(pHval);
+        mw->m_slPanH->value(_panH);
+        mw->m_rlPanH->value(_panH);
         
         mw->m_slPanH->activate();
         mw->m_slPanV->activate();        
+        mw->m_rlPanH->activate();
+        mw->m_rlPanV->activate();
+
+        if (mw->m_chkLever)
+        {
+            _panV = -_panV;
+            _panH = -_panH;
+        }
     }
+    onStateChange();
+}
+
+static void onPanH(Fl_Widget *w, void *d)
+{
+    _panH = ((Fl_Value_Slider *)w)->value();
+    std::cerr << "panH: " << _panH << std::endl;
+
+    MainWin *mw = (MainWin *)d;
+    mw->m_slPanH->value(_panH);
+    mw->m_rlPanH->value(_panH);
+
+    if (mw->m_chkLever)
+    {
+        _panH = -_panH;
+    }
+
+    onStateChange();
+}
+
+static void onPanV(Fl_Widget *w, void *d)
+{
+    _panV = ((Fl_Value_Slider *)w)->value();
+    std::cerr << "panV: " << _panV << std::endl;
+
+    MainWin *mw = (MainWin *)d;
+    mw->m_slPanV->value(_panV);
+    mw->m_rlPanV->value(_panV);
+
+    if (mw->m_chkLever)
+    {
+        _panV = -_panV;
+    }
+
     onStateChange();
 }
 
