@@ -39,6 +39,8 @@ double _evComp;
 double _zoom;
 double _panH;
 double _panV;
+int _zoomChoice; // needed for settings save
+bool _lever;     // needed for settings save
 
 // Inter-thread communication
 bool stateChange;
@@ -58,6 +60,9 @@ static void onZoomReset(Fl_Widget *, void *);
 static void onZoomChange(Fl_Widget *w, void *d);
 static void onPanH(Fl_Widget *w, void *d);
 static void onPanV(Fl_Widget *w, void *d);
+
+class MainWin;
+static void commonZoom(MainWin *mw, int zoomdex);
 
 static void popup(Fl_File_Chooser* filechooser)
 {
@@ -102,6 +107,14 @@ static void onStateChange(bool save=true)
         setP->set("saturate", _saturate);
         setP->set("hflip", (int)_hflip);
         setP->set("vflip", (int)_vflip);
+
+        setP->set("zoom", _zoomChoice);
+
+        // HACK if 'tripod pan' is active, the values have been negated; undo for save
+        setP->set("panh", _panH * (_lever ? -1.0 : 1.0));
+        setP->set("panv", _panV * (_lever ? -1.0 : 1.0));
+
+        setP->set("lever", (int)_lever);
     }
     stateChange = true;
 }
@@ -185,7 +198,7 @@ static void capFolderPick(Fl_Widget* w, void *)
 
 static int captureWVals[] = {640,1024,1280,1920,2272,3072,4056};
 static int captureHVals[]  = {480,768,960,1080,1704,2304,3040};
-static double zoomVals[] = {1.0, 0.8, 0.66667, 0.5, 0.4, 0.33333, 0.25, 0.2 };
+static double zoomVals[] = {1.0, 0.8, 2.0/3.0, 0.5, 0.4, 1.0/3.0, 0.25, 0.2 };
 
 Fl_Menu_Item menu_cmbSize[] =
         {
@@ -239,8 +252,6 @@ public:
     Fl_Choice *cmbFormat = nullptr;
 
     // Zoom settings
-//    Fl_Value_Slider *m_slPanH;
-//    Fl_Value_Slider *m_slPanV;
     Fl_Roller *m_rlPanH;
     Fl_Roller *m_rlPanV;
     Fl_Choice *cmbZoom = nullptr;
@@ -251,36 +262,18 @@ public:
 
     MainWin(int x, int y, int w, int h) : Fl_Double_Window(x, y, w,h)
     {
-        //grp = new Fl_Group(0, 25, w, h-25);
-
         int magicW = w - 20;
         int magicH = h - 50;
 
-//        Fl_Box *box1 = new Fl_Box(50, 50, magicW, magicH, "Box 1");
-//        box1->type(FL_BORDER_BOX);
-//        box1->labelfont(1);
-
         Fl_Tabs *tabs = new Fl_Tabs(10, MAGIC_Y, magicW, magicH);
         magicH -= 25;
-        //Fl_Group *t1 = 
         makeSettingsTab(magicW, magicH);
-        //Fl_Group *t5 = 
         makeZoomTab(magicW, magicH);
-        //Fl_Group *t2 = 
         makeCaptureTab(magicW, magicH);
-        //Fl_Group *t3 = 
         makeVideoTab(magicW, magicH);
-        //Fl_Group *t4 = 
         makeTimelapseTab(magicW, magicH);
         tabs->end();
-        //Fl_Group::current()->resizable(tabs);
 
-/*
-        _crop = new cropBox(_img, 0, 25, w/2, h-25);
-        _preview = new Fl_Box(w/2, 25, w/2, h-25);
-        _preview->box(FL_DOWN_FRAME);
-*/
-        //grp->end();
         resizable(this);
     }
 
@@ -296,6 +289,11 @@ public:
         double evCompVal  = setP->get("evcomp",   0.0);
         bool hflipval     = setP->get("hflip",    false);
         bool vflipval     = setP->get("vflip",    false);
+
+        _zoomChoice = setP->get("zoom", 0);
+        _lever      = (bool)setP->get("lever", (int)false);
+        _panH       = setP->get("panh", 0.0);
+        _panV       = setP->get("panv", 0.0);
         
         m_chkHflip->value(hflipval);
         m_chkVflip->value(vflipval);
@@ -304,14 +302,16 @@ public:
         m_slSaturate->value(saturateVal);
         m_slSharp->value(sharpVal);
         m_slevComp->value(evCompVal);
+
+        commonZoom(this, _zoomChoice);
         
-_hflip = hflipval;
-_vflip = vflipval;
-_bright= brightVal;
-_saturate = saturateVal;
-_sharp = sharpVal;
-_contrast = contrastVal;
-_evComp = evCompVal;
+        _hflip = hflipval;
+        _vflip = vflipval;
+        _bright= brightVal;
+        _saturate = saturateVal;
+        _sharp = sharpVal;
+        _contrast = contrastVal;
+        _evComp = evCompVal;
         
     }
     
@@ -420,7 +420,7 @@ _evComp = evCompVal;
         cmbFormat->menu(menu_cmbFormat);
         cmbFormat->value(formChoice);
 
-        // Quality? (for jpg)
+        // TODO Quality? (for jpg)
 
         Fl_Input* inp= new Fl_Input(230, MAGIC_Y+200, 200, 25, "Folder:");
         inp->align(Fl_Align(FL_ALIGN_TOP_LEFT));
@@ -458,6 +458,11 @@ _evComp = evCompVal;
     Fl_Group *makeZoomTab(int w, int h)
     {
         // TODO restore saved values
+        Prefs *setP = _prefs->getSubPrefs("camera");
+        _zoomChoice  = setP->get("zoom", 0);
+        double panHval  = setP->get("panh",   0.0);
+        double panVval  = setP->get("panv",   0.0);
+        _lever = setP->get("lever", false);
 
         Fl_Group *o = new Fl_Group(10,MAGIC_Y+25,w,h, "Zoom");
         o->tooltip("Adjust dynamic zoom");
@@ -468,22 +473,8 @@ _evComp = evCompVal;
         m_rlPanH = new Fl_Roller(slidX, slidY, 200, 25, "Pan horizontally");
         m_rlPanH->when(FL_WHEN_CHANGED);
         m_rlPanH->callback(onPanH, this);
-        m_rlPanH->type(1);
+        m_rlPanH->type(FL_HORIZONTAL);
         m_rlPanH->tooltip("Move the zoom center left or right");
-        
-/*        
-        m_slPanH = makeSlider(slidX, slidY, "Pan Horizontally", -1, 1, 0);
-        m_slPanH->callback(onPanH, this);
-        m_slPanH->tooltip("Move the zoom center left or right");
-        m_slPanH->when(FL_WHEN_RELEASE);  // no change until slider stops
-        //slidY += 50;
-*/
-/*        
-        m_slPanV = makeSlider(slidX + 250, slidY, "Pan Vertically", -1, 1, 0, true);
-        m_slPanV->callback(onPanV, this);
-        m_slPanV->tooltip("Move the zoom center up or down");
-        m_slPanV->when(FL_WHEN_RELEASE);  // no change until slider stops
-*/
 
         m_rlPanV = new Fl_Roller(slidX + 220, slidY, 25, 200, "Pan vertically");
         m_rlPanV->when(FL_WHEN_CHANGED);
@@ -491,19 +482,17 @@ _evComp = evCompVal;
         m_rlPanV->tooltip("Move the zoom center up or down");
         slidY += 70;
 
-//        slidY += 50;
-
         cmbZoom = new Fl_Choice(slidX, slidY, 150, 25, "Zoom:");
         cmbZoom->down_box(FL_BORDER_BOX);
         cmbZoom->align(Fl_Align(FL_ALIGN_TOP_LEFT));
         cmbZoom->menu(menu_cmbZoom);
-        cmbZoom->value(0);
+        cmbZoom->value(_zoomChoice); // NOTE: do before establish callback, don't fire it
         cmbZoom->callback(onZoomChange, this);
         slidY += 50;
 
         m_chkLever = new Fl_Check_Button(slidX, slidY, 150, 25, "Tripod panning");
         m_chkLever->tooltip("Pan as if using a tripod lever to move the camera");
-        m_chkLever->value(false);
+        m_chkLever->value(_lever);
         slidY += 50;
 
         Fl_Button *bReset = new Fl_Button(slidX, slidY, 100, 25, "Reset");
@@ -512,13 +501,13 @@ _evComp = evCompVal;
         
         slidY += 50;
         
-        _zoom = 1.0;
-        _panH = 0.0;
-        _panV = 0.0;
-        //m_slPanH ->deactivate();
-        //m_slPanV ->deactivate();
-        m_rlPanH ->deactivate();
-        m_rlPanV ->deactivate();
+        _panH = panHval;
+        m_rlPanH->value(_panH); // TODO confirm is not corrected
+        _panV = panVval;
+        m_rlPanV->value(_panV); // TODO confirm is not corrected
+
+        _zoom = zoomVals[_zoomChoice];
+        commonZoom(this, _zoomChoice);
 
         // TODO fine control?
         o->end();
@@ -572,50 +561,53 @@ static void onZoomReset(Fl_Widget *, void *d)
         onStateChange(OKTOSAVE);
 }
 
-static void onZoomChange(Fl_Widget *w, void *d)
+/* Update zoom controls on zoom choice change.
+ * Used during init for saved value. Used when user changes zoom level.
+ */
+static void commonZoom(MainWin *mw, int zoomdex)
 {
-   MainWin *mw = (MainWin *)d;
-    int zoomdex = ((Fl_Choice *)w)->value();
     _zoom = zoomVals[zoomdex];
 
     if (zoomdex == 0)
-        onZoomReset(nullptr, d);
+        onZoomReset(nullptr, mw);
     else
     {
         double pHval = mw->m_rlPanH->value();
         double pVval = mw->m_rlPanV->value();
         
-        double range = (1.0 - _zoom ) / 2.0;
-        //mw->m_slPanH->bounds(-range, range);
-        //mw->m_slPanV->bounds(-range, range);
+        double range = (1.0 - _zoom) / 2.0;
 
         mw->m_rlPanH->bounds(-range, range);
         mw->m_rlPanV->bounds(-range, range);
 
         _panV = mw->m_rlPanV->clamp(pVval);
-        //mw->m_slPanV->value(_panV);
         mw->m_rlPanV->value(_panV);
         _panH = mw->m_rlPanH->clamp(pHval);
-        //mw->m_slPanH->value(_panH);
         mw->m_rlPanH->value(_panH);
         
-        //mw->m_slPanH->activate();
-        //mw->m_slPanV->activate();        
         mw->m_rlPanH->activate();
         mw->m_rlPanV->activate();
-
-        if (mw->m_chkLever->value())
-        {
-            _panV = -_panV;
-            _panH = -_panH;
-        }
     }
+}
+
+static void onZoomChange(Fl_Widget *w, void *d)
+{
+    MainWin *mw = static_cast<MainWin *>(d);
+    _zoomChoice = ((Fl_Choice *)w)->value();
+    commonZoom(mw, _zoomChoice);
+
+    if (!_zoomChoice && mw->m_chkLever->value())
+    {
+        _panV = -_panV;
+        _panH = -_panH;
+    }
+    _lever = mw->m_chkLever->value(); // HACK no callback for lever change so update frequently
+
     onStateChange();
 }
 
 static void onPanH(Fl_Widget *w, void *d)
 {
-    //_panH = ((Fl_Value_Slider *)w)->value();
     _panH = ((Fl_Roller *)w)->value();
     
 #ifdef NOISY       
@@ -623,10 +615,10 @@ static void onPanH(Fl_Widget *w, void *d)
 #endif
     
     MainWin *mw = (MainWin *)d;
-    //mw->m_slPanH->value(_panH);
     mw->m_rlPanH->value(_panH);
 
-    if (mw->m_chkLever->value())
+    _lever = mw->m_chkLever->value(); // HACK no callback for lever change so update frequently
+    if (_lever)
     {
         _panH = -_panH;
     }
@@ -636,18 +628,17 @@ static void onPanH(Fl_Widget *w, void *d)
 
 static void onPanV(Fl_Widget *w, void *d)
 {
-    //_panV = ((Fl_Value_Slider *)w)->value();
     _panV = ((Fl_Roller *)w)->value();
     
 #ifdef NOISY       
-        std::cerr << "panV: " << _panV << std::endl;
+    std::cerr << "panV: " << _panV << std::endl;
 #endif
         
     MainWin *mw = (MainWin *)d;
-    //mw->m_slPanV->value(_panV);
     mw->m_rlPanV->value(_panV);
 
-    if (mw->m_chkLever->value())
+    _lever = mw->m_chkLever->value(); // HACK no callback for lever change so update frequently
+    if (_lever)
     {
         _panV = -_panV;
     }
@@ -770,7 +761,7 @@ int main(int argc, char** argv)
     
     onReset(nullptr,_window); // init camera to defaults [hack: force no save]
     
-    _window->loadSavedSettings();
+    _window->loadSavedSettings(); // TODO is this necessary? or preferred over each tab doing it?
     onStateChange();
 
     OKTOSAVE = true;
