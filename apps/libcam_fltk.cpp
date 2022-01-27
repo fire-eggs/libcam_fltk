@@ -17,6 +17,7 @@
 #include <FL/Fl_Roller.H>
 #include <FL/Fl_Spinner.H>
 #include <FL/Fl_Round_Button.H>
+
 #include "prefs.h"
 
 #include "core/libcamera_encoder.hpp"
@@ -47,11 +48,21 @@ bool _lever;     // needed for settings save
 // Inter-thread communication
 bool stateChange;
 bool doCapture;
+bool doTimelapse;
 
 int _captureW;
 int _captureH;
 bool _capturePNG;
 const char *_captureFolder;
+
+int _timelapseW;
+int _timelapseH;
+bool _timelapsePNG;
+const char *_timelapseFolder;
+unsigned long _timelapseStep;
+unsigned long _timelapseLimit;
+unsigned int _timelapseCount;
+
 
 extern void fire_proc_thread(int argc, char ** argv);
 bool OKTOSAVE;
@@ -291,6 +302,8 @@ public:
     Fl_Choice *m_cmbTLLenType;         // timelapse length "type"
     Fl_Group *m_tabTL;                 // the timelapse tab itself
     Fl_Spinner *m_spTLLenVal;          // timelapse length value [not framecount]
+    Fl_Choice *m_cmbTLSize;
+    Fl_Choice *m_cmbTLFormat;
 
     static const int MAGIC_Y = 30;
     // TODO "25" is font height? label height?
@@ -302,6 +315,7 @@ public:
 
         Fl_Tabs *tabs = new Fl_Tabs(10, MAGIC_Y, magicW, magicH);
         magicH -= 25;
+
         makeSettingsTab(magicW, magicH);
         makeZoomTab(magicW, magicH);
         makeCaptureTab(magicW, magicH);
@@ -347,9 +361,7 @@ public:
         _sharp = sharpVal;
         _contrast = contrastVal;
         _evComp = evCompVal;
-        
     }
-    
 
     Fl_Group *makeSettingsTab(int w, int h)
     {
@@ -493,6 +505,7 @@ public:
         // TODO check for valid folder
         int intervalChoice = setP->get("interval", 1);
         int lengthChoice = setP->get("length", 1);
+
         Fl_Group *o = new Fl_Group(10,MAGIC_Y+25,w,h, "TimeLapse");
         o->tooltip("Make timelapse");
 
@@ -556,21 +569,21 @@ public:
         sGroup->box(FL_ENGRAVED_FRAME);
         sGroup->align(Fl_Align(FL_ALIGN_TOP_LEFT));
 
-        Fl_Choice *cmbTLSize; // TODO move
-
+        Fl_Choice *cmbTLSize;
         cmbTLSize = new Fl_Choice(SET_X+10, MAGIC_Y+85, 150, 25, "Image Size:");
         cmbTLSize->down_box(FL_BORDER_BOX);
         cmbTLSize->align(Fl_Align(FL_ALIGN_TOP_LEFT));
         cmbTLSize->copy(menu_cmbSize);
         cmbTLSize->value(sizeChoice);
+        m_cmbTLSize = cmbTLSize;
 
-        Fl_Choice *cmbTLFormat; // TODO move
-
+        Fl_Choice *cmbTLFormat;
         cmbTLFormat = new Fl_Choice(SET_X+10, MAGIC_Y+140, 150, 25, "File Format:");
         cmbTLFormat->down_box(FL_BORDER_BOX);
         cmbTLFormat->align(Fl_Align(FL_ALIGN_TOP_LEFT));
         cmbTLFormat->copy(menu_cmbFormat);
         cmbTLFormat->value(formChoice);
+        m_cmbTLFormat = cmbTLFormat;
 
         inpTLFileNameDisplay= new Fl_Input(SET_X+10, MAGIC_Y+200, 200, 25, "Folder:");
         inpTLFileNameDisplay->align(Fl_Align(FL_ALIGN_TOP_LEFT));
@@ -645,6 +658,7 @@ public:
         commonZoom(this, _zoomChoice);
 
         // TODO fine control?
+
         o->end();
         return o;
     }
@@ -736,6 +750,7 @@ static void onZoomChange(Fl_Widget *w, void *d)
         _panV = -_panV;
         _panH = -_panH;
     }
+
     _lever = mw->m_chkLever->value(); // HACK no callback for lever change so update frequently
 
     onStateChange();
@@ -781,6 +796,24 @@ static void onPanV(Fl_Widget *w, void *d)
     onStateChange();
 }
 
+unsigned long intervalToMilliseconds(int intervalType)
+{
+    // TODO turn into an array like zoomVals ?
+
+    switch (intervalType)
+    {
+        case 0:
+            return 1;
+        case 1:
+            return 1000; // seconds
+        case 2:
+            return 60 * 1000; // minutes
+        case 3:
+            return 60 * 60 * 1000; // hours
+    }
+    return -1;
+}
+
 static void cbTimelapse(Fl_Widget *w, void *d)
 {
     MainWin *mw = static_cast<MainWin *>(d);
@@ -788,8 +821,8 @@ static void cbTimelapse(Fl_Widget *w, void *d)
 
     if (!btn->value())
     {
-        // TODO deactivate timelapse flag
-
+        // deactivate timelapse flag
+        doTimelapse = false;
         mw->m_tabTL->selection_color(FL_BACKGROUND_COLOR);
         return;
     }
@@ -820,11 +853,28 @@ static void cbTimelapse(Fl_Widget *w, void *d)
     else
         std::cerr << "   Run for " << lenval << " " << mw->m_cmbTLLenType->text() << std::endl;
 
-    // TODO Convert interval, length into milliseconds
+    // Convert interval, length into milliseconds
+    _timelapseStep = intervalStep * intervalToMilliseconds(intervalType);
+    if (framecount > 0)
+        _timelapseCount = framecount;
+    else
+    {
+        _timelapseCount = 0;
+        _timelapseLimit = lenval * intervalToMilliseconds(lenType);
+    }
 
-    // TODO get file settings
+    // get file settings
+    _timelapsePNG = mw->m_cmbTLFormat->value() == 1;
+    int sizeVal = mw->m_cmbTLSize->value();
+    _timelapseH = captureHVals[sizeVal];
+    _timelapseW = captureWVals[sizeVal];
+    _timelapseFolder = inpTLFileNameDisplay->value();
 
-    // TODO activate timelapse flag
+    // TODO check if _timelapseStep or _timelapseLimit are negative
+    // TODO check for all file settings being valid
+
+    // activate timelapse flag
+    doTimelapse = true;
 }
 
 MainWin* _window;
@@ -938,15 +988,12 @@ int main(int argc, char** argv)
     
     OKTOSAVE = false;
     
-//    sleep(1); // wait for camera to 'settle'
-    
     onReset(nullptr,_window); // init camera to defaults [hack: force no save]
     
     _window->loadSavedSettings(); // TODO is this necessary? or preferred over each tab doing it?
     onStateChange();
 
     OKTOSAVE = true;
-//    sleep(1); // wait for camera to 'settle'
         
     return Fl::run();   
 }
