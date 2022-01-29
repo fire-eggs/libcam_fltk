@@ -32,7 +32,9 @@ using libcamera::Stream;
 // brute-force inter-process communication.
 extern bool stateChange;
 extern bool doCapture;
+extern bool doTimelapse;
 
+// General camera settings
 extern bool _hflip; // state of user request for horizontal flip
 extern bool _vflip; // state of user request for vertical flip
 extern double _bright;
@@ -41,6 +43,7 @@ extern double _contrast;
 extern double _saturate;
 extern double _evComp;
 
+// Zoom and pan
 extern double _zoom;
 extern double _panH;
 extern double _panV;
@@ -48,16 +51,26 @@ extern double _panV;
 // the camera "app"
 LibcameraEncoder *_app;
 
+// Capture settings
 extern const char *_captureFolder;
 extern bool _capturePNG;
 extern int _captureH;
 extern int _captureW;
 
+// Timelapse settings
+extern int _timelapseW;
+extern int _timelapseH;
+extern bool _timelapsePNG;
+extern const char *_timelapseFolder;
+extern unsigned long _timelapseStep;
+extern unsigned long _timelapseLimit;
+extern unsigned int _timelapseCount;
+
 static std::string generate_filename(Options const *options)
 {
 	char filename[256];
 	//std::string folder = options->output; // sometimes "output" is used as a folder name
-	std::string folder = _captureFolder;
+	std::string folder = _captureFolder;  // TODO _timelapseFolder
 	if (!folder.empty() && folder.back() != '/')
 		folder += "/";
     
@@ -88,9 +101,9 @@ static void save_image(CompletedRequestPtr &payload, Stream *stream,
 	StreamInfo info = _app->GetStreamInfo(stream);
 	const std::vector<libcamera::Span<uint8_t>> mem = _app->Mmap(payload->buffers[stream]);
     
-    if (_capturePNG)
+  if (_capturePNG)
 		png_save(mem, info, filename, options);
-    else        
+  else        
 		jpeg_save(mem, info, payload->metadata, filename, _app->CameraId(), options);
 //	if (stream == _app->RawStream())
 //		dng_save(mem, info, payload->metadata, filename, app.CameraId(), options);
@@ -124,7 +137,64 @@ static void save_images(CompletedRequestPtr &payload)
 */    
 }
 
+static void captureImage()
+{
+  _app->StopCamera();
+  save_images(std::get<CompletedRequestPtr>(msg.payload));
+  _app->Teardown();
 
+  VideoOptions *newopt = _app->GetOptions();
+
+  // Horizontal and vertical flip implemented via transforms
+  newopt->transform = libcamera::Transform::Identity;
+  if (_vflip)
+      newopt->transform = libcamera::Transform::VFlip * newopt->transform;
+  if (_hflip)
+      newopt->transform = libcamera::Transform::HFlip * newopt->transform;
+      
+  newopt->brightness = _bright;
+  newopt->contrast   = _contrast;
+  newopt->saturation = _saturate;
+  newopt->sharpness  = _sharp;
+  newopt->ev         = _evComp;
+  
+  // TODO is pan/zoom reset?  if NOT, even necessary to re-establish settings?
+
+  _app->ConfigureVideo();
+  _app->StartEncoder();
+  _app->StartCamera();
+}
+
+static void switchToCapture()
+{
+  _app->StopCamera();
+  _app->StopEncoder();
+  _app->Teardown();
+
+  options->width  = _captureW;
+  options->height = _captureH;
+
+  _app->ConfigureStill( _capturePNG ? LibcameraApp::FLAG_STILL_BGR : LibcameraApp::FLAG_STILL_NONE ); // save to PNG needs BGR
+
+  _app->StartCamera();
+}
+
+static void switchToTimelapse()
+{
+  _app->StopCamera();
+  _app->StopEncoder();
+  _app->Teardown();
+
+  options->width  = _timelapseW;
+  options->height = _timelapseH;
+
+  _app->ConfigureStill( _timelapsePNG ? LibcameraApp::FLAG_STILL_BGR : 
+                                        LibcameraApp::FLAG_STILL_NONE ); // save to PNG needs BGR
+
+  _app->StartCamera();
+}
+
+// This is the "master loop" function.
 void* proc_func(void *p)
 {
 	VideoOptions *options = _app->GetOptions();
@@ -132,14 +202,12 @@ void* proc_func(void *p)
 	std::unique_ptr<Output> output = std::unique_ptr<Output>(Output::Create(options));
 	_app->SetEncodeOutputReadyCallback(std::bind(&Output::OutputReady, output.get(), _1, _2, _3, _4));
 
-    options->output = "/home/pi/Pictures/";
+  options->output = "/home/pi/Pictures/";  // TODO necessary?
     
 	_app->OpenCamera();
-	_app->ConfigureVideo();
+	_app->ConfigureVideo();   // TODO should this be ConfigurePreview instead?
 	_app->StartEncoder();
 	_app->StartCamera();
-
-    //bool inCapture = false;
     
 	for (unsigned int count = 0; ; count++)
 	{
@@ -149,23 +217,14 @@ void* proc_func(void *p)
 		else if (msg.type != LibcameraEncoder::MsgType::RequestComplete)
 			throw std::runtime_error("unrecognised message!");
 			
+    bool timelapse_timeout = false;
+    // true if doTimelapse is true AND clock has reached next timelapse trigger
+    
         if (_app->VideoStream())
         {
             if (doCapture) // user has requested still capture
             {
-                _app->StopCamera();
-                _app->StopEncoder();
-                _app->Teardown();
-                
-                options->width  = _captureW;
-                options->height = _captureH;
-                
-                _app->ConfigureStill( _capturePNG ? LibcameraApp::FLAG_STILL_BGR : LibcameraApp::FLAG_STILL_NONE ); // save to PNG needs BGR
-                
-//                _app->configuration_->at(0).size.width = _captureW;
-//                _app->configuration_->at(0).size.height = _captureH;
-                
-                _app->StartCamera();
+                switchToCapture();
             }
             else if (stateChange) // user has made settings change
             {
@@ -198,6 +257,10 @@ void* proc_func(void *p)
                 
                 stateChange = false;
             }
+            else if (timelapse_timeout)
+            {
+                switchToTimelapse();
+            }
             else
             {
                 // normal video stream processing
@@ -208,29 +271,12 @@ void* proc_func(void *p)
         }
         else if (_app->StillStream()) // still capture complete
         {
-            doCapture = false;
-            _app->StopCamera();
-            save_images(std::get<CompletedRequestPtr>(msg.payload));
-            _app->Teardown();
-
-                VideoOptions *newopt = _app->GetOptions();
-
-                // Horizontal and vertical flip implemented via transforms
-                newopt->transform = libcamera::Transform::Identity;
-                if (_vflip)
-                    newopt->transform = libcamera::Transform::VFlip * newopt->transform;
-                if (_hflip)
-                    newopt->transform = libcamera::Transform::HFlip * newopt->transform;
-                    
-                newopt->brightness = _bright;
-                newopt->contrast   = _contrast;
-                newopt->saturation = _saturate;
-                newopt->sharpness  = _sharp;
-                newopt->ev         = _evComp;
-                
-                _app->ConfigureVideo();
-                _app->StartEncoder();
-                _app->StartCamera();
+          if (timelapse_timeout)
+              ; // TODO establish next timeout trigger
+              
+          doCapture = false;
+          timelapse_timeout = false;
+          captureImage();
         }
 /*        
         
@@ -315,7 +361,7 @@ void fire_proc_thread(int argc, char ** argv)
     _app = new LibcameraEncoder();
     VideoOptions *options = _app->GetOptions();
     if (!options->Parse(argc, argv))
-	return;  // TODO some sort of error indication
+	    return;  // TODO some sort of error indication
     
     pthread_create(&proc_thread, 0, proc_func, nullptr);
     pthread_detach(proc_thread);
