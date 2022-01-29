@@ -95,10 +95,12 @@ static void event_loop(LibcameraEncoder &app)
 			app.StopEncoder();
             app.Teardown();
 		    VideoOptions *newopt = app.GetOptions();
+/*            HACK
             newopt->vflip_ = !newopt->vflip_;
             newopt->transform = libcamera::Transform::Identity;
             if (newopt->vflip_)
                 newopt->transform = libcamera::Transform::VFlip * newopt->transform;
+*/
             app.ConfigureVideo();
 	        app.StartEncoder();
             app.StartCamera();
