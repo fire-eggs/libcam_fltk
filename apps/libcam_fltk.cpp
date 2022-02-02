@@ -5,18 +5,7 @@
 #pragma ide diagnostic ignored "modernize-use-auto"
 #endif
 
-#include <iostream>
-
-#include <FL/Fl.H>
-#include <FL/Fl_Double_Window.H>
-#include <FL/Fl_Menu_Bar.H>
-#include <FL/Fl_Menu_Item.H>
-#include <FL/Fl_File_Chooser.H>
-#include <FL/Fl_Tabs.H>
-#include <FL/Fl_Value_Slider.H>
-#include <FL/Fl_Roller.H>
-#include <FL/Fl_Spinner.H>
-#include <FL/Fl_Round_Button.H>
+#include "mainwin.h"
 
 #include "prefs.h"
 
@@ -25,7 +14,7 @@
 #include "libcamera/logging.h"
 #include <libcamera/transform.h>
 
-Prefs *_prefs;
+Prefs *_prefs; // TODO HACK
 Fl_Menu_Bar *_menu;
 char *_loadfile;
 
@@ -48,21 +37,11 @@ bool _lever;     // needed for settings save
 // Inter-thread communication
 bool stateChange;
 bool doCapture;
-bool doTimelapse;
 
 int _captureW;
 int _captureH;
 bool _capturePNG;
 const char *_captureFolder;
-
-int _timelapseW;
-int _timelapseH;
-bool _timelapsePNG;
-const char *_timelapseFolder;
-unsigned long _timelapseStep;
-unsigned long _timelapseLimit;
-unsigned int _timelapseCount;
-
 
 extern void fire_proc_thread(int argc, char ** argv);
 bool OKTOSAVE;
@@ -73,7 +52,6 @@ static void onZoomReset(Fl_Widget *, void *);
 static void onZoomChange(Fl_Widget *w, void *d);
 static void onPanH(Fl_Widget *w, void *d);
 static void onPanV(Fl_Widget *w, void *d);
-static void cbTimelapse(Fl_Widget *w, void *d);
 
 class MainWin;
 static void commonZoom(MainWin *mw, int zoomdex);
@@ -192,9 +170,8 @@ static void onVFlip(Fl_Widget*w, void *)
 
 // HACK made static for access via callback
 static Fl_Input* inpFileNameDisplay = nullptr;
-static Fl_Input* inpTLFileNameDisplay = nullptr;
 
-static void folderPick(Fl_Input *inp)
+void folderPick(Fl_Input *inp)
 {
     // TODO initialize to existing folder
     // TODO native dialog
@@ -217,18 +194,12 @@ static void capFolderPick(Fl_Widget* w, void *)
     folderPick(inpFileNameDisplay);
 }
 
-static void capTLFolderPick(Fl_Widget* w, void *)
-{
-    // TODO pass as userdata
-    folderPick(inpTLFileNameDisplay);
-}
-
 #define KBR_UPD_PREVIEW 1001
 static int captureWVals[] = {640,1024,1280,1920,2272,3072,4056};
 static int captureHVals[]  = {480,768,960,1080,1704,2304,3040};
 static double zoomVals[] = {1.0, 0.8, 2.0/3.0, 0.5, 0.4, 1.0/3.0, 0.25, 0.2 };
 
-Fl_Menu_Item menu_cmbSize[] =
+static Fl_Menu_Item menu_cmbSize[] =
         {
                 {" 640 x  480", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
                 {"1024 x  768", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
@@ -240,7 +211,7 @@ Fl_Menu_Item menu_cmbSize[] =
                 {0,     0, 0, 0, 0,                      0, 0,  0, 0}
         };
 
-Fl_Menu_Item menu_cmbFormat[] =
+static Fl_Menu_Item menu_cmbFormat[] =
         {
                 {"JPG", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
                 {"PNG", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
@@ -260,55 +231,11 @@ Fl_Menu_Item menu_cmbZoom[] =
                 {0,     0, 0, 0, 0,                      0, 0,  0, 0}
         };
 
-Fl_Menu_Item menu_cmbTLType[] =
-        {
-                {"Milliseconds", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-                {"Seconds", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-                {"Minutes", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-                {"Hours", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-                {0,     0, 0, 0, 0,                      0, 0,  0, 0}
-        };
 
 static void onCapture(Fl_Widget *,void*); // forward decl
         
-class MainWin : public Fl_Double_Window
-{
-public:
 
-    // Camera settings
-    Fl_Value_Slider *m_slBright;
-    Fl_Value_Slider *m_slContrast;
-    Fl_Value_Slider *m_slSaturate;
-    Fl_Value_Slider *m_slSharp;
-    Fl_Value_Slider *m_slevComp;
-    Fl_Check_Button *m_chkHflip;
-    Fl_Check_Button *m_chkVflip;
-
-    // Capture settings
-    Fl_Choice *cmbSize = nullptr;
-    Fl_Choice *cmbFormat = nullptr;
-
-    // Zoom settings
-    Fl_Roller *m_rlPanH;
-    Fl_Roller *m_rlPanV;
-    Fl_Choice *cmbZoom = nullptr;
-    Fl_Check_Button *m_chkLever;
-
-    // Timelapse settings
-    Fl_Spinner *m_spTLDblVal;          // timelapse interval step
-    Fl_Spinner *m_spTLFrameCount;      // timelapse length frame count
-    Fl_Choice *m_cmbTLTimeType;        // timelapse interval "type"
-    Fl_Round_Button *m_rdTLFrameCount; // is timelapse length frames or time?
-    Fl_Choice *m_cmbTLLenType;         // timelapse length "type"
-    Fl_Group *m_tabTL;                 // the timelapse tab itself
-    Fl_Spinner *m_spTLLenVal;          // timelapse length value [not framecount]
-    Fl_Choice *m_cmbTLSize;
-    Fl_Choice *m_cmbTLFormat;
-
-    static const int MAGIC_Y = 30;
-    // TODO "25" is font height? label height?
-
-    MainWin(int x, int y, int w, int h) : Fl_Double_Window(x, y, w,h)
+MainWin::MainWin(int x, int y, int w, int h) : Fl_Double_Window(x, y, w,h)
     {
         int magicW = w - 20;
         int magicH = h - 50;
@@ -324,9 +251,12 @@ public:
         tabs->end();
 
         resizable(this);
+
+        m_captureHVals = captureHVals;  // TODO hack
+        m_captureWVals = captureWVals;  // TODO hack
     }
 
-    void loadSavedSettings()
+    void MainWin::loadSavedSettings()
     {
         Prefs *setP = _prefs->getSubPrefs("camera");
 
@@ -363,7 +293,7 @@ public:
         _evComp = evCompVal;
     }
 
-    Fl_Group *makeSettingsTab(int w, int h)
+    Fl_Group *MainWin::makeSettingsTab(int w, int h)
     {
         Prefs *setP = _prefs->getSubPrefs("camera");
 
@@ -431,7 +361,7 @@ public:
         return o;
     }
     
-    Fl_Group *makeCaptureTab(int w, int h)
+    Fl_Group *MainWin::makeCaptureTab(int w, int h)
     {
         Prefs *setP = _prefs->getSubPrefs("capture");
         int sizeChoice = setP->get("size", 1);
@@ -484,7 +414,7 @@ public:
         return o;
     }
 
-    Fl_Group *makeVideoTab(int w, int h)
+    Fl_Group *MainWin::makeVideoTab(int w, int h)
     {
         Fl_Group *o = new Fl_Group(10,MAGIC_Y+25,w,h, "Video");
         o->tooltip("Video Capture");
@@ -493,117 +423,7 @@ public:
         return o;
     }
 
-    Fl_Group *makeTimelapseTab(int w, int h)
-    {
-        // TODO create control for size/format/location/etc manipulation
-
-        Prefs *setP = _prefs->getSubPrefs("timelapse");
-        int sizeChoice = setP->get("size", 1);
-        int formChoice = setP->get("format", 0);
-        char * foldBuffer;
-        setP->_prefs->get("folder", foldBuffer, "/home/pi/Pictures");
-        // TODO check for valid folder
-        int intervalChoice = setP->get("interval", 1);
-        int lengthChoice = setP->get("length", 1);
-
-        Fl_Group *o = new Fl_Group(10,MAGIC_Y+25,w,h, "TimeLapse");
-        o->tooltip("Make timelapse");
-
-        Fl_Group *g1 = new Fl_Group(20, MAGIC_Y + 60, w / 2 - 30, 250, "Length Settings");
-        g1->box(FL_ENGRAVED_FRAME);
-        g1->align(Fl_Align(FL_ALIGN_TOP_LEFT));
-
-        Fl_Spinner *spinDblVal = new Fl_Spinner(30, MAGIC_Y + 85, 75, 25);
-        spinDblVal->label("Interval:");
-        spinDblVal->align(Fl_Align(FL_ALIGN_TOP_LEFT));
-        spinDblVal->type(1); // FL_FLOAT
-        spinDblVal->minimum(1);
-        spinDblVal->maximum(500);
-        spinDblVal->step(0.5);
-        m_spTLDblVal = spinDblVal;
-
-        m_cmbTLTimeType = new Fl_Choice(110, MAGIC_Y+85, 140, 25);
-        m_cmbTLTimeType->down_box(FL_BORDER_BOX);
-        m_cmbTLTimeType->menu(menu_cmbTLType);
-        m_cmbTLTimeType->value(intervalChoice);
-
-        Fl_Round_Button *rdFrameCount = new Fl_Round_Button(25, MAGIC_Y+120, 100, 25, "Number of frames");
-        rdFrameCount->type(102);
-        rdFrameCount->down_box(FL_ROUND_DOWN_BOX);
-        rdFrameCount->value(1);
-        m_rdTLFrameCount = rdFrameCount;
-
-        Fl_Spinner *spinFrameCount = new Fl_Spinner(40, MAGIC_Y+ 150, 75, 25);
-        spinFrameCount->minimum(1);
-        spinFrameCount->maximum(10000);
-        spinFrameCount->value(1);
-        spinFrameCount->step(1);
-        m_spTLFrameCount = spinFrameCount;
-
-        Fl_Round_Button *rdMaxTime = new Fl_Round_Button(25, MAGIC_Y+180, 100, 25, "Length of time");
-        rdMaxTime->type(102);
-        rdMaxTime->down_box(FL_ROUND_DOWN_BOX);
-
-        Fl_Spinner *spinLengthVal = new Fl_Spinner(40, MAGIC_Y + 210, 75, 25);
-        spinLengthVal->type(1); // FL_FLOAT
-        spinLengthVal->minimum(1);
-        spinLengthVal->maximum(500);
-        spinLengthVal->step(0.5);
-        m_spTLLenVal = spinLengthVal;
-
-        m_cmbTLLenType = new Fl_Choice(120, MAGIC_Y+210, 140, 25);
-        m_cmbTLLenType->down_box(FL_BORDER_BOX);
-        m_cmbTLLenType->menu(menu_cmbTLType);
-        m_cmbTLLenType->value(lengthChoice);
-
-        g1->end();
-
-        // TODO disable spinFrameCount, spinLengthVal, cmbTLTimeType as radiobuttons dictate
-
-        //************************************************************************************
-        // image settings
-
-        int SET_X = w / 2;
-
-        Fl_Group *sGroup = new Fl_Group(SET_X, MAGIC_Y+60, 275, 250, "Image Settings");
-        sGroup->box(FL_ENGRAVED_FRAME);
-        sGroup->align(Fl_Align(FL_ALIGN_TOP_LEFT));
-
-        Fl_Choice *cmbTLSize;
-        cmbTLSize = new Fl_Choice(SET_X+10, MAGIC_Y+85, 150, 25, "Image Size:");
-        cmbTLSize->down_box(FL_BORDER_BOX);
-        cmbTLSize->align(Fl_Align(FL_ALIGN_TOP_LEFT));
-        cmbTLSize->copy(menu_cmbSize);
-        cmbTLSize->value(sizeChoice);
-        m_cmbTLSize = cmbTLSize;
-
-        Fl_Choice *cmbTLFormat;
-        cmbTLFormat = new Fl_Choice(SET_X+10, MAGIC_Y+140, 150, 25, "File Format:");
-        cmbTLFormat->down_box(FL_BORDER_BOX);
-        cmbTLFormat->align(Fl_Align(FL_ALIGN_TOP_LEFT));
-        cmbTLFormat->copy(menu_cmbFormat);
-        cmbTLFormat->value(formChoice);
-        m_cmbTLFormat = cmbTLFormat;
-
-        inpTLFileNameDisplay= new Fl_Input(SET_X+10, MAGIC_Y+200, 200, 25, "Folder:");
-        inpTLFileNameDisplay->align(Fl_Align(FL_ALIGN_TOP_LEFT));
-        inpTLFileNameDisplay->value(foldBuffer);
-        if (foldBuffer) free(foldBuffer);
-        inpTLFileNameDisplay->readonly(true);
-
-        Fl_Button* btn = new Fl_Button(SET_X+215, MAGIC_Y+200, 50, 25, "Pick");
-        btn->callback(capTLFolderPick);
-
-        sGroup->end();
-
-        Fl_Light_Button *btnDoit = new Fl_Light_Button(35, MAGIC_Y+325, 150, 25, "Run Timelapse");
-        btnDoit->callback(cbTimelapse, this);
-
-        o->end();
-        return o;
-    }
-
-    Fl_Group *makeZoomTab(int w, int h)
+    Fl_Group *MainWin::makeZoomTab(int w, int h)
     {
         // TODO restore saved values
         Prefs *setP = _prefs->getSubPrefs("camera");
@@ -662,11 +482,6 @@ public:
         o->end();
         return o;
     }
-
-    void resize(int, int, int, int) override;
-    void save_capture_settings();
-
-}; // end class MainWin
 
 static void onReset(Fl_Widget *w, void *d)
 {
@@ -812,69 +627,6 @@ unsigned long intervalToMilliseconds(int intervalType)
             return 60 * 60 * 1000; // hours
     }
     return -1;
-}
-
-static void cbTimelapse(Fl_Widget *w, void *d)
-{
-    MainWin *mw = static_cast<MainWin *>(d);
-    Fl_Light_Button *btn = static_cast<Fl_Light_Button *>(w);
-
-    if (!btn->value())
-    {
-        // deactivate timelapse flag
-        doTimelapse = false;
-        mw->m_tabTL->selection_color(FL_BACKGROUND_COLOR);
-        return;
-    }
-
-    mw->m_tabTL->selection_color(FL_YELLOW);
-
-    int intervalType = mw->m_cmbTLTimeType->value();
-    double intervalStep = mw->m_spTLDblVal->value();
-
-    // don't attempt fractions of milliseconds
-    if (intervalType == 0)
-        intervalStep = (int)intervalStep;
-
-    int framecount = -1;
-    int lenType = -1;
-    double lenval = -1.0;
-    if (mw->m_rdTLFrameCount->value())
-        framecount = mw->m_spTLFrameCount->value();
-    else
-    {
-        lenType = mw->m_cmbTLLenType->value();
-        lenval = mw->m_spTLLenVal->value();
-    }
-
-    std::cerr << "Timelapse step: " << intervalStep << " " << mw->m_cmbTLTimeType->text() << std::endl;
-    if (framecount > 0)
-        std::cerr << "   Run for " << framecount << " frames" << std::endl;
-    else
-        std::cerr << "   Run for " << lenval << " " << mw->m_cmbTLLenType->text() << std::endl;
-
-    // Convert interval, length into milliseconds
-    _timelapseStep = intervalStep * intervalToMilliseconds(intervalType);
-    if (framecount > 0)
-        _timelapseCount = framecount;
-    else
-    {
-        _timelapseCount = 0;
-        _timelapseLimit = lenval * intervalToMilliseconds(lenType);
-    }
-
-    // get file settings
-    _timelapsePNG = mw->m_cmbTLFormat->value() == 1;
-    int sizeVal = mw->m_cmbTLSize->value();
-    _timelapseH = captureHVals[sizeVal];
-    _timelapseW = captureWVals[sizeVal];
-    _timelapseFolder = inpTLFileNameDisplay->value();
-
-    // TODO check if _timelapseStep or _timelapseLimit are negative
-    // TODO check for all file settings being valid
-
-    // activate timelapse flag
-    doTimelapse = true;
 }
 
 MainWin* _window;
