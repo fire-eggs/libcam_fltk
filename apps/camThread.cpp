@@ -137,10 +137,10 @@ static void save_images(CompletedRequestPtr &payload)
 */    
 }
 
-static void captureImage()
+static void captureImage(LibcameraEncoder::Msg *msg)
 {
   _app->StopCamera();
-  save_images(std::get<CompletedRequestPtr>(msg.payload));
+  save_images(std::get<CompletedRequestPtr>(msg->payload));
   _app->Teardown();
 
   VideoOptions *newopt = _app->GetOptions();
@@ -165,7 +165,7 @@ static void captureImage()
   _app->StartCamera();
 }
 
-static void switchToCapture()
+static void switchToCapture(VideoOptions *options)
 {
   _app->StopCamera();
   _app->StopEncoder();
@@ -179,7 +179,7 @@ static void switchToCapture()
   _app->StartCamera();
 }
 
-static void switchToTimelapse()
+static void switchToTimelapse(VideoOptions *options)
 {
   _app->StopCamera();
   _app->StopEncoder();
@@ -208,23 +208,56 @@ void* proc_func(void *p)
 	_app->ConfigureVideo();   // TODO should this be ConfigurePreview instead?
 	_app->StartEncoder();
 	_app->StartCamera();
+
+    bool activeTimelapse = false;
+    auto timelapseStart = std::chrono::high_resolution_clock::now();
+    unsigned int timelapseFrameCount = 0;
+    std::chrono::milliseconds timelapseStep;
     
-	for (unsigned int count = 0; ; count++)
-	{
-		LibcameraEncoder::Msg msg = _app->Wait();
-		if (msg.type == LibcameraEncoder::MsgType::Quit)
-			return nullptr;
-		else if (msg.type != LibcameraEncoder::MsgType::RequestComplete)
-			throw std::runtime_error("unrecognised message!");
-			
-    bool timelapse_timeout = false;
-    // true if doTimelapse is true AND clock has reached next timelapse trigger
-    
+    for (unsigned int count = 0; ; count++)
+    {
+        LibcameraEncoder::Msg msg = _app->Wait();
+        if (msg.type == LibcameraEncoder::MsgType::Quit)
+            return nullptr;
+        else if (msg.type != LibcameraEncoder::MsgType::RequestComplete)
+            throw std::runtime_error("unrecognised message!");    // TODO error recovery
+
+        if (doTimelapse && !activeTimelapse)
+        {
+std::cerr << "Activate Timelapse " << std::endl;
+            
+            // first recognition of timelapse starting
+            timelapseStart = std::chrono::high_resolution_clock::now();
+            timelapseStep  = std::chrono::milliseconds(_timelapseStep);
+            activeTimelapse = true;
+            timelapseFrameCount = 0;
+        }
+        
+        // Don't continue the timelapse if the limit has been reached
+        bool timelapseTrigger = false;
+        if (activeTimelapse)
+        {
+            // have we hit a timelapse trigger?
+            auto now = std::chrono::high_resolution_clock::now();
+            timelapseTrigger = activeTimelapse && (now - timelapseStart) > timelapseStep;
+            
+            if (_timelapseCount < timelapseFrameCount)
+            {
+std::cerr << "Timelapse frame count reached; ended " << std::endl;
+                activeTimelapse = false;
+                timelapseTrigger = false;
+                doTimelapse = false;
+            }
+            
+            // TODO how to inform the GUI that the timelapse has ended?
+            // TODO check against _timelapseLimit
+        }
+        
         if (_app->VideoStream())
         {
             if (doCapture) // user has requested still capture
             {
-                switchToCapture();
+                switchToCapture(options);
             }
             else if (stateChange) // user has made settings change
             {
@@ -257,9 +290,11 @@ void* proc_func(void *p)
                 
                 stateChange = false;
             }
-            else if (timelapse_timeout)
+            else if (timelapseTrigger)
             {
-                switchToTimelapse();
+std::cerr << "Timelapse triggered " << std::endl;
+                timelapseStart = std::chrono::high_resolution_clock::now(); // for next timelapse interval
+                switchToTimelapse(options);
             }
             else
             {
@@ -271,12 +306,11 @@ void* proc_func(void *p)
         }
         else if (_app->StillStream()) // still capture complete
         {
-          if (timelapse_timeout)
-              ; // TODO establish next timeout trigger
-              
-          doCapture = false;
-          timelapse_timeout = false;
-          captureImage();
+std::cerr << "Capture Image " << std::endl;
+            timelapseFrameCount++;
+            doCapture = false;
+            timelapseTrigger = false;
+            captureImage(&msg);
         }
 /*        
         
@@ -361,7 +395,7 @@ void fire_proc_thread(int argc, char ** argv)
     _app = new LibcameraEncoder();
     VideoOptions *options = _app->GetOptions();
     if (!options->Parse(argc, argv))
-	    return;  // TODO some sort of error indication
+	return;  // TODO some sort of error indication
     
     pthread_create(&proc_thread, 0, proc_func, nullptr);
     pthread_detach(proc_thread);

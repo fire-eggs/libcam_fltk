@@ -195,6 +195,7 @@ static void capFolderPick(Fl_Widget* w, void *)
 }
 
 #define KBR_UPD_PREVIEW 1001
+
 static int captureWVals[] = {640,1024,1280,1920,2272,3072,4056};
 static int captureHVals[]  = {480,768,960,1080,1704,2304,3040};
 static double zoomVals[] = {1.0, 0.8, 2.0/3.0, 0.5, 0.4, 1.0/3.0, 0.25, 0.2 };
