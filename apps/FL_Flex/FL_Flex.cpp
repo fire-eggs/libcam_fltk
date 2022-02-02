@@ -37,7 +37,7 @@ void Fl_Flex::resizeRow(int x, int y, int w, int h)
   int padW = w - margin * 2;
 
   // Calculate total width minus padding
-  for(size_t i = 1; i < cc; i++)
+  for(int i = 1; i < cc; i++)
   {
     padW -= 5;
   }
@@ -47,7 +47,7 @@ void Fl_Flex::resizeRow(int x, int y, int w, int h)
 
   // Precalculate remaining size to resize to
   // Calculate non-resizable width total
-  for(size_t i = 0; i < cc; i++)
+  for(int i = 0; i < cc; i++)
   {
     Fl_Widget *c = child(i);
 
@@ -58,7 +58,7 @@ void Fl_Flex::resizeRow(int x, int y, int w, int h)
   }
 
   // Set children to shared width of remaining
-  for(size_t i = 0; i < cc; i++)
+  for(int i = 0; i < cc; i++)
   {
     Fl_Widget *c = child(i);
 
@@ -81,7 +81,7 @@ void Fl_Flex::resizeCol(int x, int y, int w, int h)
   int padH = h - margin * 2;
 
   // Calculate total height minus padding
-  for(size_t i = 1; i < cc; i++)
+  for(int i = 1; i < cc; i++)
   {
     padH -= pad;
   }
@@ -91,7 +91,7 @@ void Fl_Flex::resizeCol(int x, int y, int w, int h)
 
   // Precalculate remaining size to resize to
   // Calculate non-resizable height total
-  for(size_t i = 0; i < cc; i++)
+  for(int i = 0; i < cc; i++)
   {
     Fl_Widget *c = child(i);
 
@@ -102,7 +102,7 @@ void Fl_Flex::resizeCol(int x, int y, int w, int h)
   }
 
   // Set children to shared width of remaining
-  for(size_t i = 0; i < cc; i++)
+  for(int i = 0; i < cc; i++)
   {
     Fl_Widget *c = child(i);
 

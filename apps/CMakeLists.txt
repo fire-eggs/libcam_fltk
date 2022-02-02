@@ -13,7 +13,7 @@ add_executable(libcam_v libcam_v.cpp)
 target_link_libraries(libcam_v libcamera_app encoders outputs)
 
 project(libcam_fltk)
-add_executable(libcam_fltk libcam_fltk.cpp camThread.cpp)
+add_executable(libcam_fltk libcam_fltk.cpp camThread.cpp timelapse.cpp FL_Flex/FL_Flex.cpp)
 target_link_libraries(libcam_fltk libcamera_app encoders outputs fltk dl Xext m fontconfig Xrender Xcursor Xfixes Xinerama Xft)
 
 project(libcamera-hello)
