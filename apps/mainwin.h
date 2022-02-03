@@ -49,6 +49,7 @@ public:
     Fl_Spinner *m_spTLFrameCount;      // timelapse length frame count
     Fl_Choice *m_cmbTLTimeType;        // timelapse interval "type"
     Fl_Round_Button *m_rdTLFrameCount; // is timelapse length frames or time?
+    Fl_Round_Button *m_rdTLLength;     // ditto
     Fl_Choice *m_cmbTLLenType;         // timelapse length "type"
     Fl_Group *m_tabTL;                 // the timelapse tab itself
     Fl_Spinner *m_spTLLenVal;          // timelapse length value [not framecount]
@@ -74,6 +75,7 @@ public:
 
     void loadSavedSettings();
     void save_capture_settings();
+    void save_timelapse_settings();
 
 public:
     int *m_captureWVals;

@@ -19,9 +19,9 @@ unsigned int _timelapseCount;
 extern Prefs *_prefs;
 Fl_Menu_Item menu_cmbTLType[] =
         {
-                {"Milliseconds", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-                {"Seconds", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-                {"Minutes", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+                {"Milliseconds", 0, nullptr, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+                {"Seconds", 0, nullptr, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+                {"Minutes", 0, nullptr, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
                 {"Hours", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
                 {0,     0, 0, 0, 0,                      0, 0,  0, 0}
         };
@@ -52,6 +52,18 @@ static void capTLFolderPick(Fl_Widget* w, void *d)
 {
     MainWin *mw = static_cast<MainWin *>(d);
     folderPick(mw->inpTLFileNameDisplay);
+}
+
+static void cbRadio(Fl_Widget *w, void *d)
+{
+    // Fl_Flex uses FL_Group to contain rows/columns. This breaks radio button
+    // behavior when they are in different rows/columns.
+
+    MainWin *mw = static_cast<MainWin *>(d);
+    if (w == mw->m_rdTLLength)
+        mw->m_rdTLFrameCount->value(0);
+    else
+        mw->m_rdTLLength->value(0);
 }
 
 static void cbTimelapse(Fl_Widget *w, void *d)
@@ -113,6 +125,8 @@ static void cbTimelapse(Fl_Widget *w, void *d)
     // TODO check if _timelapseStep or _timelapseLimit are negative
     // TODO check for all file settings being valid
 
+    mw->save_timelapse_settings();
+    
     // activate timelapse flag
     doTimelapse = true;
 }
@@ -121,8 +135,12 @@ void MainWin::leftTimelapse(Fl_Flex *col)
 {
     Prefs *setP = _prefs->getSubPrefs("timelapse");
 
-    int intervalChoice = setP->get("interval", 1);
-    int lengthChoice = setP->get("length", 1);
+    int intervalChoice = setP->get("intervalType", 1);
+    int lengthChoice = setP->get("lengthType", 1);
+    int frameCount = setP->get("frameCount", 1);
+    int limitOnFrames = setP->get("frameLimit", 1);
+    double intervalVal = setP->get("interval", 1.0);
+    double lengthVal   = setP->get("length",   1.0);   
 
     Fl_Box *b = new Fl_Box(0, 0, 0, 0, "Length Settings");
     b->align(FL_ALIGN_INSIDE | FL_ALIGN_TOP_LEFT);
@@ -139,6 +157,7 @@ void MainWin::leftTimelapse(Fl_Flex *col)
         spinDblVal->minimum(1);
         spinDblVal->maximum(500);
         spinDblVal->step(0.5);
+        spinDblVal->value(intervalVal);
         m_spTLDblVal = spinDblVal;
 
         m_cmbTLTimeType = new Fl_Choice(0, 0, 0, 0);
@@ -153,7 +172,8 @@ void MainWin::leftTimelapse(Fl_Flex *col)
     Fl_Round_Button *rdFrameCount = new Fl_Round_Button(0,0,0,0, "Number of frames");
     rdFrameCount->type(102);
     rdFrameCount->down_box(FL_ROUND_DOWN_BOX);
-    rdFrameCount->value(1);
+    rdFrameCount->callback(cbRadio, this);
+    if (limitOnFrames) rdFrameCount->value(1);
     m_rdTLFrameCount = rdFrameCount;
     row2->end();
 
@@ -164,7 +184,7 @@ void MainWin::leftTimelapse(Fl_Flex *col)
         Fl_Spinner *spinFrameCount = new Fl_Spinner(0, 0, 0, 0);
         spinFrameCount->minimum(1);
         spinFrameCount->maximum(10000);
-        spinFrameCount->value(1);
+        spinFrameCount->value(frameCount);
         spinFrameCount->step(1);
         m_spTLFrameCount = spinFrameCount;
         row3->end();
@@ -176,6 +196,9 @@ void MainWin::leftTimelapse(Fl_Flex *col)
     Fl_Round_Button *rdMaxTime = new Fl_Round_Button(0,0,0,0, "Length of time");
     rdMaxTime->type(102);
     rdMaxTime->down_box(FL_ROUND_DOWN_BOX);
+    if (!limitOnFrames) rdMaxTime->value(1);
+    rdMaxTime->callback(cbRadio, this);
+    m_rdTLLength = rdMaxTime;
     row4->end();
 
     Fl_Flex *row5 = new Fl_Flex(Fl_Flex::ROW);
@@ -187,6 +210,7 @@ void MainWin::leftTimelapse(Fl_Flex *col)
         spinLengthVal->minimum(1);
         spinLengthVal->maximum(500);
         spinLengthVal->step(0.5);
+        spinLengthVal->value(lengthVal);
         m_spTLLenVal = spinLengthVal;
 
         m_cmbTLLenType = new Fl_Choice(0, 0, 0, 0);
@@ -258,7 +282,7 @@ void MainWin::rightTimelapse(Fl_Flex *col)
         inpTLFileNameDisplay->readonly(true);
 
         Fl_Button *btn = new Fl_Button(0,0,0,0, "Pick");
-        btn->callback(capTLFolderPick);
+        btn->callback(capTLFolderPick, this);
         row4->end();
         row4->setSize(btn,50);
     }
@@ -295,4 +319,24 @@ Fl_Group *MainWin::makeTimelapseTab(int w, int h)
     o->end();
 
     return o;
+}
+
+void MainWin::save_timelapse_settings()
+{
+    Prefs *setP = _prefs->getSubPrefs("timelapse");
+    
+    setP->set("size", m_cmbTLSize->value());
+    setP->set("format", m_cmbTLFormat->value());
+    const char *val = inpTLFileNameDisplay->value();
+    setP->_prefs->set("folder", val);
+    
+    setP->set("frameCount", m_spTLFrameCount->value());
+    setP->set("intervalType", m_cmbTLTimeType->value());
+    setP->set("lengthType", m_cmbTLLenType->value());
+    setP->set("frameLimit", m_rdTLFrameCount->value());
+
+    setP->set("length",   m_spTLLenVal->value());
+    setP->set("interval", m_spTLDblVal->value());
+    
+    setP->_prefs->flush();
 }

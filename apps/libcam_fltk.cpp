@@ -426,12 +426,12 @@ MainWin::MainWin(int x, int y, int w, int h) : Fl_Double_Window(x, y, w,h)
 
     Fl_Group *MainWin::makeZoomTab(int w, int h)
     {
-        // TODO restore saved values
+        // Restore saved values
         Prefs *setP = _prefs->getSubPrefs("camera");
         _zoomChoice  = setP->get("zoom", 0);
         double panHval  = setP->get("panh",   0.0);
         double panVval  = setP->get("panv",   0.0);
-        _lever = setP->get("lever", false);
+        _lever = (bool)setP->get("lever", false);
 
         Fl_Group *o = new Fl_Group(10,MAGIC_Y+25,w,h, "Zoom");
         o->tooltip("Adjust dynamic zoom");
@@ -512,18 +512,19 @@ static void onZoomReset(Fl_Widget *, void *d)
 {
         MainWin *mw = (MainWin *)d;
         _zoom = 1.0;
-        _panH = 0.0;
-        _panV = 0.0;
-        mw->cmbZoom->value(0);
-        //mw->m_slPanH->value(_panH);
-        //mw->m_slPanV->value(_panV);
+        _zoomChoice = 0;
+        _panH = +0.0;
+        _panV = +0.0;
+        _lever = false;
+
+        mw->m_chkLever->value(_lever);
+        mw->cmbZoom->value(_zoomChoice);
         mw->m_rlPanH->value(_panH);
         mw->m_rlPanV->value(_panV);
-        //mw->m_slPanH ->deactivate();
-        //mw->m_slPanV ->deactivate();
         mw->m_rlPanH ->deactivate();
         mw->m_rlPanV ->deactivate();
-        onStateChange(OKTOSAVE);
+
+        onStateChange();
 }
 
 /* Update zoom controls on zoom choice change.
@@ -532,6 +533,8 @@ static void onZoomReset(Fl_Widget *, void *d)
 static void commonZoom(MainWin *mw, int zoomdex)
 {
     _zoom = zoomVals[zoomdex];
+
+    bool oldLever = _lever; // TODO onZoomReset clobbers
 
     if (zoomdex == 0)
         onZoomReset(nullptr, mw);
@@ -553,6 +556,9 @@ static void commonZoom(MainWin *mw, int zoomdex)
         mw->m_rlPanH->activate();
         mw->m_rlPanV->activate();
     }
+
+    mw->m_chkLever->value(oldLever);
+    _lever = oldLever;
 }
 
 static void onZoomChange(Fl_Widget *w, void *d)
@@ -675,6 +681,7 @@ void load_cb(Fl_Widget*, void*) {
 void quit_cb(Fl_Widget* , void* )
 {
     _window->save_capture_settings();
+    _window->save_timelapse_settings();
 
     // TODO how to kill camera thread?
     // TODO grab preview window size/pos

@@ -66,11 +66,14 @@ extern unsigned long _timelapseStep;
 extern unsigned long _timelapseLimit;
 extern unsigned int _timelapseCount;
 
+// Local pointers, set appropriately on switchTo[Capture|Timelapse]
+bool saveToPNG;
+char *saveToFolder;
+
 static std::string generate_filename(Options const *options)
 {
 	char filename[256];
-	//std::string folder = options->output; // sometimes "output" is used as a folder name
-	std::string folder = _captureFolder;  // TODO _timelapseFolder
+	std::string folder = saveToFolder;
 	if (!folder.empty() && folder.back() != '/')
 		folder += "/";
     
@@ -81,7 +84,7 @@ static std::string generate_filename(Options const *options)
 		char time_string[32];
 		std::tm *time_info = std::localtime(&raw_time);
 		std::strftime(time_string, sizeof(time_string), "%m%d%H%M%S", time_info);
-		snprintf(filename, sizeof(filename), "%s%s.%s", folder.c_str(), time_string, _capturePNG ? "png" : "jpg"); // options->encoding.c_str());
+		snprintf(filename, sizeof(filename), "%s%s.%s", folder.c_str(), time_string, saveToPNG ? "png" : "jpg"); // options->encoding.c_str());
 	}
 /*	
 	else if (options->timestamp)
@@ -101,7 +104,7 @@ static void save_image(CompletedRequestPtr &payload, Stream *stream,
 	StreamInfo info = _app->GetStreamInfo(stream);
 	const std::vector<libcamera::Span<uint8_t>> mem = _app->Mmap(payload->buffers[stream]);
     
-  if (_capturePNG)
+  if (saveToPNG)
 		png_save(mem, info, filename, options);
   else        
 		jpeg_save(mem, info, payload->metadata, filename, _app->CameraId(), options);
@@ -176,6 +179,9 @@ static void switchToCapture(VideoOptions *options)
 
   _app->ConfigureStill( _capturePNG ? LibcameraApp::FLAG_STILL_BGR : LibcameraApp::FLAG_STILL_NONE ); // save to PNG needs BGR
 
+  saveToPNG = _capturePNG;
+  saveToFolder = _captureFolder;
+
   _app->StartCamera();
 }
 
@@ -191,6 +197,9 @@ static void switchToTimelapse(VideoOptions *options)
   _app->ConfigureStill( _timelapsePNG ? LibcameraApp::FLAG_STILL_BGR : 
                                         LibcameraApp::FLAG_STILL_NONE ); // save to PNG needs BGR
 
+  saveToPNG = _timelapsePNG;
+  saveToFolder = _timelapseFolder;
+  
   _app->StartCamera();
 }
 
