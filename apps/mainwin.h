@@ -71,7 +71,6 @@ public:
     void rightTimelapse(Fl_Flex *col);
     void timelapseEnded();
 
-
     Fl_Group *makeZoomTab(int w, int h);
 
     void resize(int, int, int, int) override;

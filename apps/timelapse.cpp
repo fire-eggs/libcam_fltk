@@ -77,6 +77,9 @@ void MainWin::timelapseEnded()
     doTimelapse = false;
     m_tabTL->selection_color(FL_BACKGROUND_COLOR);
     m_btnDoTimelapse->value(0);
+    m_tabTL->redraw_label();
+    redraw();
+    Fl::flush();
 }
 
 static void cbTimelapse(Fl_Widget *w, void *d)
