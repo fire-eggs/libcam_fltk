@@ -68,7 +68,7 @@ extern unsigned int _timelapseCount;
 
 // Local pointers, set appropriately on switchTo[Capture|Timelapse]
 bool saveToPNG;
-char *saveToFolder;
+const char *saveToFolder;
 
 static std::string generate_filename(Options const *options)
 {
