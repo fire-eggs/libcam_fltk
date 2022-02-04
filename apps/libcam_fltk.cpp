@@ -173,15 +173,19 @@ static Fl_Input* inpFileNameDisplay = nullptr;
 
 void folderPick(Fl_Input *inp)
 {
-    // TODO initialize to existing folder
     // TODO native dialog
-    // TODO can't create folder
-    // TODO cancel out should not clear existing value
 
     // show folder picker dialog
-    Fl_File_Chooser* choose = new Fl_File_Chooser(nullptr,nullptr,Fl_File_Chooser::DIRECTORY,"Choose a folder");
+    Fl_File_Chooser* choose = new Fl_File_Chooser(nullptr,nullptr,
+                                                  Fl_File_Chooser::DIRECTORY | Fl_File_Chooser::CREATE,
+                                                  "Choose a folder");
     choose->preview(false); // force preview off
+    choose->directory(inp->value()); // try to initialize to existing folder
     popup(choose);
+
+    if (!choose->count())  // no selection
+        return;
+
     char *loaddir = (char*)choose->value();
 
     // update input field with picked folder
