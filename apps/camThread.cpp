@@ -70,6 +70,8 @@ extern unsigned int _timelapseCount;
 bool saveToPNG;
 const char *saveToFolder;
 
+extern void guiEvent(int);
+
 static std::string generate_filename(Options const *options)
 {
 	char filename[256];
@@ -250,12 +252,20 @@ std::cerr << "Activate Timelapse " << std::endl;
             auto now = std::chrono::high_resolution_clock::now();
             timelapseTrigger = activeTimelapse && (now - timelapseStart) > timelapseStep;
             
-            if (_timelapseCount < timelapseFrameCount)
+            if (_timelapseCount < timelapseFrameCount || !doTimelapse)
             {
+                if (!doTimelapse)
+                {
+std::cerr << "Timelapse stopped in GUI" << std::endl;
+                }
+                else
+                {
 std::cerr << "Timelapse frame count reached; ended " << std::endl;
+                }
                 activeTimelapse = false;
                 timelapseTrigger = false;
                 doTimelapse = false;
+                guiEvent(1002); // TODO extern to const
             }
             
             // TODO how to inform the GUI that the timelapse has ended?
