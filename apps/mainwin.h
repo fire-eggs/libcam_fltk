@@ -55,6 +55,7 @@ public:
     Fl_Spinner *m_spTLLenVal;          // timelapse length value [not framecount]
     Fl_Choice *m_cmbTLSize;
     Fl_Choice *m_cmbTLFormat;
+    Fl_Light_Button *m_btnDoTimelapse;
 
     Fl_Input* inpTLFileNameDisplay;
 
@@ -68,6 +69,8 @@ public:
     Fl_Group *makeTimelapseTab(int w, int h);
     void leftTimelapse(Fl_Flex *col);
     void rightTimelapse(Fl_Flex *col);
+    void timelapseEnded();
+
 
     Fl_Group *makeZoomTab(int w, int h);
 

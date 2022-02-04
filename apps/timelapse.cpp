@@ -5,6 +5,12 @@
 #include <iostream>
 #include "mainwin.h"
 
+#ifdef __CLION_IDE__
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
+#pragma ide diagnostic ignored "bugprone-reserved-identifier"
+#pragma ide diagnostic ignored "modernize-use-auto"
+#endif
 
 bool doTimelapse;
 
@@ -64,6 +70,13 @@ static void cbRadio(Fl_Widget *w, void *d)
         mw->m_rdTLFrameCount->value(0);
     else
         mw->m_rdTLLength->value(0);
+}
+
+void MainWin::timelapseEnded()
+{
+    doTimelapse = false;
+    m_tabTL->selection_color(FL_BACKGROUND_COLOR);
+    m_btnDoTimelapse->value(0);
 }
 
 static void cbTimelapse(Fl_Widget *w, void *d)
@@ -315,6 +328,7 @@ Fl_Group *MainWin::makeTimelapseTab(int w, int h)
 
     Fl_Light_Button *btnDoit = new Fl_Light_Button(35, MAGIC_Y+325, 150, 25, "Run Timelapse");
     btnDoit->callback(cbTimelapse, this);
+    m_btnDoTimelapse = btnDoit;
 
     o->end();
 
@@ -340,3 +354,7 @@ void MainWin::save_timelapse_settings()
     
     setP->_prefs->flush();
 }
+
+#ifdef __CLION_IDE__
+#pragma clang diagnostic pop
+#endif
