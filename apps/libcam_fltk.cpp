@@ -2,12 +2,18 @@
 
 #ifdef __CLION_IDE__
 #pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
+#pragma ide diagnostic ignored "bugprone-reserved-identifier"
 #pragma ide diagnostic ignored "modernize-use-auto"
 #endif
 
 #include "mainwin.h"
 
 #include "prefs.h"
+
+#include <iostream>
+
+const int TIMELAPSE_COMPLETE = 1002;
 
 #include "core/libcamera_encoder.hpp"
 #include "output/output.hpp"
@@ -714,10 +720,21 @@ int handleSpecial(int event)
     case KBR_UPD_PREVIEW:
 //        _window->updatePreview();
         return 1;
+
+    case TIMELAPSE_COMPLETE:
+        std::cerr << "Timelapse ended" << std::endl;
+        _window->timelapseEnded();
+        break;
+
     default:
         return 0;
     }
     return 1;
+}
+
+void guiEvent(int val)
+{
+    Fl::handle_(val, nullptr);
 }
 
 int main(int argc, char** argv)
