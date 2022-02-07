@@ -676,10 +676,14 @@ void jpeg_save(std::vector<libcamera::Span<uint8_t>> const &mem, StreamInfo cons
 			std::cerr << "EXIF data len " << exif_len << std::endl;
 
         int res = fwrite(exif_header, sizeof(exif_header), 1, fp);
+        if (res != 1)
+			throw std::runtime_error("failed to write file - output probably corrupt"); // TODO error handling
+        
         res = fputc((exif_len + thumb_len + 2) >> 8, fp);
         res = fputc((exif_len + thumb_len + 2) & 0xff, fp);
         //res = fwrite(exif_buffer, exif_len, 1, fp);
 		res = fwrite(jpeg_buffer + exif_image_offset, jpeg_len - exif_image_offset, 1, fp);
+		
 
 /*        
 		if (fwrite(exif_header, sizeof(exif_header), 1, fp) != 1 || fputc((exif_len + thumb_len + 2) >> 8, fp) == EOF ||
