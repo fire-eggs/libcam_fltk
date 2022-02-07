@@ -254,6 +254,7 @@ void LibcameraApp::ConfigureStill(unsigned int flags)
 		configuration_->at(0).size.width = options_->width;
 	if (options_->height)
 		configuration_->at(0).size.height = options_->height;
+	configuration_->at(0).colorSpace = libcamera::ColorSpace::Jpeg;
 	configuration_->transform = options_->transform;
 
 	post_processor_.AdjustConfig("still", &configuration_->at(0));
@@ -298,12 +299,19 @@ void LibcameraApp::ConfigureVideo(unsigned int flags)
 		throw std::runtime_error("failed to generate video configuration");
 
 	// Now we get to override any of the default settings from the options_->
-	configuration_->at(0).pixelFormat = libcamera::formats::YUV420;
-	configuration_->at(0).bufferCount = 6; // 6 buffers is better than 4
+	StreamConfiguration &cfg = configuration_->at(0);
+	cfg.pixelFormat = libcamera::formats::YUV420;
+	cfg.bufferCount = 6; // 6 buffers is better than 4
 	if (options_->width)
-		configuration_->at(0).size.width = options_->width;
+		cfg.size.width = options_->width;
 	if (options_->height)
-		configuration_->at(0).size.height = options_->height;
+		cfg.size.height = options_->height;
+	if (flags & FLAG_VIDEO_JPEG_COLOURSPACE)
+		cfg.colorSpace = libcamera::ColorSpace::Jpeg;
+	else if (cfg.size.width >= 1280 || cfg.size.height >= 720)
+		cfg.colorSpace = libcamera::ColorSpace::Rec709;
+	else
+		cfg.colorSpace = libcamera::ColorSpace::Smpte170m;
 	configuration_->transform = options_->transform;
 
 	post_processor_.AdjustConfig("video", &configuration_->at(0));
@@ -474,12 +482,9 @@ void LibcameraApp::StopCamera()
 
 	// An application might be holding a CompletedRequest, so queueRequest will get
 	// called to delete it later, but we need to know not to try and re-queue it.
-	known_completed_requests_.clear();
+	completed_requests_.clear();
 
 	msg_queue_.Clear();
-
-	while (!free_requests_.empty())
-		free_requests_.pop();
 
 	requests_.clear();
 
@@ -498,7 +503,9 @@ void LibcameraApp::queueRequest(CompletedRequest *completed_request)
 {
 	BufferMap buffers(std::move(completed_request->buffers));
 
+	Request *request = completed_request->request;
 	delete completed_request;
+	assert(request);
 
 	// This function may run asynchronously so needs protection from the
 	// camera stopping at the same time.
@@ -508,24 +515,12 @@ void LibcameraApp::queueRequest(CompletedRequest *completed_request)
 
 	// An application could be holding a CompletedRequest while it stops and re-starts
 	// the camera, after which we don't want to queue another request now.
-	auto it = known_completed_requests_.find(completed_request);
-	if (it == known_completed_requests_.end())
-		return;
-	known_completed_requests_.erase(it);
-
-	Request *request = nullptr;
 	{
-		std::lock_guard<std::mutex> lock(free_requests_mutex_);
-		if (!free_requests_.empty())
-		{
-			request = free_requests_.front();
-			free_requests_.pop();
-		}
-	}
-	if (!request)
-	{
-		std::cerr << "WARNING: could not make request!" << std::endl;
-		return;
+		std::lock_guard<std::mutex> lock(completed_requests_mutex_);
+		auto it = completed_requests_.find(completed_request);
+		if (it == completed_requests_.end())
+			return;
+		completed_requests_.erase(it);
 	}
 
 	for (auto const &p : buffers)
@@ -626,6 +621,7 @@ StreamInfo LibcameraApp::GetStreamInfo(Stream const *stream) const
 	info.height = cfg.size.height;
 	info.stride = cfg.stride;
 	info.pixel_format = stream->configuration().pixelFormat;
+	info.colour_space = stream->configuration().colorSpace;
 	return info;
 }
 
@@ -663,11 +659,9 @@ void LibcameraApp::setupCapture()
 			{
 				const FrameBuffer::Plane &plane = buffer->planes()[i];
 				buffer_size += plane.length;
-				// KBR if (i == buffer->planes().size() - 1 || plane.fd.get() != buffer->planes()[i + 1].fd.get())
-				if (i == buffer->planes().size() - 1 || plane.fd.fd() != buffer->planes()[i + 1].fd.fd())
+				if (i == buffer->planes().size() - 1 || plane.fd.get() != buffer->planes()[i + 1].fd.get())
 				{
-					// KBR void *memory = mmap(NULL, buffer_size, PROT_READ | PROT_WRITE, MAP_SHARED, plane.fd.get(), 0);
-					void *memory = mmap(NULL, buffer_size, PROT_READ | PROT_WRITE, MAP_SHARED, plane.fd.fd(), 0);
+					void *memory = mmap(NULL, buffer_size, PROT_READ | PROT_WRITE, MAP_SHARED, plane.fd.get(), 0);
 					mapped_buffers_[buffer.get()].push_back(
 						libcamera::Span<uint8_t>(static_cast<uint8_t *>(memory), buffer_size));
 					buffer_size = 0;
@@ -721,13 +715,11 @@ void LibcameraApp::requestComplete(Request *request)
 	if (request->status() == Request::RequestCancelled)
 		return;
 
-	CompletedRequest *r = new CompletedRequest(sequence_++, request->buffers(), request->metadata());
+	CompletedRequest *r = new CompletedRequest(sequence_++, request);
 	CompletedRequestPtr payload(r, [this](CompletedRequest *cr) { this->queueRequest(cr); });
-	known_completed_requests_.insert(r);
 	{
-		request->reuse();
-		std::lock_guard<std::mutex> lock(free_requests_mutex_);
-		free_requests_.push(request);
+		std::lock_guard<std::mutex> lock(completed_requests_mutex_);
+		completed_requests_.insert(r);
 	}
 
 	// We calculate the instantaneous framerate in case anyone wants it.
@@ -800,8 +792,7 @@ void LibcameraApp::previewThread()
 		frame_info.fps = item.completed_request->framerate;
 		frame_info.sequence = item.completed_request->sequence;
 
-		// KBR int fd = buffer->planes()[0].fd.get();
-		int fd = buffer->planes()[0].fd.fd();
+		int fd = buffer->planes()[0].fd.get();
 		{
 			std::lock_guard<std::mutex> lock(preview_mutex_);
 			// the reference to the shared_ptr moves to the map here
