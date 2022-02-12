@@ -12,6 +12,8 @@
 #pragma ide diagnostic ignored "modernize-use-auto"
 #endif
 
+#define TL_ACTIVE_COLOR FL_RED
+
 bool doTimelapse;
 
 int _timelapseW;
@@ -23,9 +25,12 @@ unsigned long _timelapseLimit;
 unsigned int _timelapseCount;
 
 extern Prefs *_prefs;
+void folderPick(Fl_Input *);
+unsigned long intervalToMilliseconds(int intervalType);
+
 Fl_Menu_Item menu_cmbTLType[] =
         {
-                {"Milliseconds", 0, nullptr, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+//{"Milliseconds", 0, nullptr, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
                 {"Seconds", 0, nullptr, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
                 {"Minutes", 0, nullptr, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
                 {"Hours", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
@@ -51,9 +56,6 @@ static Fl_Menu_Item menu_cmbFormat[] =
                 {0,     0, 0, 0, 0,                      0, 0,  0, 0}
         };
 
-void folderPick(Fl_Input *);
-unsigned long intervalToMilliseconds(int intervalType);
-
 static void capTLFolderPick(Fl_Widget* w, void *d)
 {
     MainWin *mw = static_cast<MainWin *>(d);
@@ -72,16 +74,6 @@ static void cbRadio(Fl_Widget *w, void *d)
         mw->m_rdTLLength->value(0);
 }
 
-void MainWin::timelapseEnded()
-{
-    doTimelapse = false;
-    m_tabTL->selection_color(FL_BACKGROUND_COLOR);
-    m_btnDoTimelapse->value(0);
-    m_tabTL->redraw_label();
-    redraw();
-    Fl::flush();
-}
-
 static void cbTimelapse(Fl_Widget *w, void *d)
 {
     MainWin *mw = static_cast<MainWin *>(d);
@@ -95,14 +87,16 @@ static void cbTimelapse(Fl_Widget *w, void *d)
         return;
     }
 
-    mw->m_tabTL->selection_color(FL_YELLOW);
+    mw->m_tabTL->selection_color(TL_ACTIVE_COLOR);
 
     int intervalType = mw->m_cmbTLTimeType->value();
     double intervalStep = mw->m_spTLDblVal->value();
 
+    /* 20220211 milliseconds no longer an option
     // don't attempt fractions of milliseconds
     if (intervalType == 0)
         intervalStep = (int)intervalStep;
+    */
 
     int framecount = -1;
     int lenType = -1;
@@ -147,20 +141,39 @@ static void cbTimelapse(Fl_Widget *w, void *d)
     doTimelapse = true;
 }
 
+static void cbHidePreview(Fl_Widget *w, void *d)
+{
+
+}
+
+void MainWin::timelapseEnded()
+{
+    doTimelapse = false;
+    m_tabTL->selection_color(FL_BACKGROUND_COLOR);
+    m_btnDoTimelapse->value(0);
+}
+
 void MainWin::leftTimelapse(Fl_Flex *col)
 {
     Prefs *setP = _prefs->getSubPrefs("timelapse");
 
-    int intervalChoice = setP->get("intervalType", 1);
+    int intervalChoice = setP->get("intervalType", 0);
     int lengthChoice = setP->get("lengthType", 1);
     int frameCount = setP->get("frameCount", 1);
     int limitOnFrames = setP->get("frameLimit", 1);
     double intervalVal = setP->get("interval", 1.0);
     double lengthVal   = setP->get("length",   1.0);   
 
-    Fl_Box *b = new Fl_Box(0, 0, 0, 0, "Length Settings");
-    b->align(FL_ALIGN_INSIDE | FL_ALIGN_TOP_LEFT);
-    b->labelfont(FL_BOLD);
+    Fl_Flex *row0 = new Fl_Flex(Fl_Flex::ROW);
+    {
+        Fl_Box *b = new Fl_Box(0, 0, 0, 0, "Length Settings");
+        b->align(FL_ALIGN_INSIDE | FL_ALIGN_TOP_LEFT);
+        b->labelfont(FL_BOLD);
+
+        Fl_Button *bCalc = new Fl_Button(0, 0, 0, 0, "Calculator");
+        row0->end();
+        row0->setSize(bCalc, 100);
+    }
 
     Fl_Box* pad1 = new Fl_Box(0, 0, 0, 0, "");
 
@@ -170,7 +183,7 @@ void MainWin::leftTimelapse(Fl_Flex *col)
         spinDblVal->label("Interval:");
         spinDblVal->align(Fl_Align(FL_ALIGN_TOP_LEFT));
         spinDblVal->type(1); // FL_FLOAT
-        spinDblVal->minimum(1);
+        spinDblVal->minimum(0.5);
         spinDblVal->maximum(500);
         spinDblVal->step(0.5);
         spinDblVal->value(intervalVal);
@@ -238,8 +251,8 @@ void MainWin::leftTimelapse(Fl_Flex *col)
         row5->setSize(spinLengthVal, 85);
     }
 
-    col->setSize(b, 35);
-    col->setSize(pad1, 15);
+    col->setSize(row0, 25);
+    col->setSize(pad1, 25);
     col->setSize(row1, 30);
     col->setSize(row2, 30);
     col->setSize(row3, 30);
@@ -321,17 +334,26 @@ Fl_Group *MainWin::makeTimelapseTab(int w, int h)
         Fl_Flex *colLeft = new Fl_Flex(Fl_Flex::COLUMN);
         leftTimelapse(colLeft);
         colLeft->end();
+
+        // horizontal padding between columns
         Fl_Box *pad = new Fl_Box(0,0,0,0);
+        row0->setSize(pad,15);
+
         Fl_Flex *colRight = new Fl_Flex(Fl_Flex::COLUMN);
         rightTimelapse(colRight);
         colRight->end();
-        row0->setSize(pad,10);
+
         row0->end();
     }
 
+    // TODO how to prevent getting too narrow?
     Fl_Light_Button *btnDoit = new Fl_Light_Button(35, MAGIC_Y+325, 150, 25, "Run Timelapse");
+    btnDoit->selection_color(TL_ACTIVE_COLOR);
     btnDoit->callback(cbTimelapse, this);
     m_btnDoTimelapse = btnDoit;
+
+    Fl_Check_Button *chkHidePreview = new Fl_Check_Button(35, MAGIC_Y + 375, 200, 25, "Turn off preview window");
+    chkHidePreview->callback(cbHidePreview, this);
 
     o->end();
 

@@ -13,6 +13,7 @@
 
 #include <iostream>
 
+#define KBR_UPD_PREVIEW 1001
 const int TIMELAPSE_COMPLETE = 1002;
 
 #include "core/libcamera_encoder.hpp"
@@ -23,6 +24,7 @@ const int TIMELAPSE_COMPLETE = 1002;
 Prefs *_prefs; // TODO HACK
 Fl_Menu_Bar *_menu;
 char *_loadfile;
+MainWin* _window;
 
 // Camera settings
 bool _hflip;
@@ -44,6 +46,7 @@ bool _lever;     // needed for settings save
 bool stateChange;
 bool doCapture;
 
+// capture settings
 int _captureW;
 int _captureH;
 bool _capturePNG;
@@ -53,7 +56,7 @@ extern void fire_proc_thread(int argc, char ** argv);
 bool OKTOSAVE;
 
 // pre-declare those callbacks which reference MainWin members
-static void onReset(Fl_Widget *, void *);
+//static void onReset(Fl_Widget *, void *);
 static void onZoomReset(Fl_Widget *, void *);
 static void onZoomChange(Fl_Widget *w, void *d);
 static void onPanH(Fl_Widget *w, void *d);
@@ -68,7 +71,7 @@ static void popup(Fl_File_Chooser* filechooser)
 
     // deactivate Fl::grab(), because it is incompatible with modal windows
     Fl_Window* g = Fl::grab();
-    if (g) Fl::grab(0);
+    if (g) Fl::grab(nullptr);
 
     while (filechooser->shown())
         Fl::wait();
@@ -78,7 +81,7 @@ static void popup(Fl_File_Chooser* filechooser)
 }
 
 // TODO goes in class?
-static Fl_Value_Slider *makeSlider(int x, int y, const char *label, int min, int max, int def, bool vert=false)
+static Fl_Value_Slider *makeSlider(int x, int y, const char *label, int min, int max, double def, bool vert=false)
 {
     // TODO how to change the size of the "value" label?
 
@@ -92,7 +95,7 @@ static Fl_Value_Slider *makeSlider(int x, int y, const char *label, int min, int
     return o;
 }
 
-static void onStateChange(bool save=true)
+static void onStateChange()
 {
     if (OKTOSAVE)
     {
@@ -174,21 +177,55 @@ static void onVFlip(Fl_Widget*w, void *)
     onStateChange();
 }
 
+static void onReset(Fl_Widget *, void *d)
+{
+    // TODO constants for defaults
+
+    MainWin *mw = (MainWin *)d;
+    mw->m_slBright->value(0.0);
+    mw->m_slContrast->value(1.0);
+    mw->m_slSaturate->value(1.0);
+    mw->m_slSharp->value(1.0);
+    mw->m_slevComp->value(0.0);
+    mw->m_chkHflip->value(false);
+    mw->m_chkVflip->value(false);
+
+    _bright = 0.0;
+    _contrast = 1.0;
+    _sharp = 1.0;
+    _saturate = 1.0;
+    _evComp = 0.0;
+    _hflip = false;
+    _vflip = false;
+
+    onStateChange(); // hack force not save
+}
+
+static void cbHidePreview(Fl_Widget *, void *)
+{
+    // TODO
+}
+
 // HACK made static for access via callback
 static Fl_Input* inpFileNameDisplay = nullptr;
 
 void folderPick(Fl_Input *inp)
 {
-    // TODO native dialog
+    // TODO native dialog as an option
 
     // show folder picker dialog
     Fl_File_Chooser* choose = new Fl_File_Chooser(nullptr,nullptr,
                                                   Fl_File_Chooser::DIRECTORY | Fl_File_Chooser::CREATE,
                                                   "Choose a folder");
     choose->preview(false); // force preview off
-    choose->directory(inp->value()); // try to initialize to existing folder
-    popup(choose);
 
+    // try to initialize to existing folder
+    char *val = const_cast<char *>(inp->value());
+    if (!val || strlen(val) < 1)
+        val = const_cast<char *>("/home");
+    choose->directory(val);
+
+    popup(choose);
     if (!choose->count())  // no selection
         return;
 
@@ -198,13 +235,11 @@ void folderPick(Fl_Input *inp)
     inp->value(loaddir);
 }
 
-static void capFolderPick(Fl_Widget* w, void *)
+static void capFolderPick(Fl_Widget*, void *)
 {
     // TODO pass as userdata
     folderPick(inpFileNameDisplay);
 }
-
-#define KBR_UPD_PREVIEW 1001
 
 static int captureWVals[] = {640,1024,1280,1920,2272,3072,4056};
 static int captureHVals[]  = {480,768,960,1080,1704,2304,3040};
@@ -367,6 +402,10 @@ MainWin::MainWin(int x, int y, int w, int h) : Fl_Double_Window(x, y, w,h)
         m_slevComp->when(FL_WHEN_RELEASE);
         slidY += yStep;
 
+
+        Fl_Check_Button *chkHidePreview = new Fl_Check_Button(slidX, slidY, 200, 25, "Turn off preview window");
+        chkHidePreview->callback(cbHidePreview, this);
+
         o->end();
         //Fl_Group::current()->resizable(o);
         return o;
@@ -390,6 +429,7 @@ MainWin::MainWin(int x, int y, int w, int h) : Fl_Double_Window(x, y, w,h)
         bStill->callback(onCapture);
         Fl_Button *bBurst = new Fl_Button(50, MAGIC_Y+100, 150, 30, "Burst Capture");
         bBurst->tooltip("Capture multiple still images");
+        bBurst->deactivate();
 
 
         Fl_Group *sGroup = new Fl_Group(220, MAGIC_Y+60, 270, 250, "Settings");
@@ -431,6 +471,7 @@ MainWin::MainWin(int x, int y, int w, int h) : Fl_Double_Window(x, y, w,h)
         o->tooltip("Video Capture");
 
         o->end();
+        o->deactivate();
         return o;
     }
 
@@ -493,30 +534,6 @@ MainWin::MainWin(int x, int y, int w, int h) : Fl_Double_Window(x, y, w,h)
         o->end();
         return o;
     }
-
-static void onReset(Fl_Widget *w, void *d)
-{
-    // TODO constants for defaults
-
-    MainWin *mw = (MainWin *)d;
-    mw->m_slBright->value(0.0);
-    mw->m_slContrast->value(1.0);
-    mw->m_slSaturate->value(1.0);
-    mw->m_slSharp->value(1.0);
-    mw->m_slevComp->value(0.0);
-    mw->m_chkHflip->value(false);
-    mw->m_chkVflip->value(false);
-
-    _bright = 0.0;
-    _contrast = 1.0;
-    _sharp = 1.0;
-    _saturate = 1.0;
-    _evComp = 0.0;
-    _hflip = false;
-    _vflip = false;
-    
-    onStateChange(OKTOSAVE); // hack force not save
-}
 
 static void onZoomReset(Fl_Widget *, void *d)
 {
@@ -631,22 +648,23 @@ static void onPanV(Fl_Widget *w, void *d)
 unsigned long intervalToMilliseconds(int intervalType)
 {
     // TODO turn into an array like zoomVals ?
+    // TODO need manifest constants for the 'type'
 
     switch (intervalType)
     {
+        /* 20220211 milliseconds no longer an option
         case 0:
             return 1;
-        case 1:
+            */
+        case 0:
             return 1000; // seconds
-        case 2:
+        case 1:
             return 60 * 1000; // minutes
-        case 3:
+        case 2:
             return 60 * 60 * 1000; // hours
     }
     return -1;
 }
-
-MainWin* _window;
 
 static void onCapture(Fl_Widget *w, void *)
 {
@@ -700,15 +718,16 @@ void quit_cb(Fl_Widget* , void* )
 }
 
 void save_cb(Fl_Widget*, void*) {
-//    _window->savecrop();
 }
 
 Fl_Menu_Item mainmenuItems[] =
 {
-    {"&File", 0, 0, 0, FL_SUBMENU, 0, 0, 0, 0},
+    {"&File", 0, nullptr, nullptr, FL_SUBMENU, 0, 0, 0, 0},
+/*
     {"&Load...", 0, load_cb, 0, 0, 0, 0, 0, 0},
     {"Save", 0, save_cb, 0, 0, 0, 0, 0, 0},
-    {"E&xit", 0, quit_cb, 0, 0, 0, 0, 0, 0},
+*/
+    {"E&xit", 0, quit_cb, nullptr, 0, 0, 0, 0, 0},
     {0, 0, 0, 0, 0, 0, 0, 0, 0},
     {0, 0, 0, 0, 0, 0, 0, 0, 0},
 };
