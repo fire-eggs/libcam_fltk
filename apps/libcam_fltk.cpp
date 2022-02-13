@@ -45,6 +45,7 @@ bool _lever;     // needed for settings save
 // Inter-thread communication
 bool stateChange;
 bool doCapture;
+bool _previewOn;
 
 // capture settings
 int _captureW;
@@ -201,9 +202,13 @@ static void onReset(Fl_Widget *, void *d)
     onStateChange(); // hack force not save
 }
 
-static void cbHidePreview(Fl_Widget *, void *)
+static void cbHidePreview(Fl_Widget *w, void *)
 {
-    // TODO
+    Fl_Check_Button* btn = dynamic_cast<Fl_Check_Button*>(w);
+    _previewOn = !btn->value();
+    
+    Prefs *setP = _prefs->getSubPrefs("preview");
+    setP->set("on", _previewOn);    
 }
 
 // HACK made static for access via callback
@@ -405,7 +410,11 @@ MainWin::MainWin(int x, int y, int w, int h) : Fl_Double_Window(x, y, w,h)
 
         Fl_Check_Button *chkHidePreview = new Fl_Check_Button(slidX, slidY, 200, 25, "Turn off preview window");
         chkHidePreview->callback(cbHidePreview, this);
-
+        {
+            Prefs *setP = _prefs->getSubPrefs("preview");
+            chkHidePreview->value(!setP->get("on", true));
+        }
+        
         o->end();
         //Fl_Group::current()->resizable(o);
         return o;
@@ -761,7 +770,6 @@ int main(int argc, char** argv)
 
     libcamera::logSetTarget(libcamera::LoggingTargetNone);
 
-
     Fl::lock();
 
     // Use remembered main window size/pos
@@ -783,7 +791,10 @@ int main(int argc, char** argv)
 
     window.show();
 
-
+    // Initialize the preview flag before starting the camera
+    Prefs *setP = _prefs->getSubPrefs("preview");
+    _previewOn = setP->get("on", true);
+    
     fire_proc_thread(argc, argv);
     
     OKTOSAVE = false;

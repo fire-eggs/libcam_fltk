@@ -24,6 +24,8 @@ unsigned long _timelapseStep;
 unsigned long _timelapseLimit;
 unsigned int _timelapseCount;
 
+extern bool _previewOn;
+
 extern Prefs *_prefs;
 void folderPick(Fl_Input *);
 unsigned long intervalToMilliseconds(int intervalType);
@@ -141,10 +143,16 @@ static void cbTimelapse(Fl_Widget *w, void *d)
     doTimelapse = true;
 }
 
+/*
 static void cbHidePreview(Fl_Widget *w, void *d)
 {
-
+    Fl_Check_Button *btn = dynamic_cast<Fl_Check_Button *>(w);
+    _previewOn = !btn->value();
+    
+    Prefs *setP = _prefs->getSubPrefs("preview");
+    setP->set("on", _previewOn);
 }
+*/
 
 void MainWin::timelapseEnded()
 {
@@ -352,9 +360,17 @@ Fl_Group *MainWin::makeTimelapseTab(int w, int h)
     btnDoit->callback(cbTimelapse, this);
     m_btnDoTimelapse = btnDoit;
 
+    /*
     Fl_Check_Button *chkHidePreview = new Fl_Check_Button(35, MAGIC_Y + 375, 200, 25, "Turn off preview window");
     chkHidePreview->callback(cbHidePreview, this);
-
+    {
+        Prefs *setP = _prefs->getSubPrefs("preview");
+        int val = setP->get("on", true);
+        chkHidePreview->value(!val);    
+    }
+    m_chkHidePreviewTL = chkHidePreview;
+    */
+    
     o->end();
 
     return o;

@@ -33,6 +33,7 @@ using libcamera::Stream;
 extern bool stateChange;
 extern bool doCapture;
 extern bool doTimelapse;
+extern bool _previewOn;
 
 // General camera settings
 extern bool _hflip; // state of user request for horizontal flip
@@ -69,6 +70,7 @@ extern unsigned int _timelapseCount;
 // Local pointers, set appropriately on switchTo[Capture|Timelapse]
 bool saveToPNG;
 const char *saveToFolder;
+bool previewIsOn;
 
 extern void guiEvent(int);
 
@@ -205,6 +207,53 @@ static void switchToTimelapse(VideoOptions *options)
   _app->StartCamera();
 }
 
+static void changeSettings()
+{
+                _app->StopCamera();
+                _app->StopEncoder();
+                _app->Teardown();
+                VideoOptions *newopt = _app->GetOptions();
+
+                // Horizontal and vertical flip implemented via transforms
+                newopt->transform = libcamera::Transform::Identity;
+                if (_vflip)
+                    newopt->transform = libcamera::Transform::VFlip * newopt->transform;
+                if (_hflip)
+                    newopt->transform = libcamera::Transform::HFlip * newopt->transform;
+                    
+                newopt->brightness = _bright;
+                newopt->contrast   = _contrast;
+                newopt->saturation = _saturate;
+                newopt->sharpness  = _sharp;
+                newopt->ev         = _evComp;
+                
+                newopt->roi_x = _panH + (1.0-_zoom) / 2.0;  // pan values are relative to 'center'
+                newopt->roi_y = _panV + (1.0-_zoom) / 2.0;
+                newopt->roi_height = _zoom;
+                newopt->roi_width = _zoom;
+                
+                _app->ConfigureVideo();
+                _app->StartEncoder();
+                _app->StartCamera();   
+}
+
+static void changePreview()
+{
+    _app->StopCamera();
+    _app->StopEncoder();
+    _app->Teardown();
+    _app->CloseCamera();
+    
+    VideoOptions *newopt = _app->GetOptions();
+   newopt->nopreview = !_previewOn;
+    previewIsOn = _previewOn;
+    
+    _app->OpenCamera();  // preview window is created as a side-effect here
+    _app->ConfigureVideo();
+    _app->StartEncoder();
+    _app->StartCamera();   
+}
+
 // This is the "master loop" function.
 void* proc_func(void *p)
 {
@@ -214,6 +263,10 @@ void* proc_func(void *p)
 	_app->SetEncodeOutputReadyCallback(std::bind(&Output::OutputReady, output.get(), _1, _2, _3, _4));
 
   options->output = "/home/pi/Pictures/";  // TODO necessary?
+
+    // Initialize preview window [created as side-effect in OpenCamera]
+    previewIsOn = _previewOn;
+    options->nopreview = !previewIsOn;
     
 	_app->OpenCamera();
 	_app->ConfigureVideo();   // TODO should this be ConfigurePreview instead?
@@ -225,7 +278,7 @@ void* proc_func(void *p)
     unsigned int timelapseFrameCount = 0;
     std::chrono::milliseconds timelapseStep;
     
-    for (unsigned int count = 0; ; count++)
+    for (;;)
     {
         LibcameraEncoder::Msg msg = _app->Wait();
         if (msg.type == LibcameraEncoder::MsgType::Quit)
@@ -280,33 +333,7 @@ std::cerr << "Timelapse frame count reached; ended " << std::endl;
             }
             else if (stateChange) // user has made settings change
             {
-                _app->StopCamera();
-                _app->StopEncoder();
-                _app->Teardown();
-                VideoOptions *newopt = _app->GetOptions();
-
-                // Horizontal and vertical flip implemented via transforms
-                newopt->transform = libcamera::Transform::Identity;
-                if (_vflip)
-                    newopt->transform = libcamera::Transform::VFlip * newopt->transform;
-                if (_hflip)
-                    newopt->transform = libcamera::Transform::HFlip * newopt->transform;
-                    
-                newopt->brightness = _bright;
-                newopt->contrast   = _contrast;
-                newopt->saturation = _saturate;
-                newopt->sharpness  = _sharp;
-                newopt->ev         = _evComp;
-                
-                newopt->roi_x = _panH + (1.0-_zoom) / 2.0;  // pan values are relative to 'center'
-                newopt->roi_y = _panV + (1.0-_zoom) / 2.0;
-                newopt->roi_height = _zoom;
-                newopt->roi_width = _zoom;
-                
-                _app->ConfigureVideo();
-                _app->StartEncoder();
-                _app->StartCamera();
-                
+                changeSettings();
                 stateChange = false;
             }
             else if (timelapseTrigger)
@@ -331,73 +358,12 @@ std::cerr << "Capture Image " << std::endl;
             timelapseTrigger = false;
             captureImage(&msg);
         }
-/*        
         
-        // 1) user has made settings change
-        // 2) request for frame capture has completed
-        if (stateChange || inCapture)
+        if (previewIsOn != _previewOn)
         {
-            _app->StopCamera();
-			_app->StopEncoder();
-            _app->Teardown();
-		    VideoOptions *newopt = _app->GetOptions();
-
-            // Horizontal and vertical flip implemented via transforms
-            newopt->transform = libcamera::Transform::Identity;
-            if (_vflip)
-                newopt->transform = libcamera::Transform::VFlip * newopt->transform;
-            if (_hflip)
-                newopt->transform = libcamera::Transform::HFlip * newopt->transform;
-                
-            newopt->brightness = _bright;
-            newopt->contrast   = _contrast;
-            newopt->saturation = _saturate;
-            newopt->sharpness  = _sharp;
-            newopt->ev         = _evComp;
-            
-            _app->ConfigureVideo();
-	        _app->StartEncoder();
-            _app->StartCamera();
-            
-            inCapture = false;
+            // switching state of the preview window
+            changePreview();
         }
-
-        if (doCapture)
-        {
-            _app->StopCamera();
-            //_app->StopEncoder();
-            _app->Teardown();
-            
-            inCapture = true;
-            
-            //StillOptions *newopt = _app->GetCaptureOptions();
-            
-            // TODO modify options
-            // TODO how are these options provided to ConfigureStill ?
-            
-            _app->ConfigureStill();
-            
-            _app->StartCamera();
-        }
-        
-		bool frameout = options->frames && count >= options->frames;
-		if (frameout)
-		{
-			_app->StopCamera(); // stop complains if encoder very slow to close
-			_app->StopEncoder();
-			return nullptr;
-		}
-
-		if (!stateChange && !inCapture)
-		{
-			CompletedRequestPtr &completed_request = std::get<CompletedRequestPtr>(msg.payload);
-			_app->EncodeBuffer(completed_request, _app->VideoStream());
-			_app->ShowPreview(completed_request, _app->VideoStream());
-		}
-        
-        stateChange = false; // TODO possibility of collision?
-        doCapture = false;
-*/        
 	}
 
     return nullptr;

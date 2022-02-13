@@ -193,6 +193,10 @@ EglPreview::EglPreview(Options const *options) : Preview(options), last_fd_(-1),
 
 EglPreview::~EglPreview()
 {
+    // KBR some combination of the below necessary to make the preview window actually disappear
+    Quit(); // KBR
+    XDestroyWindow(display_, window_); // KBR
+    Quit(); // KBR
 }
 
 static void no_border(Display *display, Window window)

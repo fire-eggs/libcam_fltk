@@ -33,8 +33,8 @@ Preview *make_preview(Options const *options)
 		{
 #if LIBEGL_PRESENT
 			Preview *p = make_egl_preview(options);
-			if (p)
-				std::cerr << "Made X/EGL preview window" << std::endl;
+            // KBR if (p)
+			// KBR std::cerr << "Made X/EGL preview window" << std::endl;
 			return p;
 #else
 			throw std::runtime_error("egl libraries unavailable.");

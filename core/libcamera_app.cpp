@@ -124,7 +124,10 @@ void LibcameraApp::OpenCamera()
 
 void LibcameraApp::CloseCamera()
 {
+    preview_->Quit(); // KBR
+    preview_->Reset();
 	preview_.reset();
+    preview_.release(); // KBR
 
 	if (camera_acquired_)
 		camera_->release();
