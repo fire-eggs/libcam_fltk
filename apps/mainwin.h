@@ -2,8 +2,8 @@
 // Created by kevin on 1/31/22.
 //
 
-#ifndef CROPPER_MAINWIN_H
-#define CROPPER_MAINWIN_H
+#ifndef LIBCAMFLTK_MAINWIN_H
+#define LIBCAMFLTK_MAINWIN_H
 
 #include <FL/Fl.H>
 #include <FL/Fl_Double_Window.H>
@@ -76,6 +76,7 @@ public:
     void resize(int, int, int, int) override;
 
     void loadSavedSettings();
+    void loadZoomSettings();
     void save_capture_settings();
     void save_timelapse_settings();
 
@@ -84,4 +85,4 @@ public:
     int *m_captureHVals;
 };
 
-#endif //CROPPER_MAINWIN_H
+#endif //LIBCAMFLTK_MAINWIN_H

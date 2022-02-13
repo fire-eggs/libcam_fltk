@@ -14,8 +14,10 @@
 
 #define TL_ACTIVE_COLOR FL_RED
 
+// Inter-process communication
 bool doTimelapse;
 
+// Timelapse settings
 int _timelapseW;
 int _timelapseH;
 bool _timelapsePNG;
@@ -24,11 +26,31 @@ unsigned long _timelapseStep;
 unsigned long _timelapseLimit;
 unsigned int _timelapseCount;
 
-extern bool _previewOn;
+//extern bool _previewOn;
 
 extern Prefs *_prefs;
 void folderPick(Fl_Input *);
-unsigned long intervalToMilliseconds(int intervalType);
+
+static unsigned long intervalToMilliseconds(int intervalType)
+{
+    // TODO turn into an array like zoomVals ?
+    // TODO need manifest constants for the 'type'
+
+    switch (intervalType)
+    {
+        /* 20220211 milliseconds no longer an option
+        case 0:
+            return 1;
+            */
+        case 0:
+            return 1000; // seconds
+        case 1:
+            return 60 * 1000; // minutes
+        case 2:
+            return 60 * 60 * 1000; // hours
+    }
+    return -1;
+}
 
 Fl_Menu_Item menu_cmbTLType[] =
         {
@@ -79,7 +101,7 @@ static void cbRadio(Fl_Widget *w, void *d)
 static void cbTimelapse(Fl_Widget *w, void *d)
 {
     MainWin *mw = static_cast<MainWin *>(d);
-    Fl_Light_Button *btn = static_cast<Fl_Light_Button *>(w);
+    Fl_Light_Button *btn = dynamic_cast<Fl_Light_Button *>(w);
 
     if (!btn->value())
     {
@@ -179,6 +201,7 @@ void MainWin::leftTimelapse(Fl_Flex *col)
         b->labelfont(FL_BOLD);
 
         Fl_Button *bCalc = new Fl_Button(0, 0, 0, 0, "Calculator");
+        bCalc->deactivate();
         row0->end();
         row0->setSize(bCalc, 100);
     }
