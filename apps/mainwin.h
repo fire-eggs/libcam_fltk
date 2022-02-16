@@ -70,6 +70,7 @@ public:
     void leftTimelapse(Fl_Flex *col);
     void rightTimelapse(Fl_Flex *col);
     void timelapseEnded();
+    void doCalc();
 
     Fl_Group *makeZoomTab(int w, int h);
 

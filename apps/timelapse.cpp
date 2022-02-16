@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include "mainwin.h"
+#include "calc.h"
 
 #ifdef __CLION_IDE__
 #pragma clang diagnostic push
@@ -183,6 +184,19 @@ void MainWin::timelapseEnded()
     m_btnDoTimelapse->value(0);
 }
 
+static void onCalc(Fl_Widget *w, void *d)
+{
+    MainWin *mw = static_cast<MainWin*>(d);
+    mw->doCalc();
+}
+
+void MainWin::doCalc()
+{
+    CalcWin *calc = new CalcWin(500, 500, "Calculator", _prefs);
+    calc->ControlsToUpdate(m_spTLFrameCount,m_rdTLFrameCount,m_spTLDblVal,m_cmbTLTimeType,m_rdTLLength);
+    calc->showCalc();
+}
+
 void MainWin::leftTimelapse(Fl_Flex *col)
 {
     Prefs *setP = _prefs->getSubPrefs("timelapse");
@@ -201,7 +215,8 @@ void MainWin::leftTimelapse(Fl_Flex *col)
         b->labelfont(FL_BOLD);
 
         Fl_Button *bCalc = new Fl_Button(0, 0, 0, 0, "Calculator");
-        bCalc->deactivate();
+        bCalc->callback(onCalc, this);
+
         row0->end();
         row0->setSize(bCalc, 100);
     }
