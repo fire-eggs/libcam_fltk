@@ -116,8 +116,9 @@ void Fl_Flex::resizeCol(int x, int y, int w, int h)
       // This is very handy to allow resizable items to have negative height
       // allowing one on the top and bottom to center contents even if container
       // is too small.
-      c->resize(x + margin, cy, w - margin * 2,
-        (padH - nrs) / (cc - (int)setsized.size()));
+      int denom = cc - setsized.size();
+      if (!denom) denom = 1;
+      c->resize(x + margin, cy, w - margin * 2, (padH - nrs) / denom);
     }
 
     cy += c->h() + pad;

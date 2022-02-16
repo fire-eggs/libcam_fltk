@@ -1,3 +1,6 @@
+#ifndef FL_FLEX_H
+#define FL_FLEX_H
+
 #include <FL/Fl.H>
 #include <FL/Fl_Group.H>
 
@@ -36,3 +39,4 @@ private:
 
 }; 
 
+#endif // FL_FLEX_H
