@@ -14,23 +14,6 @@
 #include "prefs.h"
 #include "FL_Flex/FL_Flex.H"
 
-static Fl_Menu_Item menu_cmbFPS[] =
-{
-{"15", 0, nullptr, nullptr, 0, FL_NORMAL_LABEL, 0, 14, 0},
-{"24", 0, nullptr, nullptr, 0, FL_NORMAL_LABEL, 0, 14, 0},
-{"25", 0, nullptr, nullptr, 0, FL_NORMAL_LABEL, 0, 14, 0},
-{"30", 0, nullptr, nullptr, 0, FL_NORMAL_LABEL, 0, 14, 0},
-{"Custom", 0, nullptr, nullptr, 0, FL_NORMAL_LABEL, 0, 14, 0},
-};
-
-static Fl_Menu_Item menu_cmbRunLenType[] =
-{
-{"Seconds", 0, nullptr, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-{"Minutes", 0, nullptr, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-{"Hours", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-{0,     0, 0, 0, 0,                      0, 0,  0, 0}
-};
-
 class CalcWin : public Fl_Double_Window
 {
 private:

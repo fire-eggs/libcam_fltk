@@ -31,6 +31,7 @@ MainWin* _window;
 
 extern void fire_proc_thread(int argc, char ** argv);
 bool OKTOSAVE;
+extern bool _previewOn;
 
 static void popup(Fl_File_Chooser* filechooser)
 {
@@ -115,8 +116,8 @@ MainWin::MainWin(int x, int y, int w, int h) : Fl_Double_Window(x, y, w,h)
 
         resizable(this);
 
-        m_captureHVals = captureHVals;  // TODO hack
-        m_captureWVals = captureWVals;  // TODO hack
+        //m_captureHVals = captureHVals;  // TODO hack
+        //m_captureWVals = captureWVals;  // TODO hack
     }
 
 Fl_Group *MainWin::makeVideoTab(int w, int h)
@@ -193,12 +194,10 @@ int handleSpecial(int event)
     return 1;
 }
 
-/*
 void guiEvent(int val)
 {
     Fl::handle_(val, nullptr);
 }
-*/
 
 int main(int argc, char** argv)
 {
@@ -233,6 +232,7 @@ int main(int argc, char** argv)
     fire_proc_thread(argc, argv);
     
     OKTOSAVE = false;
+    
     onReset(nullptr,_window); // init camera to defaults [hack: force no save]
     
     _window->loadSavedSettings(); // TODO is this necessary? or preferred over each tab doing it?

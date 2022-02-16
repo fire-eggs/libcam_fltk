@@ -11,6 +11,24 @@
 
 static int FPS_VALS[] = {15, 24, 25, 30, 60};
 
+static Fl_Menu_Item menu_cmbFPS[] =
+{
+{"15", 0, nullptr, nullptr, 0, FL_NORMAL_LABEL, 0, 14, 0},
+{"24", 0, nullptr, nullptr, 0, FL_NORMAL_LABEL, 0, 14, 0},
+{"25", 0, nullptr, nullptr, 0, FL_NORMAL_LABEL, 0, 14, 0},
+{"30", 0, nullptr, nullptr, 0, FL_NORMAL_LABEL, 0, 14, 0},
+{"Custom", 0, nullptr, nullptr, 0, FL_NORMAL_LABEL, 0, 14, 0},
+{0,     0, 0, 0, 0,                      0, 0,  0, 0}
+};
+
+static Fl_Menu_Item menu_cmbRunLenType[] =
+{
+{"Seconds", 0, nullptr, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+{"Minutes", 0, nullptr, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+{"Hours", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+{0,     0, 0, 0, 0,                      0, 0,  0, 0}
+};
+
 // TODO duplicated here and timelapse.cpp
 static double intervalToMilliseconds(int intervalType)
 {
@@ -42,7 +60,7 @@ void CalcWin::recalc()
 
     m_framecount = lround(vidlen * fpsVal);
     char buff[100];
-    sprintf(buff, "%ld", m_framecount);
+    sprintf(buff, "%d", m_framecount);
     m_resFrameCount->value(buff);
 
     int lenType = m_cmbRunLenType->value();
@@ -115,8 +133,9 @@ CalcWin::CalcWin(int w, int h, const char *l, Prefs *prefs)
 
         Fl_Flex *row1 = new Fl_Flex(Fl_Flex::ROW);
         {
-            Fl_Box *lbl2 = new Fl_Box(0,0,0,0,"1. Length of final video:");
-
+            Fl_Box *lbl2 = new Fl_Box(0,0,0,0);
+            lbl2->label("1. Length of final video:");
+            
             m_spinVidLen = new Fl_Spinner(0, 0, 0, 0);
             m_spinVidLen->type(1); // FL_FLOAT
             m_spinVidLen->minimum(0.5);
@@ -126,9 +145,10 @@ CalcWin::CalcWin(int w, int h, const char *l, Prefs *prefs)
             m_spinVidLen->callback(onChange, this);
             m_spinVidLen->when(FL_WHEN_CHANGED);
 
-            Fl_Box *lbl3 = new Fl_Box(0, 0, 0, 0, "Seconds");
-            lbl3->align(FL_ALIGN_INSIDE | FL_ALIGN_CENTER | FL_ALIGN_LEFT);
+            Fl_Box *lbl3 = new Fl_Box(0, 0, 0, 0);
+            lbl3->label("Seconds");
             Fl_Box *lbl4 = new Fl_Box(0, 0, 0, 0);
+            lbl4->label("");
 
             row1->setSize(m_spinVidLen, 100);
 
@@ -139,8 +159,9 @@ CalcWin::CalcWin(int w, int h, const char *l, Prefs *prefs)
 
         Fl_Flex *row2 = new Fl_Flex(Fl_Flex::ROW);
         {
-            Fl_Box *b = new Fl_Box(0,0,0,0,"2. Select Video FPS:");
-
+            Fl_Box *b = new Fl_Box(0,0,0,0);
+            b->label("2. Select Video FPS:");
+            
             m_cmbFPS = new Fl_Choice(0,0,0,0);
             m_cmbFPS->align(Fl_Align(FL_ALIGN_LEFT));
             m_cmbFPS->down_box(FL_BORDER_BOX);
@@ -151,6 +172,7 @@ CalcWin::CalcWin(int w, int h, const char *l, Prefs *prefs)
 
             Fl_Input *b2 = new Fl_Input(0,0,0,0);
             b2->value("Custom");
+            b2->deactivate();
 
             row2->end();
             row1->setSize(b2, 100);
@@ -159,7 +181,10 @@ CalcWin::CalcWin(int w, int h, const char *l, Prefs *prefs)
         Fl_Box* pad3 = new Fl_Box(0, 0, 0, 0, "");
 
         Fl_Flex *row3 = new Fl_Flex(Fl_Flex::ROW);
-        Fl_Box *lbl1 = new Fl_Box(0,0,0,0, "Resulting Frame Count:");
+        
+        Fl_Box *lbl1 = new Fl_Box(0,0,0,0);
+        lbl1->label("Resulting Frame Count:");
+        
         m_resFrameCount = new Fl_Input(0, 0, 0, 0);
         m_resFrameCount->value("filler");
         m_resFrameCount->readonly(true);
@@ -205,11 +230,13 @@ CalcWin::CalcWin(int w, int h, const char *l, Prefs *prefs)
         Fl_Box* pad5 = new Fl_Box(0, 0, 0, 0, "");
 
         Fl_Flex *row5 = new Fl_Flex(Fl_Flex::ROW);
-        Fl_Box *lbl5 = new Fl_Box(0,0,0,0, "Resulting Interval:");
+        Fl_Box *lbl5 = new Fl_Box(0,0,0,0);
+        lbl5->label("Resulting Interval:");
         m_resInterval = new Fl_Input(0, 0, 0, 0);
         m_resInterval->value("filler");
         m_resInterval->readonly(true);
-        Fl_Box *lbl7 = new Fl_Box(0,0,0,0,"Milliseconds");
+        Fl_Box *lbl7 = new Fl_Box(0,0,0,0);
+        lbl7->label("Milliseconds");
         row3->end();
 
         Fl_Box* line2 = new Fl_Box(0,0,0,0);

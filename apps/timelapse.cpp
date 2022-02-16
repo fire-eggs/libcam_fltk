@@ -99,10 +99,13 @@ static void cbRadio(Fl_Widget *w, void *d)
         mw->m_rdTLLength->value(0);
 }
 
+static int captureWVals[] = {640,1024,1280,1920,2272,3072,4056};
+static int captureHVals[]  = {480,768,960,1080,1704,2304,3040};
+
 static void cbTimelapse(Fl_Widget *w, void *d)
 {
     MainWin *mw = static_cast<MainWin *>(d);
-    Fl_Light_Button *btn = dynamic_cast<Fl_Light_Button *>(w);
+    Fl_Light_Button *btn = static_cast<Fl_Light_Button *>(w);
 
     if (!btn->value())
     {
@@ -153,8 +156,8 @@ static void cbTimelapse(Fl_Widget *w, void *d)
     // get file settings
     _timelapsePNG = mw->m_cmbTLFormat->value() == 1;
     int sizeVal = mw->m_cmbTLSize->value();
-    _timelapseH = mw->m_captureHVals[sizeVal];
-    _timelapseW = mw->m_captureWVals[sizeVal];
+    _timelapseH = captureHVals[sizeVal];
+    _timelapseW = captureWVals[sizeVal];
     _timelapseFolder = mw->inpTLFileNameDisplay->value();
 
     // TODO check if _timelapseStep or _timelapseLimit are negative
@@ -297,6 +300,9 @@ void MainWin::leftTimelapse(Fl_Flex *col)
         row5->setSize(spinLengthVal, 85);
     }
 
+    m_spTLLenVal->deactivate();
+    m_cmbTLLenType->deactivate();
+    
     col->setSize(row0, 25);
     col->setSize(pad1, 25);
     col->setSize(row1, 30);

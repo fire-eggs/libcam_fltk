@@ -49,6 +49,10 @@ static void capFolderPick(Fl_Widget*, void *)
     // TODO pass as userdata
     folderPick(inpFileNameDisplay);
 }
+
+static int captureWVals[] = {640, 1024, 1280, 1920, 2272, 3072, 4056};
+static int captureHVals[]  = {480, 768, 960, 1080, 1704, 2304, 3040};
+
 static void onCapture(Fl_Widget *w, void *)
 {
     // TODO pass mainwin as data
