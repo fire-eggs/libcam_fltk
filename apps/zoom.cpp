@@ -2,9 +2,12 @@
 // Created by kevin on 2/13/22.
 //
 
+#ifdef NOISY
 #include <iostream>
+#endif
+
+#include <FL/fl_draw.H>
 #include "settings.h"
-#include "capture.h"
 #include "prefs.h"
 #include "mainwin.h"
 #include "zoom.h"
@@ -33,6 +36,26 @@ Fl_Menu_Item menu_cmbZoom[] =
                 {0,     0, 0, 0, 0,                      0, 0,  0, 0}
         };
 
+class DrawZoom : public Fl_Widget
+{
+public:
+    DrawZoom(int X, int Y, int W, int H, const char *L= nullptr) : Fl_Widget(X,Y,W,H,L) {}
+    void draw()
+    {
+        fl_draw_box(FL_BORDER_BOX, x(), y(), w(), h(), FL_BACKGROUND_COLOR);
+        fl_draw_box(FL_BORDER_FRAME, x(), y(), w(), h(), FL_BLACK);
+
+        // TODO common code w/ camThread.h
+        int dx = w() * (_panH + (1.0 - _zoom) / 2.0);
+        int dy = h() * (_panV + (1.0 - _zoom) / 2.0);
+        int dh = h() * _zoom;
+        int dw = w() * _zoom;
+        fl_draw_box(FL_BORDER_FRAME, x()+dx, y()+dy, dw, dh, FL_BLUE);
+    }
+};
+
+DrawZoom *dZoom;
+
 static void commonZoom(MainWin *mw, int zoomdex);
 
 static void onZoomChange(Fl_Widget *w, void *d)
@@ -41,13 +64,15 @@ static void onZoomChange(Fl_Widget *w, void *d)
     _zoomChoice = ((Fl_Choice *)w)->value();
     commonZoom(mw, _zoomChoice);
 
-    if (!_zoomChoice && mw->m_chkLever->value())
+    if (_zoomChoice && mw->m_chkLever->value())
     {
         _panV = -_panV;
         _panH = -_panH;
     }
 
     _lever = mw->m_chkLever->value(); // HACK no callback for lever change so update frequently
+
+    dZoom->redraw();
 
     onStateChange();
 }
@@ -69,7 +94,8 @@ static void onPanH(Fl_Widget *w, void *d)
         _panH = -_panH;
     }
 
-    onStateChange();
+    onZoomChange(mw->cmbZoom, d);
+    //onStateChange();
 }
 
 static void onPanV(Fl_Widget *w, void *d)
@@ -89,7 +115,8 @@ static void onPanV(Fl_Widget *w, void *d)
         _panV = -_panV;
     }
 
-    onStateChange();
+    onZoomChange(mw->cmbZoom, d);
+    //onStateChange();
 }
 
 static void onZoomReset(Fl_Widget *, void *d)
@@ -156,6 +183,8 @@ Fl_Group *MainWin::makeZoomTab(int w, int h)
     bReset->callback(onZoomReset, this);
 
     slidY += 50;
+
+    dZoom = new DrawZoom(slidX, slidY, 150, 150);
 
     _panH = panHval;
     m_rlPanH->value(_panH); // TODO confirm is not corrected
