@@ -3,6 +3,8 @@
 //
 
 #include <iostream>
+#include <ctime>
+#include <cmath>
 #include "mainwin.h"
 #include "calc.h"
 
@@ -31,6 +33,9 @@ unsigned int _timelapseCount;
 
 extern Prefs *_prefs;
 void folderPick(Fl_Input *);
+
+Fl_Box *lblStart;
+Fl_Box *lblEnd;
 
 static unsigned long intervalToMilliseconds(int intervalType)
 {
@@ -109,9 +114,7 @@ static void cbTimelapse(Fl_Widget *w, void *d)
 
     if (!btn->value())
     {
-        // deactivate timelapse flag
-        doTimelapse = false;
-        mw->m_tabTL->selection_color(FL_BACKGROUND_COLOR);
+        mw->timelapseEnded();
         return;
     }
 
@@ -164,7 +167,29 @@ static void cbTimelapse(Fl_Widget *w, void *d)
     // TODO check for all file settings being valid
 
     mw->save_timelapse_settings();
-    
+
+    {
+        std::time_t raw_time;
+        std::time(&raw_time);
+        char time_string[64];
+        std::tm *time_info = std::localtime(&raw_time);
+        std::strftime(time_string, sizeof(time_string), "Timelapse started at: %H:%M:%S %b %d", time_info);
+        lblStart->copy_label(time_string);
+
+        // effective timelapse length -> seconds
+        int tLseconds = lround(_timelapseLimit / 1000.0);
+        if (_timelapseCount)
+        {
+            tLseconds = lround(_timelapseCount * _timelapseStep / 1000.0);
+        }
+
+        // raw_time + seconds
+        std::time_t end_time = raw_time + tLseconds; // test: 37 minutes
+        time_info = std::localtime(&end_time);
+        std::strftime(time_string, sizeof(time_string), "Timelapse will end at: %H:%M:%S %b %d (est.)", time_info);
+        lblEnd->copy_label(time_string);
+    }
+
     // activate timelapse flag
     doTimelapse = true;
 }
@@ -182,9 +207,12 @@ static void cbHidePreview(Fl_Widget *w, void *d)
 
 void MainWin::timelapseEnded()
 {
+    // timelapse has been ended
     doTimelapse = false;
     m_tabTL->selection_color(FL_BACKGROUND_COLOR);
     m_btnDoTimelapse->value(0);
+    lblStart->copy_label("");
+    lblEnd->copy_label("");
 }
 
 static void onCalc(Fl_Widget *w, void *d)
@@ -403,6 +431,21 @@ Fl_Group *MainWin::makeTimelapseTab(int w, int h)
     btnDoit->selection_color(TL_ACTIVE_COLOR);
     btnDoit->callback(cbTimelapse, this);
     m_btnDoTimelapse = btnDoit;
+
+    lblStart = new Fl_Box(35, MAGIC_Y+360, 350, 25);
+    //lblStart->label("Timelapse started at: hh:mm:ss MMM dd");
+    lblStart->align(Fl_Align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT));
+    //lblStart->deactivate();
+
+    lblEnd = new Fl_Box(35, MAGIC_Y+390, 350, 25);
+    //lblEnd->label("Timelapse will end at: hh:mm:ss MMM dd (est.)");
+    lblEnd->align(Fl_Align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT));
+    //lblEnd->deactivate();
+
+    Fl_Box *lblFc = new Fl_Box(35, MAGIC_Y+420, 350, 25);
+    lblFc->label("Frames captured: xxxx of nnnn");
+    lblFc->align(Fl_Align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT));
+    lblFc->deactivate();
 
     /*
     Fl_Check_Button *chkHidePreview = new Fl_Check_Button(35, MAGIC_Y + 375, 200, 25, "Turn off preview window");
