@@ -15,6 +15,7 @@
 #include <FL/Fl_Roller.H>
 #include <FL/Fl_Spinner.H>
 #include <FL/Fl_Round_Button.H>
+#include <ctime>
 
 #include "prefs.h"
 #include "FL_Flex/FL_Flex.H"
@@ -59,6 +60,9 @@ public:
 
     Fl_Input* inpTLFileNameDisplay;
 
+    std::time_t m_TLStart;
+    std::time_t m_TLEnd;
+    Fl_Box *m_lblCountdown;
 
 public:
     MainWin(int x, int y, int w, int h); // : Fl_Double_Window(x, y, w,h);
@@ -80,6 +84,8 @@ public:
     void loadZoomSettings();
     void save_capture_settings();
     void save_timelapse_settings();
+
+    void updateCountdown(bool repeat=true);
 
 public:
     int *m_captureWVals;

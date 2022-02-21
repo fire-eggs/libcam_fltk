@@ -107,6 +107,36 @@ static void cbRadio(Fl_Widget *w, void *d)
 static int captureWVals[] = {640,1024,1280,1920,2272,3072,4056};
 static int captureHVals[]  = {480,768,960,1080,1704,2304,3040};
 
+static void cbTLcountdown(void *d)
+{
+    MainWin *mw = static_cast<MainWin *>(d);
+    mw->updateCountdown();
+}
+
+void MainWin::updateCountdown(bool repeat)
+{
+    // current time
+    std::time_t raw_time;
+    std::time(&raw_time);
+
+    double t = difftime(m_TLEnd, raw_time);
+
+    if (t < 0)
+        return; // shouldn't happen but just in case
+        
+    int h = (t / 3600);
+    int m = (long)((t / 60.0)) % 60;
+    int s = (long)t % 60;
+
+    char buff[64];
+    snprintf(buff, sizeof(buff), "%02d:%02d:%02d remaining", h, m, s);
+    m_lblCountdown->copy_label(buff);
+
+    double tick = t > 3600 ? 15 : 5;
+    if (repeat)
+        Fl::repeat_timeout(tick, cbTLcountdown, this);
+}
+
 static void cbTimelapse(Fl_Widget *w, void *d)
 {
     MainWin *mw = static_cast<MainWin *>(d);
@@ -171,6 +201,8 @@ static void cbTimelapse(Fl_Widget *w, void *d)
     {
         std::time_t raw_time;
         std::time(&raw_time);
+        mw->m_TLStart = raw_time;
+
         char time_string[64];
         std::tm *time_info = std::localtime(&raw_time);
         std::strftime(time_string, sizeof(time_string), "Timelapse started at: %H:%M:%S %b %d", time_info);
@@ -188,22 +220,17 @@ static void cbTimelapse(Fl_Widget *w, void *d)
         time_info = std::localtime(&end_time);
         std::strftime(time_string, sizeof(time_string), "Timelapse will end at: %H:%M:%S %b %d (est.)", time_info);
         lblEnd->copy_label(time_string);
+
+        mw->m_TLEnd = end_time;
+        int countdownSeconds = tLseconds > 3600 ? 15 : 5;
+        Fl::add_timeout(countdownSeconds, cbTLcountdown, mw);
+        mw->updateCountdown(false);
+
     }
 
     // activate timelapse flag
     doTimelapse = true;
 }
-
-/*
-static void cbHidePreview(Fl_Widget *w, void *d)
-{
-    Fl_Check_Button *btn = dynamic_cast<Fl_Check_Button *>(w);
-    _previewOn = !btn->value();
-    
-    Prefs *setP = _prefs->getSubPrefs("preview");
-    setP->set("on", _previewOn);
-}
-*/
 
 void MainWin::timelapseEnded()
 {
@@ -213,6 +240,8 @@ void MainWin::timelapseEnded()
     m_btnDoTimelapse->value(0);
     lblStart->copy_label("");
     lblEnd->copy_label("");
+    m_lblCountdown->copy_label("");
+    Fl::remove_timeout(cbTLcountdown);
 }
 
 static void onCalc(Fl_Widget *w, void *d)
@@ -442,10 +471,15 @@ Fl_Group *MainWin::makeTimelapseTab(int w, int h)
     lblEnd->align(Fl_Align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT));
     //lblEnd->deactivate();
 
-    Fl_Box *lblFc = new Fl_Box(35, MAGIC_Y+420, 350, 25);
+    m_lblCountdown = new Fl_Box(35, MAGIC_Y+420, 350, 25);
+    m_lblCountdown->align(Fl_Align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT));
+
+    /*
+    Fl_Box *lblFc = new Fl_Box(35, MAGIC_Y+450, 350, 25);
     lblFc->label("Frames captured: xxxx of nnnn");
     lblFc->align(Fl_Align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT));
     lblFc->deactivate();
+    */
 
     /*
     Fl_Check_Button *chkHidePreview = new Fl_Check_Button(35, MAGIC_Y + 375, 200, 25, "Turn off preview window");
