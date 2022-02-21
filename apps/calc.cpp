@@ -9,6 +9,20 @@
 #include <cmath>
 #include "calc.h"
 
+class HackSpin : Fl_Spinner
+{
+    // Modify the default callback logic of the Fl_Spinner so that the callback
+    // will occur whenever the user types in the input field [not just waiting for
+    // focus change].
+
+public:
+    HackSpin(int X, int Y, int W, int H, const char *L= nullptr)
+    : Fl_Spinner(X,Y,W,H,L)
+    {
+        input_.when(FL_WHEN_CHANGED | FL_WHEN_RELEASE | FL_WHEN_ENTER_KEY);
+    }
+};
+
 static int FPS_VALS[] = {15, 24, 25, 30, 60};
 
 static Fl_Menu_Item menu_cmbFPS[] =
@@ -136,14 +150,14 @@ CalcWin::CalcWin(int w, int h, const char *l, Prefs *prefs)
             Fl_Box *lbl2 = new Fl_Box(0,0,0,0);
             lbl2->label("1. Length of final video:");
             
-            m_spinVidLen = new Fl_Spinner(0, 0, 0, 0);
+            m_spinVidLen = (Fl_Spinner *)new HackSpin(0, 0, 0, 0);
             m_spinVidLen->type(1); // FL_FLOAT
             m_spinVidLen->minimum(0.5);
             m_spinVidLen->maximum(500);
             m_spinVidLen->step(0.5);
             m_spinVidLen->value(60); // TODO from prefs
             m_spinVidLen->callback(onChange, this);
-            m_spinVidLen->when(FL_WHEN_CHANGED);
+            //m_spinVidLen->when(FL_WHEN_CHANGED);
 
             Fl_Box *lbl3 = new Fl_Box(0, 0, 0, 0);
             lbl3->label("Seconds");
@@ -207,7 +221,7 @@ CalcWin::CalcWin(int w, int h, const char *l, Prefs *prefs)
 
         Fl_Flex *row4 = new Fl_Flex(Fl_Flex::ROW);
 
-        m_spinRecLen = new Fl_Spinner(0, 0, 0, 0);
+        m_spinRecLen = (Fl_Spinner *)new HackSpin(0, 0, 0, 0);
         m_spinRecLen->label("3. How long will it take to record the timelapse:");
         m_spinRecLen->align(Fl_Align(FL_ALIGN_TOP_LEFT));
         m_spinRecLen->type(1); // FL_FLOAT
@@ -216,7 +230,7 @@ CalcWin::CalcWin(int w, int h, const char *l, Prefs *prefs)
         m_spinRecLen->step(0.5);
         m_spinRecLen->value(1); // TODO from prefs
         m_spinRecLen->callback(onChange, this);
-        m_spinRecLen->when(FL_WHEN_CHANGED);
+        //m_spinRecLen->when(FL_WHEN_CHANGED);
 
         m_cmbRunLenType = new Fl_Choice(0,0,0,0);
         m_cmbRunLenType->down_box(FL_BORDER_BOX);
