@@ -13,6 +13,7 @@
 #include "capture.h"
 #include "settings.h"
 #include "zoom.h"
+#include "mylog.h"
 
 #include <iostream>
 
@@ -31,6 +32,7 @@ MainWin* _window;
 
 extern void fire_proc_thread(int argc, char ** argv);
 bool OKTOSAVE;
+bool OKTOFIRE;
 extern bool _previewOn;
 
 static void popup(Fl_File_Chooser* filechooser)
@@ -76,6 +78,14 @@ void folderPick(Fl_Input *inp)
 
 void onStateChange()
 {
+    if (!OKTOFIRE)
+        return;
+
+    dolog("STATE:bright[%g]contrast[%g]sharp[%g]evcomp[%g]saturate[%g]",
+          _bright,_contrast,_sharp,_evComp,_saturate);
+    dolog("STATE:hflip[%d]vflip[%d]zoom[%d]panh[%g]panv[%g]preview[%d]",
+          _hflip,_vflip,_zoomChoice,_panH,_panV,_previewOn);
+
     if (OKTOSAVE)
     {
         Prefs *setP = _prefs->getSubPrefs("camera");
@@ -157,6 +167,8 @@ void quit_cb(Fl_Widget* , void* )
     // TODO how to kill camera thread?
     // TODO grab preview window size/pos
     _window->hide();
+
+    dolog("quit_cb");
     exit(0);
 }
 
@@ -184,7 +196,7 @@ int handleSpecial(int event)
         return 1;
 
     case TIMELAPSE_COMPLETE:
-        std::cerr << "Timelapse ended" << std::endl;
+        dolog("TL-end from camthread");
         _window->timelapseEnded();
         break;
 
@@ -201,6 +213,8 @@ void guiEvent(int val)
 
 int main(int argc, char** argv)
 {
+    OKTOFIRE = false; // hack: don't activate statechange until settings all loaded
+    initlog();
 
     libcamera::logSetTarget(libcamera::LoggingTargetNone);
 
@@ -238,10 +252,12 @@ int main(int argc, char** argv)
     _window->loadSavedSettings(); // TODO is this necessary? or preferred over each tab doing it?
     _window->loadZoomSettings(); // TODO is this necessary? or preferred over each tab doing it?
 
+    OKTOFIRE = true;
     onStateChange();
 
     OKTOSAVE = true;
         
+    dolog("fl_run");
     return Fl::run();   
 }
 
