@@ -28,6 +28,8 @@
 
 #include "mylog.h"
 
+const int TIMELAPSE_COMPLETE = 1002; // TODO need a better hack
+
 using namespace std::placeholders;
 using libcamera::Stream;
 
@@ -307,7 +309,7 @@ void* proc_func(void *p)
             auto now = std::chrono::high_resolution_clock::now();
             timelapseTrigger = activeTimelapse && (now - timelapseStart) > timelapseStep;
             
-            if (_timelapseCount < timelapseFrameCount || !doTimelapse)
+            if ((_timelapseCount-1) < timelapseFrameCount || !doTimelapse)
             {
                 if (!doTimelapse)
                 {
@@ -320,7 +322,7 @@ void* proc_func(void *p)
                 activeTimelapse = false;
                 timelapseTrigger = false;
                 doTimelapse = false;
-                guiEvent(1002); // TODO extern to const
+                guiEvent(TIMELAPSE_COMPLETE);
             }
             
             // TODO check against _timelapseLimit
