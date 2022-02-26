@@ -7,6 +7,7 @@
 #include <cmath>
 #include "mainwin.h"
 #include "calc.h"
+#include "mylog.h"
 
 #ifdef __CLION_IDE__
 #pragma clang diagnostic push
@@ -139,6 +140,7 @@ void MainWin::updateCountdown(bool repeat)
 
 static void cbTimelapse(Fl_Widget *w, void *d)
 {
+    dolog("cbTimelapse");
     MainWin *mw = static_cast<MainWin *>(d);
     Fl_Light_Button *btn = static_cast<Fl_Light_Button *>(w);
 
@@ -170,12 +172,16 @@ static void cbTimelapse(Fl_Widget *w, void *d)
         lenval = mw->m_spTLLenVal->value();
     }
 
+    /*
     std::cerr << "Timelapse step: " << intervalStep << " " << mw->m_cmbTLTimeType->text() << std::endl;
     if (framecount > 0)
         std::cerr << "   Run for " << framecount << " frames" << std::endl;
     else
         std::cerr << "   Run for " << lenval << " " << mw->m_cmbTLLenType->text() << std::endl;
-
+*/
+    
+    dolog("cbTimelapse: step:%g %s frames: %d", intervalStep, mw->m_cmbTLTimeType->text(), framecount);
+    
     // Convert interval, length into milliseconds
     _timelapseStep = intervalStep * intervalToMilliseconds(intervalType);
     if (framecount > 0)

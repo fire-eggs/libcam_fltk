@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.6)
 
+include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/spdlog .)
+
 project(libcamera-still)
 add_executable(libcamera-still libcamera_still.cpp)
 target_link_libraries(libcamera-still libcamera_app images)
@@ -21,7 +23,7 @@ add_executable(libcamera-jpeg libcamera_jpeg.cpp)
 target_link_libraries(libcamera-jpeg libcamera_app images)
 
 project(libcam_fltk)
-add_executable(libcam_fltk libcam_fltk.cpp camThread.cpp timelapse.cpp capture.cpp settings.cpp zoom.cpp calc.cpp FL_Flex/FL_Flex.cpp)
+add_executable(libcam_fltk libcam_fltk.cpp camThread.cpp timelapse.cpp capture.cpp settings.cpp zoom.cpp calc.cpp FL_Flex/FL_Flex.cpp mylog.cpp)
 target_link_libraries(libcam_fltk libcamera_app encoders outputs fltk m X11 Xext pthread Xinerama Xfixes Xcursor Xft Xrender m fontconfig dl)
 
 set(EXECUTABLES libcamera-still libcamera-vid libcamera-hello libcamera-raw libcamera-jpeg libcam_fltk)

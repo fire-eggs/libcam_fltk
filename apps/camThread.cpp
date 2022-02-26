@@ -26,6 +26,8 @@
 
 #include "image/image.hpp" // jpeg_save
 
+#include "mylog.h"
+
 using namespace std::placeholders;
 using libcamera::Stream;
 
@@ -123,7 +125,7 @@ static void save_image(CompletedRequestPtr &payload, Stream *stream,
 //	else
 //		yuv_save(mem, info, filename, options);
 //	if (options->verbose)
-    std::cerr << "Saved image " << info.width << " x " << info.height << " to file " << filename << std::endl;
+    dolog("CT:save_image: w:%d h:%d file:%s", info.width, info.height, filename.c_str());
 }
 
 static void save_images(CompletedRequestPtr &payload)
@@ -288,7 +290,7 @@ void* proc_func(void *p)
 
         if (doTimelapse && !activeTimelapse)
         {
-std::cerr << "Activate Timelapse " << std::endl;
+            dolog("CT:activate timelapse");
             
             // first recognition of timelapse starting
             timelapseStart = std::chrono::high_resolution_clock::now();
@@ -309,11 +311,11 @@ std::cerr << "Activate Timelapse " << std::endl;
             {
                 if (!doTimelapse)
                 {
-std::cerr << "Timelapse stopped in GUI" << std::endl;
+                    dolog("CT:timelapse stopped in GUI");
                 }
                 else
                 {
-std::cerr << "Timelapse frame count reached; ended " << std::endl;
+                    dolog("CT:timelapse frame count reached; ended");
                 }
                 activeTimelapse = false;
                 timelapseTrigger = false;
@@ -321,7 +323,6 @@ std::cerr << "Timelapse frame count reached; ended " << std::endl;
                 guiEvent(1002); // TODO extern to const
             }
             
-            // TODO how to inform the GUI that the timelapse has ended?
             // TODO check against _timelapseLimit
         }
         
@@ -329,16 +330,18 @@ std::cerr << "Timelapse frame count reached; ended " << std::endl;
         {
             if (doCapture) // user has requested still capture
             {
+                dolog("CT:docapture");
                 switchToCapture(options);
             }
             else if (stateChange) // user has made settings change
             {
+                dolog("CT:changesettings");
                 changeSettings();
                 stateChange = false;
             }
             else if (timelapseTrigger)
             {
-std::cerr << "Timelapse triggered " << std::endl;
+                dolog("CT:timelapse triggered");
                 timelapseStart = std::chrono::high_resolution_clock::now(); // for next timelapse interval
                 switchToTimelapse(options);
             }
@@ -352,8 +355,8 @@ std::cerr << "Timelapse triggered " << std::endl;
         }
         else if (_app->StillStream()) // still capture complete
         {
-std::cerr << "Capture Image " << std::endl;
             timelapseFrameCount++;
+            dolog("CT:capture image - %d", timelapseFrameCount);
             doCapture = false;
             timelapseTrigger = false;
             captureImage(&msg);
@@ -361,6 +364,7 @@ std::cerr << "Capture Image " << std::endl;
         
         if (previewIsOn != _previewOn)
         {
+            dolog("CT: change preview");
             // switching state of the preview window
             changePreview();
         }

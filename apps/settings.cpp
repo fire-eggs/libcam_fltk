@@ -7,6 +7,7 @@
 #include "prefs.h"
 #include "mainwin.h"
 #include "settings.h"
+#include "mylog.h"
 
 // Camera settings : implementation
 bool _hflip;
@@ -131,6 +132,7 @@ void onReset(Fl_Widget *, void *d)
 
 static void cbHidePreview(Fl_Widget *w, void *)
 {
+    dolog("cbHidePreview:%d", _previewOn);
     Fl_Check_Button* btn = dynamic_cast<Fl_Check_Button*>(w);
     _previewOn = !btn->value();
 
