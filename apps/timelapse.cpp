@@ -8,6 +8,7 @@
 #include "mainwin.h"
 #include "calc.h"
 #include "mylog.h"
+#include <FL/Fl.H>
 
 #ifdef __CLION_IDE__
 #pragma clang diagnostic push
@@ -132,6 +133,8 @@ void MainWin::updateCountdown(bool repeat)
     char buff[64];
     snprintf(buff, sizeof(buff), "%02d:%02d:%02d remaining", h, m, s);
     m_lblCountdown->copy_label(buff);
+    
+    Fl::flush();
 
     double tick = t > 3600 ? 15 : 5;
     if (repeat)
@@ -188,6 +191,9 @@ static void cbTimelapse(Fl_Widget *w, void *d)
         _timelapseCount = framecount;
     else
     {
+
+        // TODO convert to framecount
+        
         _timelapseCount = 0;
         _timelapseLimit = lenval * intervalToMilliseconds(lenType);
     }
@@ -248,6 +254,7 @@ void MainWin::timelapseEnded()
     lblEnd->copy_label("");
     m_lblCountdown->copy_label("");
     Fl::remove_timeout(cbTLcountdown);
+    Fl::flush();
 }
 
 static void onCalc(Fl_Widget *w, void *d)
