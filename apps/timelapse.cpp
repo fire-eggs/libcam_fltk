@@ -115,6 +115,9 @@ static void cbTLcountdown(void *d)
     mw->updateCountdown();
 }
 
+#define LONGTICK 15
+#define SHORTTICK 5
+
 void MainWin::updateCountdown(bool repeat)
 {
     // current time
@@ -136,7 +139,7 @@ void MainWin::updateCountdown(bool repeat)
     
     Fl::flush();
 
-    double tick = t > 3600 ? 15 : 5;
+    double tick = t > 3600 ? LONGTICK : t > 100 ? SHORTTICK : 1;
     if (repeat)
         Fl::repeat_timeout(tick, cbTLcountdown, this);
 }
@@ -233,7 +236,8 @@ static void cbTimelapse(Fl_Widget *w, void *d)
         lblEnd->copy_label(time_string);
 
         mw->m_TLEnd = end_time;
-        int countdownSeconds = tLseconds > 3600 ? 15 : 5;
+        // TODO to function
+        int countdownSeconds = tLseconds > 3600 ? LONGTICK : tLseconds > 100 ? SHORTTICK : 1;
         Fl::add_timeout(countdownSeconds, cbTLcountdown, mw);
         mw->updateCountdown(false);
 
