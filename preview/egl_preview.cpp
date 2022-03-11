@@ -445,6 +445,8 @@ void EglPreview::Reset()
 
 bool EglPreview::Quit()
 {
+    return false; // TODO notify the main app that preview has been turned off
+#if 0 // KBR
 	XEvent event;
 	while (XCheckTypedWindowEvent(display_, window_, ClientMessage, &event))
 	{
@@ -452,6 +454,7 @@ bool EglPreview::Quit()
 			return true;
 	}
 	return false;
+#endif
 }
 
 Preview *make_egl_preview(Options const *options)
