@@ -191,13 +191,12 @@ static void cbTimelapse(Fl_Widget *w, void *d)
         _timelapseCount = framecount;
     else
     {
-
-        // TODO convert to framecount
-        
-        _timelapseCount = 0;
         _timelapseLimit = lenval * intervalToMilliseconds(lenType);
+        _timelapseCount = _timelapseLimit / _timelapseStep;
     }
 
+    dolog("cbTimelapse2: step:%d frames: %d [limit:%d]", _timelapseStep, _timelapseCount, _timelapseLimit);
+    
     // get file settings
     _timelapsePNG = mw->m_cmbTLFormat->value() == 1;
     int sizeVal = mw->m_cmbTLSize->value();
@@ -369,9 +368,6 @@ void MainWin::leftTimelapse(Fl_Flex *col)
         row5->setSize(pad, 25);
         row5->setSize(spinLengthVal, 85);
     }
-
-    m_spTLLenVal->deactivate();
-    m_cmbTLLenType->deactivate();
     
     col->setSize(row0, 25);
     col->setSize(pad1, 25);

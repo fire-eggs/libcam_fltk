@@ -68,7 +68,7 @@ extern int _timelapseH;
 extern bool _timelapsePNG;
 extern const char *_timelapseFolder;
 extern unsigned long _timelapseStep;
-extern unsigned long _timelapseLimit;
+//extern unsigned long _timelapseLimit; // not using: limit on count
 extern unsigned int _timelapseCount;
 
 // Local pointers, set appropriately on switchTo[Capture|Timelapse]
@@ -324,8 +324,6 @@ void* proc_func(void *p)
                 doTimelapse = false;
                 guiEvent(TIMELAPSE_COMPLETE);
             }
-            
-            // TODO check against _timelapseLimit
         }
         
         if (_app->VideoStream())
