@@ -23,7 +23,6 @@ bool _previewOn;
 bool stateChange;
 
 extern Prefs *_prefs;
-void folderPick(Fl_Input *);
 extern MainWin* _window;
 
 extern void onStateChange();

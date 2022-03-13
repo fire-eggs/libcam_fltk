@@ -50,7 +50,7 @@ static void popup(Fl_File_Chooser* filechooser)
         Fl::grab(g);
 }
 
-void folderPick(Fl_Input *inp)
+void folderPick(Fl_Output *inp)
 {
     // TODO native dialog as an option
 

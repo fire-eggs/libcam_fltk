@@ -15,6 +15,8 @@
 #include <FL/Fl_Roller.H>
 #include <FL/Fl_Spinner.H>
 #include <FL/Fl_Round_Button.H>
+#include <FL/Fl_Output.H>
+
 #include <ctime>
 
 #include "prefs.h"
@@ -58,7 +60,7 @@ public:
     Fl_Choice *m_cmbTLFormat;
     Fl_Light_Button *m_btnDoTimelapse;
 
-    Fl_Input* inpTLFileNameDisplay;
+    Fl_Output* inpTLFileNameDisplay;
 
     std::time_t m_TLStart;
     std::time_t m_TLEnd;
@@ -91,5 +93,7 @@ public:
     int *m_captureWVals;
     int *m_captureHVals;
 };
+
+void folderPick(Fl_Output *);
 
 #endif //LIBCAMFLTK_MAINWIN_H

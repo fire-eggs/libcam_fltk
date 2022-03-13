@@ -31,10 +31,7 @@ unsigned long _timelapseStep;
 unsigned long _timelapseLimit;
 unsigned int _timelapseCount;
 
-//extern bool _previewOn;
-
 extern Prefs *_prefs;
-void folderPick(Fl_Input *);
 
 Fl_Box *lblStart;
 Fl_Box *lblEnd;
@@ -426,11 +423,10 @@ void MainWin::rightTimelapse(Fl_Flex *col)
 
     Fl_Flex *row4 = new Fl_Flex(Fl_Flex::ROW);
     {
-        inpTLFileNameDisplay = new Fl_Input(0,0,0,0, "Folder:");
+        inpTLFileNameDisplay = new Fl_Output(0,0,0,0, "Folder:");
         inpTLFileNameDisplay->align(Fl_Align(FL_ALIGN_TOP_LEFT));
         inpTLFileNameDisplay->value(foldBuffer);
         if (foldBuffer) free(foldBuffer);
-        inpTLFileNameDisplay->readonly(true);
 
         Fl_Button *btn = new Fl_Button(0,0,0,0, "Pick");
         btn->callback(capTLFolderPick, this);
