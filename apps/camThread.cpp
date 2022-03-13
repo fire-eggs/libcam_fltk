@@ -85,7 +85,7 @@ static std::string generate_filename(Options const *options)
 	if (!folder.empty() && folder.back() != '/')
 		folder += "/";
     
-//	if (options->datetime)
+//	if (options->datetime) // TODO other filename options
 	{
 		std::time_t raw_time;
 		std::time(&raw_time);
@@ -171,6 +171,14 @@ static void captureImage(LibcameraEncoder::Msg *msg)
   
   // TODO is pan/zoom reset?  if NOT, even necessary to re-establish settings?
 
+  //newopt->viewfinder_height = 768;
+  //newopt->viewfinder_width = 1024;
+  //dolog("CT:captureImage:Preview: %d %d", newopt->viewfinder_width, newopt->viewfinder_height);
+  //newopt->viewfinder_mode_string = "1024:768:12";
+  //newopt->viewfinder_mode = Mode(newopt->viewfinder_mode_string);
+  newopt->width = 1024;
+  newopt->height=768;
+  
   _app->ConfigureVideo();
   _app->StartEncoder();
   _app->StartCamera();
