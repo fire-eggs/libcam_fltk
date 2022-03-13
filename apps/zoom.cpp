@@ -73,6 +73,7 @@ static void onZoomChange(Fl_Widget *w, void *d)
     _lever = mw->m_chkLever->value(); // HACK no callback for lever change so update frequently
 
     dZoom->redraw();
+    Fl::flush();
 
     onStateChange();
 }
@@ -95,7 +96,6 @@ static void onPanH(Fl_Widget *w, void *d)
     }
 
     onZoomChange(mw->cmbZoom, d);
-    //onStateChange();
 }
 
 static void onPanV(Fl_Widget *w, void *d)
@@ -116,12 +116,12 @@ static void onPanV(Fl_Widget *w, void *d)
     }
 
     onZoomChange(mw->cmbZoom, d);
-    //onStateChange();
 }
 
 static void onZoomReset(Fl_Widget *, void *d)
 {
     MainWin *mw = (MainWin *)d;
+        
     _zoom = 1.0;
     _zoomChoice = 0;
     _panH = +0.0;
@@ -135,6 +135,9 @@ static void onZoomReset(Fl_Widget *, void *d)
     mw->m_rlPanH ->deactivate();
     mw->m_rlPanV ->deactivate();
 
+    dZoom->redraw();
+    Fl::flush();
+    
     onStateChange();
 }
 
