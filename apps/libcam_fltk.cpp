@@ -175,6 +175,12 @@ void quit_cb(Fl_Widget* , void* )
 void save_cb(Fl_Widget*, void*) {
 }
 
+extern void do_about();
+void about_cb(Fl_Widget*, void*)
+{
+    do_about();
+}
+
 Fl_Menu_Item mainmenuItems[] =
 {
     {"&File", 0, nullptr, nullptr, FL_SUBMENU, 0, 0, 0, 0},
@@ -183,6 +189,8 @@ Fl_Menu_Item mainmenuItems[] =
     {"Save", 0, save_cb, 0, 0, 0, 0, 0, 0},
 */
     {"E&xit", 0, quit_cb, nullptr, 0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {"&About", 0, about_cb, nullptr, 0, 0, 0, 0, 0},
     {0, 0, 0, 0, 0, 0, 0, 0, 0},
     {0, 0, 0, 0, 0, 0, 0, 0, 0},
 };
