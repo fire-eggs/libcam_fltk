@@ -67,7 +67,7 @@ public:
     Fl_Box *m_lblCountdown;
 
 public:
-    MainWin(int x, int y, int w, int h); // : Fl_Double_Window(x, y, w,h);
+    MainWin(int x, int y, int w, int h, const char *L=0); // : Fl_Double_Window(x, y, w,h);
 
     Fl_Group *makeSettingsTab(int w, int h);
     Fl_Group *makeCaptureTab(int w, int h);

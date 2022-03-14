@@ -109,7 +109,7 @@ void onStateChange()
     stateChange = true;
 }
 
-MainWin::MainWin(int x, int y, int w, int h) : Fl_Double_Window(x, y, w,h)
+MainWin::MainWin(int x, int y, int w, int h,const char *L) : Fl_Double_Window(x, y, w,h,L)
     {
         int magicW = w - 20;
         int magicH = h - 50;
@@ -234,7 +234,7 @@ int main(int argc, char** argv)
     _prefs->getWinRect("MainWin", x, y, w, h);
 
     // TODO : use actual size when building controls?
-    MainWin window(x, y, w, h);
+    MainWin window(x, y, w, h, "libcam_fltk");
     window.callback(quit_cb);
 
     _menu = new Fl_Menu_Bar(0, 0, window.w(), 25);

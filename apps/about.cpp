@@ -27,7 +27,7 @@ Fl_Double_Window *make_about()
 {
     auto panel = new Fl_Double_Window(345, 300, "About libcam_fltk");
 
-    auto text = new Fl_Box(10, 5, 330, 150,
+    new Fl_Box(10, 5, 330, 150,
 "libcam_fltk : an interactive GUI\nfor libcamera-apps on Raspberry Pi\n"
 "\nVersion 0.5 (Alpha)\n\nProgrammer: Kevin Routley\nProduct Manager: Ted Barnard");
 
