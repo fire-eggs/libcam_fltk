@@ -13,6 +13,7 @@
 
 #include "prefs.h"
 #include "FL_Flex/FL_Flex.H"
+#include "timeentry.h"
 
 class CalcWin : public Fl_Double_Window
 {
@@ -36,13 +37,14 @@ public:
     void ControlsToUpdate(Fl_Spinner *, Fl_Round_Button*,Fl_Spinner*,Fl_Choice*,Fl_Round_Button*);
     void updateTLControls();
 
-    Fl_Spinner *m_spinVidLen;
+    //Fl_Spinner *m_spinVidLen;
     Fl_Choice *m_cmbFPS;
 
     void recalc();
 
     Fl_Choice *m_cmbRunLenType;
     Fl_Spinner *m_spinRecLen;
+    TimeEntry *tim;
 };
 
 #endif //LIBCAMFLTK_CALC_H

@@ -265,7 +265,7 @@ static void onCalc(Fl_Widget *w, void *d)
 
 void MainWin::doCalc()
 {
-    CalcWin *calc = new CalcWin(500, 500, "Calculator", _prefs);
+    CalcWin *calc = new CalcWin(400, 350, "Calculator", _prefs);
     calc->ControlsToUpdate(m_spTLFrameCount,m_rdTLFrameCount,m_spTLDblVal,m_cmbTLTimeType,m_rdTLLength);
     calc->showCalc();
 }
