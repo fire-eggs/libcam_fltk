@@ -14,13 +14,16 @@ class TimeEntry : public Fl_Pack
 public:
     TimeEntry(int x, int y, int w, int h, const char *L=nullptr);
     void value(int hr, int min, int sec);
+    void value(unsigned long seconds);
     void getValue(int &hr, int &min, int& sec);
     unsigned long getSeconds();
 
 private:
-    Fl_Spinner *hs;
+    Fl_Spinner *hs; // TODO consider using HackSpin instead?
     Fl_Spinner *ms;
     Fl_Spinner *ss;
+
+    static void te_cb(Fl_Widget *, void *); // internal callback
 };
 
 

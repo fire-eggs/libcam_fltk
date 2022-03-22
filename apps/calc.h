@@ -19,17 +19,18 @@ class CalcWin : public Fl_Double_Window
 {
 private:
     Prefs *m_prefs;
-    Fl_Input *m_resFrameCount;
-    Fl_Input *m_resInterval;
 
-    Fl_Spinner *_destFrameCount;
-    Fl_Round_Button* _destRadio1;
-    Fl_Round_Button* _destRadio2;
-    Fl_Spinner *_destIntervalSpin;
-    Fl_Choice *_destIntervalType;
+    TimeEntry *tlTime;  // length of timelapse
+    TimeEntry *vidTime; // length of video
+    Fl_Choice *m_cmbFPS; // choice of FPS
+    Fl_Spinner *spinTLInterval; // interval in seconds
+    Fl_Output *outFrameCount; // display of framecount
 
-    double m_intervalSeconds;
-    int m_framecount;
+    static void onChange(Fl_Widget *, void *);
+    static void onChangeInterval(Fl_Widget *, void *);
+    static void onReset(Fl_Widget *, void *);
+    void recalcInterval();
+    void showFramecount(int value);
 
 public:
     CalcWin(int w, int h, const char *l, Prefs *prefs);
@@ -38,13 +39,8 @@ public:
     void updateTLControls();
 
     //Fl_Spinner *m_spinVidLen;
-    Fl_Choice *m_cmbFPS;
 
-    void recalc();
 
-    Fl_Choice *m_cmbRunLenType;
-    Fl_Spinner *m_spinRecLen;
-    TimeEntry *tim;
 };
 
 #endif //LIBCAMFLTK_CALC_H

@@ -16,6 +16,7 @@
         hs->wrap(1);
         hs->format("%02.f");
         hs->value(0);
+        hs->callback(te_cb, this);
 //        hs->label("HR");
 //        hs->align(Fl_Align(FL_ALIGN_TOP));
 
@@ -29,6 +30,7 @@
         ms->wrap(1);   // TODO on wrap, increment hours?
         ms->format("%02.f");
         ms->value(1);
+        ms->callback(te_cb, this);
 //        ms->label("MIN");
 //        ms->align(Fl_Align(FL_ALIGN_TOP));
 
@@ -42,6 +44,7 @@
         ss->wrap(1);  // TODO on wrap, increment minutes?
         ss->format("%02.f");
         ss->value(0);
+        ss->callback((Fl_Callback *)te_cb, this);
 //        ss->label("SEC");
 //        ss->align(Fl_Align(FL_ALIGN_TOP));
 
@@ -69,3 +72,18 @@
         return h * 3600 + m * 60 + s;
     }
 
+void TimeEntry::value(unsigned long seconds)
+{
+    int hr = seconds / 3600;
+    seconds -= hr * 3600;
+    int min = seconds / 60;
+    seconds -= min * 60;
+    value(hr, min, seconds);
+}
+
+void TimeEntry::te_cb(Fl_Widget *, void *d)
+{
+    auto te = static_cast<TimeEntry *>(d);
+    te->set_changed();
+    te->do_callback();
+}
