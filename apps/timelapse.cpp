@@ -287,11 +287,7 @@ void MainWin::leftTimelapse(Fl_Flex *col)
         b->align(FL_ALIGN_INSIDE | FL_ALIGN_TOP_LEFT);
         b->labelfont(FL_BOLD);
 
-        Fl_Button *bCalc = new Fl_Button(0, 0, 0, 0, "Calculator");
-        bCalc->callback(onCalc, this);
-
         row0->end();
-        row0->setSize(bCalc, 100);
     }
 
     Fl_Box* pad1 = new Fl_Box(0, 0, 0, 0, "");
@@ -464,42 +460,26 @@ Fl_Group *MainWin::makeTimelapseTab(int w, int h)
         row0->end();
     }
 
+    Fl_Button *bCalc = new Fl_Button(35, MAGIC_Y+325, 150, 25, "Calculator");
+    bCalc->callback(onCalc, this);
+
     // TODO how to prevent getting too narrow?
-    Fl_Light_Button *btnDoit = new Fl_Light_Button(35, MAGIC_Y+325, 150, 25, "Run Timelapse");
+    Fl_Light_Button *btnDoit = new Fl_Light_Button(35, MAGIC_Y+355, 150, 25, "Run Timelapse");
     btnDoit->selection_color(TL_ACTIVE_COLOR);
     btnDoit->callback(cbTimelapse, this);
     m_btnDoTimelapse = btnDoit;
 
-    lblStart = new Fl_Box(35, MAGIC_Y+360, 350, 25);
-    //lblStart->label("Timelapse started at: hh:mm:ss MMM dd");
+    lblStart = new Fl_Box(35, MAGIC_Y+390, 350, 25);
+    lblStart->box(FL_BORDER_BOX);
     lblStart->align(Fl_Align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT));
-    //lblStart->deactivate();
 
-    lblEnd = new Fl_Box(35, MAGIC_Y+390, 350, 25);
-    //lblEnd->label("Timelapse will end at: hh:mm:ss MMM dd (est.)");
+    lblEnd = new Fl_Box(35, MAGIC_Y+420, 350, 25);
+    lblEnd->box(FL_BORDER_BOX);
     lblEnd->align(Fl_Align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT));
-    //lblEnd->deactivate();
 
-    m_lblCountdown = new Fl_Box(35, MAGIC_Y+420, 350, 25);
+    m_lblCountdown = new Fl_Box(35, MAGIC_Y+450, 350, 25);
     m_lblCountdown->align(Fl_Align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT));
-
-    /*
-    Fl_Box *lblFc = new Fl_Box(35, MAGIC_Y+450, 350, 25);
-    lblFc->label("Frames captured: xxxx of nnnn");
-    lblFc->align(Fl_Align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT));
-    lblFc->deactivate();
-    */
-
-    /*
-    Fl_Check_Button *chkHidePreview = new Fl_Check_Button(35, MAGIC_Y + 375, 200, 25, "Turn off preview window");
-    chkHidePreview->callback(cbHidePreview, this);
-    {
-        Prefs *setP = _prefs->getSubPrefs("preview");
-        int val = setP->get("on", true);
-        chkHidePreview->value(!val);    
-    }
-    m_chkHidePreviewTL = chkHidePreview;
-    */
+    m_lblCountdown->box(FL_BORDER_BOX);
     
     o->end();
 
