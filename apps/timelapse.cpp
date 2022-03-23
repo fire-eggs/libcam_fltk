@@ -166,7 +166,7 @@ static void cbTimelapse(Fl_Widget *w, void *d)
     */
 
     int framecount = -1;
-    int lenType = -1;
+    //int lenType = -1;
     unsigned int lenval = 0;
     if (mw->m_rdTLFrameCount->value())
         framecount = mw->m_spTLFrameCount->value();
@@ -296,11 +296,11 @@ void MainWin::leftTimelapse(Fl_Flex *col)
     Prefs *setP = _prefs->getSubPrefs("timelapse");
 
     int intervalChoice = setP->get("intervalType", 0);
-    int lengthChoice = setP->get("lengthType", 1);
+    //int lengthChoice = setP->get("lengthType", 1);
     int frameCount = setP->get("frameCount", 1);
     int limitOnFrames = setP->get("frameLimit", 1);
     double intervalVal = setP->get("interval", 1.0);
-    double lengthVal   = setP->get("length",   1.0);   
+    //double lengthVal   = setP->get("length",   1.0);   
 
     Fl_Flex *row0 = new Fl_Flex(Fl_Flex::ROW);
     {
@@ -502,20 +502,20 @@ Fl_Group *MainWin::makeTimelapseTab(int w, int h)
     calc_Y += 35;
 
     lblStart = new Fl_Box(35, calc_Y, 350, 25);
-    lblStart->box(FL_BORDER_BOX);
+    //lblStart->box(FL_BORDER_BOX);
     lblStart->align(Fl_Align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT));
 
     calc_Y += 30;
 
     lblEnd = new Fl_Box(35, calc_Y, 350, 25);
-    lblEnd->box(FL_BORDER_BOX);
+    //lblEnd->box(FL_BORDER_BOX);
     lblEnd->align(Fl_Align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT));
 
     calc_Y += 30;
 
     m_lblCountdown = new Fl_Box(35, calc_Y, 350, 25);
     m_lblCountdown->align(Fl_Align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT));
-    m_lblCountdown->box(FL_BORDER_BOX);
+    //m_lblCountdown->box(FL_BORDER_BOX);
 
     o->end();
 
