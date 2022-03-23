@@ -41,6 +41,7 @@ public:
     // Capture settings
     Fl_Choice *cmbSize = nullptr;
     Fl_Choice *cmbFormat = nullptr;
+    Fl_Box *m_lblCapStatus = nullptr;
 
     // Zoom settings
     Fl_Roller *m_rlPanH;
@@ -80,6 +81,7 @@ public:
     void leftTimelapse(Fl_Flex *col);
     void rightTimelapse(Fl_Flex *col);
     void timelapseEnded();
+    void captureStatus(int event);
     void doCalc();
 
     Fl_Group *makeZoomTab(int w, int h);

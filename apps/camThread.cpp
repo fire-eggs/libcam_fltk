@@ -29,6 +29,8 @@
 #include "mylog.h"
 
 const int TIMELAPSE_COMPLETE = 1002; // TODO need a better hack
+const int CAPTURE_FAIL = 1004;
+const int CAPTURE_SUCCESS = 1003;
 
 using namespace std::placeholders;
 using libcamera::Stream;
@@ -134,6 +136,7 @@ static void save_images(CompletedRequestPtr &payload)
 {
 	Options *options = _app->GetOptions();
 	std::string filename = generate_filename(options);
+    options->output=filename; // KBR for exception
 	save_image(payload, _app->StillStream(), filename);
 	//update_latest_link(filename, options);
 /*    
@@ -150,8 +153,11 @@ static void save_images(CompletedRequestPtr &payload)
 
 static void captureImage(LibcameraEncoder::Msg *msg)
 {
+  try
+  {
   _app->StopCamera();
   save_images(std::get<CompletedRequestPtr>(msg->payload));
+  guiEvent(CAPTURE_SUCCESS);
   _app->Teardown();
 
   VideoOptions *newopt = _app->GetOptions();
@@ -182,6 +188,12 @@ static void captureImage(LibcameraEncoder::Msg *msg)
   _app->ConfigureVideo();
   _app->StartEncoder();
   _app->StartCamera();
+  }
+  catch (std::runtime_error& e)
+  {
+    dolog("CT:captureImage: exception |%s|", e.what());
+    guiEvent(CAPTURE_FAIL);
+  }
 }
 
 static void switchToCapture(VideoOptions *options)
@@ -221,49 +233,65 @@ static void switchToTimelapse(VideoOptions *options)
 
 static void changeSettings()
 {
-                _app->StopCamera();
-                _app->StopEncoder();
-                _app->Teardown();
-                VideoOptions *newopt = _app->GetOptions();
+  try
+  {
+      _app->StopCamera();
+      _app->StopEncoder();
+      _app->Teardown();
+      VideoOptions *newopt = _app->GetOptions();
 
-                // Horizontal and vertical flip implemented via transforms
-                newopt->transform = libcamera::Transform::Identity;
-                if (_vflip)
-                    newopt->transform = libcamera::Transform::VFlip * newopt->transform;
-                if (_hflip)
-                    newopt->transform = libcamera::Transform::HFlip * newopt->transform;
-                    
-                newopt->brightness = _bright;
-                newopt->contrast   = _contrast;
-                newopt->saturation = _saturate;
-                newopt->sharpness  = _sharp;
-                newopt->ev         = _evComp;
-                
-                newopt->roi_x = _panH + (1.0-_zoom) / 2.0;  // pan values are relative to 'center'
-                newopt->roi_y = _panV + (1.0-_zoom) / 2.0;
-                newopt->roi_height = _zoom;
-                newopt->roi_width = _zoom;
-                
-                _app->ConfigureVideo();
-                _app->StartEncoder();
-                _app->StartCamera();   
+      // Horizontal and vertical flip implemented via transforms
+      newopt->transform = libcamera::Transform::Identity;
+      if (_vflip)
+          newopt->transform = libcamera::Transform::VFlip * newopt->transform;
+      if (_hflip)
+          newopt->transform = libcamera::Transform::HFlip * newopt->transform;
+          
+      newopt->brightness = _bright;
+      newopt->contrast   = _contrast;
+      newopt->saturation = _saturate;
+      newopt->sharpness  = _sharp;
+      newopt->ev         = _evComp;
+      
+      newopt->roi_x = _panH + (1.0-_zoom) / 2.0;  // pan values are relative to 'center'
+      newopt->roi_y = _panV + (1.0-_zoom) / 2.0;
+      newopt->roi_height = _zoom;
+      newopt->roi_width = _zoom;
+      
+      _app->ConfigureVideo();
+      _app->StartEncoder();
+      _app->StartCamera();   
+  }
+  catch (std::runtime_error& e)
+  {
+    dolog("CT:changeSettings: exception |%s|", e.what());
+    // TODO notify GUI
+  }
 }
 
 static void changePreview()
 {
+  try
+  {
     _app->StopCamera();
     _app->StopEncoder();
     _app->Teardown();
     _app->CloseCamera();
     
     VideoOptions *newopt = _app->GetOptions();
-   newopt->nopreview = !_previewOn;
+    newopt->nopreview = !_previewOn;
     previewIsOn = _previewOn;
     
     _app->OpenCamera();  // preview window is created as a side-effect here
     _app->ConfigureVideo();
     _app->StartEncoder();
     _app->StartCamera();   
+  }
+  catch (std::runtime_error& e)
+  {
+    dolog("CT:changePreview: exception |%s|", e.what());
+    // TODO notify GUI
+  }
 }
 
 // This is the "master loop" function.
@@ -389,7 +417,6 @@ void* proc_func(void *p)
             changePreview();
         }
 	}
-
     return nullptr;
 }
 

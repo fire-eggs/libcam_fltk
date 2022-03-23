@@ -19,6 +19,8 @@
 
 #define KBR_UPD_PREVIEW 1001
 const int TIMELAPSE_COMPLETE = 1002;
+const int CAPTURE_FAIL = 1004;
+const int CAPTURE_SUCCESS = 1003;
 
 #include "core/libcamera_encoder.hpp"
 #include "output/output.hpp"
@@ -208,6 +210,16 @@ int handleSpecial(int event)
         _window->timelapseEnded();
         break;
 
+    case CAPTURE_SUCCESS:
+        dolog("Cap-success from camthread");
+        _window->captureStatus(event);
+        break;
+
+    case CAPTURE_FAIL:
+        dolog("Cap-fail from camthread");
+        _window->captureStatus(event);
+        break;
+        
     default:
         return 0;
     }
