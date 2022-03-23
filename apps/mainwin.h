@@ -21,6 +21,7 @@
 
 #include "prefs.h"
 #include "FL_Flex/FL_Flex.H"
+#include "timeentry.h"
 
 class MainWin : public Fl_Double_Window
 {
@@ -53,9 +54,10 @@ public:
     Fl_Choice *m_cmbTLTimeType;        // timelapse interval "type"
     Fl_Round_Button *m_rdTLFrameCount; // is timelapse length frames or time?
     Fl_Round_Button *m_rdTLLength;     // ditto
-    Fl_Choice *m_cmbTLLenType;         // timelapse length "type"
+    //Fl_Choice *m_cmbTLLenType;         // timelapse length "type"
     Fl_Group *m_tabTL;                 // the timelapse tab itself
-    Fl_Spinner *m_spTLLenVal;          // timelapse length value [not framecount]
+    //Fl_Spinner *m_spTLLenVal;          // timelapse length value [not framecount]
+    TimeEntry *m_TLLengthOfTime;
     Fl_Choice *m_cmbTLSize;
     Fl_Choice *m_cmbTLFormat;
     Fl_Light_Button *m_btnDoTimelapse;

@@ -167,14 +167,11 @@ static void cbTimelapse(Fl_Widget *w, void *d)
 
     int framecount = -1;
     int lenType = -1;
-    double lenval = -1.0;
+    unsigned int lenval = 0;
     if (mw->m_rdTLFrameCount->value())
         framecount = mw->m_spTLFrameCount->value();
     else
-    {
-        lenType = mw->m_cmbTLLenType->value();
-        lenval = mw->m_spTLLenVal->value();
-    }
+        lenval = mw->m_TLLengthOfTime->getSeconds();
 
     /*
     std::cerr << "Timelapse step: " << intervalStep << " " << mw->m_cmbTLTimeType->text() << std::endl;
@@ -192,7 +189,7 @@ static void cbTimelapse(Fl_Widget *w, void *d)
         _timelapseCount = framecount;
     else
     {
-        _timelapseLimit = lenval * intervalToMilliseconds(lenType);
+        _timelapseLimit = lenval * 1000; //intervalToMilliseconds(lenType);
         _timelapseCount = _timelapseLimit / _timelapseStep;
     }
 
@@ -291,7 +288,7 @@ void MainWin::onCalcResults(Fl_Widget *calc, void *d)
 
     // TODO timelapse limit as length
     unsigned int tlLen = cw->getTimelapseLength();
-
+    mw->m_TLLengthOfTime->value(tlLen);
 }
 
 void MainWin::leftTimelapse(Fl_Flex *col)
@@ -372,7 +369,9 @@ void MainWin::leftTimelapse(Fl_Flex *col)
     Fl_Flex *row5 = new Fl_Flex(Fl_Flex::ROW);
     {
         Fl_Box *pad = new Fl_Box(0, 0, 0, 0, "");
+        m_TLLengthOfTime = new TimeEntry(0,0,0,0);
 
+/*
         Fl_Spinner *spinLengthVal = new Fl_Spinner(0, 0, 0, 0);
         spinLengthVal->type(1); // FL_FLOAT
         spinLengthVal->minimum(1);
@@ -385,9 +384,11 @@ void MainWin::leftTimelapse(Fl_Flex *col)
         m_cmbTLLenType->down_box(FL_BORDER_BOX);
         m_cmbTLLenType->menu(menu_cmbTLType);
         m_cmbTLLenType->value(lengthChoice);
+*/
         row5->end();
         row5->setSize(pad, 25);
-        row5->setSize(spinLengthVal, 85);
+        row5->setSize(m_TLLengthOfTime, 120);
+        //row5->setSize(spinLengthVal, 85);
     }
     
     col->setSize(row0, 25);
@@ -484,24 +485,35 @@ Fl_Group *MainWin::makeTimelapseTab(int w, int h)
         row0->end();
     }
 
-    Fl_Button *bCalc = new Fl_Button(35, MAGIC_Y+325, 150, 25, "Calculator");
+    // TODO consider a Fl_Pack
+    int calc_Y = MAGIC_Y + 300;
+
+    Fl_Button *bCalc = new Fl_Button(35, calc_Y, 150, 25, "Calculator");
     bCalc->callback(onCalc, this);
 
+    calc_Y += 35;
+
     // TODO how to prevent getting too narrow?
-    Fl_Light_Button *btnDoit = new Fl_Light_Button(35, MAGIC_Y+355, 150, 25, "Run Timelapse");
+    Fl_Light_Button *btnDoit = new Fl_Light_Button(35, calc_Y, 150, 25, "Run Timelapse");
     btnDoit->selection_color(TL_ACTIVE_COLOR);
     btnDoit->callback(cbTimelapse, this);
     m_btnDoTimelapse = btnDoit;
 
-    lblStart = new Fl_Box(35, MAGIC_Y+390, 350, 25);
+    calc_Y += 35;
+
+    lblStart = new Fl_Box(35, calc_Y, 350, 25);
     lblStart->box(FL_BORDER_BOX);
     lblStart->align(Fl_Align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT));
 
-    lblEnd = new Fl_Box(35, MAGIC_Y+420, 350, 25);
+    calc_Y += 30;
+
+    lblEnd = new Fl_Box(35, calc_Y, 350, 25);
     lblEnd->box(FL_BORDER_BOX);
     lblEnd->align(Fl_Align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT));
 
-    m_lblCountdown = new Fl_Box(35, MAGIC_Y+450, 350, 25);
+    calc_Y += 30;
+
+    m_lblCountdown = new Fl_Box(35, calc_Y, 350, 25);
     m_lblCountdown->align(Fl_Align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT));
     m_lblCountdown->box(FL_BORDER_BOX);
 
@@ -521,12 +533,14 @@ void MainWin::save_timelapse_settings()
     
     setP->set("frameCount", m_spTLFrameCount->value());
     setP->set("intervalType", m_cmbTLTimeType->value());
-    setP->set("lengthType", m_cmbTLLenType->value());
     setP->set("frameLimit", m_rdTLFrameCount->value());
 
-    setP->set("length",   m_spTLLenVal->value());
     setP->set("interval", m_spTLDblVal->value());
-    
+
+    // TODO m_TLLengthOfTime
+    //setP->set("lengthType", m_cmbTLLenType->value());
+    //setP->set("length",   m_spTLLenVal->value());
+
     setP->_prefs->flush();
 }
 
