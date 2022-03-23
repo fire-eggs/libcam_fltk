@@ -316,7 +316,18 @@ void* proc_func(void *p)
             // have we hit a timelapse trigger?
             auto now = std::chrono::high_resolution_clock::now();
             timelapseTrigger = activeTimelapse && (now - timelapseStart) > timelapseStep;
-            
+
+            // My misunderstanding: the timelapse runs until the user stops it.
+            // However, I can see the need for a "stop at end" option...
+            if (!doTimelapse)
+            {
+                dolog("CT:timelapse stopped in GUI");
+                activeTimelapse = false;
+                timelapseTrigger = false;
+                doTimelapse = false;
+                guiEvent(TIMELAPSE_COMPLETE);
+            }
+/* revisit for "force stop"            
             if ((_timelapseCount-1) < timelapseFrameCount || !doTimelapse)
             {
                 if (!doTimelapse)
@@ -332,8 +343,9 @@ void* proc_func(void *p)
                 doTimelapse = false;
                 guiEvent(TIMELAPSE_COMPLETE);
             }
+*/
         }
-        
+
         if (_app->VideoStream())
         {
             if (doCapture) // user has requested still capture
