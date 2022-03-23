@@ -66,6 +66,8 @@ public:
     std::time_t m_TLEnd;
     Fl_Box *m_lblCountdown;
 
+    static void onCalcResults(Fl_Widget *, void *);
+
 public:
     MainWin(int x, int y, int w, int h, const char *L=0); // : Fl_Double_Window(x, y, w,h);
 

@@ -73,6 +73,26 @@ void CalcWin::showFramecount(int value)
     outFrameCount->value(buff);
 }
 
+unsigned int CalcWin::getFrameCount()
+{
+    // TODO use getInterval
+    double interval = spinTLInterval->value();
+    unsigned long tllen = tlTime->getSeconds();
+    int framecount = lround(tllen / interval );
+    return framecount;
+}
+
+unsigned int CalcWin::getInterval()
+{
+    double interval = spinTLInterval->value();
+    return lround(interval);
+}
+
+unsigned int CalcWin::getTimelapseLength()
+{
+    return tlTime->getSeconds();
+}
+
 void CalcWin::onChangeInterval(Fl_Widget *, void *d)
 {
     // interval has been changed. Update vidTime
@@ -85,6 +105,7 @@ void CalcWin::onChangeInterval(Fl_Widget *, void *d)
     int fpsVal = FPS_VALS[fpsChoice];
     unsigned long tllen = cw->tlTime->getSeconds();
 
+    // TODO use getFrameCount
     int framecount = lround(tllen / interval );
     cw->showFramecount(framecount);
 
@@ -104,35 +125,12 @@ void CalcWin::onReset(Fl_Widget *w, void *d)
     cw->recalcInterval();
 }
 
-static void onUse(Fl_Widget *w, void *d)
+void CalcWin::onUse(Fl_Widget *w, void *d)
 {
     CalcWin *cw = static_cast<CalcWin *>(d);
-    cw->updateTLControls();
+    cw->_callback(cw, cw->_callbackData);
+    //cw->do_callback();
 }
-
-void CalcWin::updateTLControls()
-{
-    // TODO callback and access methods
-/*
-    _destFrameCount->value(m_framecount);
-    _destRadio1->value(true);
-    _destRadio2->value(false);
-    _destIntervalSpin->value(m_intervalSeconds);
-    _destIntervalType->value(0);
-*/
-}
-
-void CalcWin::ControlsToUpdate(Fl_Spinner *c1, Fl_Round_Button*c2, Fl_Spinner*c3, Fl_Choice*c4,Fl_Round_Button*c5)
-{
-    /*
-    _destFrameCount = c1;
-    _destRadio1 = c2;
-    _destIntervalSpin = c3;
-    _destIntervalType = c4;
-    _destRadio2 = c5;
-     */
-}
-
 
 CalcWin::CalcWin(int w, int h, const char *l, Prefs *prefs)
     : Fl_Double_Window(w, h, l)

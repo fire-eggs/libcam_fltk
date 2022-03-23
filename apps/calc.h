@@ -19,6 +19,8 @@ class CalcWin : public Fl_Double_Window
 {
 private:
     Prefs *m_prefs;
+    void *_callbackData;
+    Fl_Callback *_callback;
 
     TimeEntry *tlTime;  // length of timelapse
     TimeEntry *vidTime; // length of video
@@ -32,15 +34,16 @@ private:
     void recalcInterval();
     void showFramecount(int value);
 
+    static void onUse(Fl_Widget*, void *);
 public:
     CalcWin(int w, int h, const char *l, Prefs *prefs);
     void showCalc();
-    void ControlsToUpdate(Fl_Spinner *, Fl_Round_Button*,Fl_Spinner*,Fl_Choice*,Fl_Round_Button*);
-    void updateTLControls();
 
-    //Fl_Spinner *m_spinVidLen;
+    unsigned int getFrameCount();
+    unsigned int getInterval();
+    unsigned int getTimelapseLength();
 
-
+    void onUseData(Fl_Callback *cb, void *d) {_callback = cb; _callbackData = d;}
 };
 
 #endif //LIBCAMFLTK_CALC_H

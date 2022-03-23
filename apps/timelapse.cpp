@@ -123,6 +123,7 @@ void MainWin::updateCountdown(bool repeat)
 
     double t = difftime(m_TLEnd, raw_time);
 
+    // TODO this will happen with on-going timelapse
     if (t < 0)
         return; // shouldn't happen but just in case
         
@@ -259,6 +260,7 @@ void MainWin::timelapseEnded()
 
 static void onCalc(Fl_Widget *w, void *d)
 {
+    // TODO move to MainWin:: method
     MainWin *mw = static_cast<MainWin*>(d);
     mw->doCalc();
 }
@@ -266,8 +268,30 @@ static void onCalc(Fl_Widget *w, void *d)
 void MainWin::doCalc()
 {
     CalcWin *calc = new CalcWin(400, 350, "Calculator", _prefs);
-    calc->ControlsToUpdate(m_spTLFrameCount,m_rdTLFrameCount,m_spTLDblVal,m_cmbTLTimeType,m_rdTLLength);
+    //calc->callback(onCalcResults, this);
+    calc->onUseData(onCalcResults, this);
     calc->showCalc();
+}
+
+void MainWin::onCalcResults(Fl_Widget *calc, void *d)
+{
+    MainWin *mw = static_cast<MainWin*>(d);
+    CalcWin *cw = static_cast<CalcWin*>(calc);
+
+    // force radio buttons to framecount
+    mw->m_rdTLFrameCount->value(true);
+    mw->m_rdTLLength->value(false);
+
+    mw->m_spTLFrameCount->value( cw->getFrameCount() );
+
+    // TODO longer than 60 seconds
+    // interval in seconds
+    mw->m_spTLDblVal->value( cw->getInterval() );
+    mw->m_cmbTLTimeType->value(0);
+
+    // TODO timelapse limit as length
+    unsigned int tlLen = cw->getTimelapseLength();
+
 }
 
 void MainWin::leftTimelapse(Fl_Flex *col)
@@ -480,7 +504,7 @@ Fl_Group *MainWin::makeTimelapseTab(int w, int h)
     m_lblCountdown = new Fl_Box(35, MAGIC_Y+450, 350, 25);
     m_lblCountdown->align(Fl_Align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT));
     m_lblCountdown->box(FL_BORDER_BOX);
-    
+
     o->end();
 
     return o;
