@@ -121,6 +121,8 @@ public:
 	void SetControls(ControlList &controls);
 	StreamInfo GetStreamInfo(Stream const *stream) const;
 
+    Preview *getPreview() { return preview_.get(); }
+    
 protected:
 	std::unique_ptr<Options> options_;
 
