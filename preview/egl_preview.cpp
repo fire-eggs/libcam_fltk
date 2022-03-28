@@ -46,6 +46,8 @@ public:
 		w = max_image_width_;
 		h = max_image_height_;
 	}
+	
+    virtual void getWindowPos(int &x, int& y) override;
 
 private:
 	struct Buffer
@@ -457,6 +459,18 @@ bool EglPreview::Quit()
 #endif
 }
 
+void EglPreview::getWindowPos(int &x, int& y)
+{
+    Window root = XRootWindow(display_, 0);
+    int getX, getY;
+    unsigned int width, height, bwidth, depth;
+        
+    XGetGeometry(display_, window_, &root, &getX, &getY, &width, &height, &bwidth, &depth);
+    Window child;
+    XTranslateCoordinates(display_, window_, root, 0, 0, &getX, &getY, &child);
+    x = getX;
+    y = getY;
+}
 Preview *make_egl_preview(Options const *options)
 {
 	return new EglPreview(options);
