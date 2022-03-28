@@ -23,6 +23,7 @@
 
 #include "libcamera/logging.h"
 #include "libcamera/transform.h"
+#include "preview/preview.hpp"
 
 #include "image/image.hpp" // jpeg_save
 
@@ -31,6 +32,7 @@
 const int TIMELAPSE_COMPLETE = 1002; // TODO need a better hack
 const int CAPTURE_FAIL = 1004;
 const int CAPTURE_SUCCESS = 1003;
+const int PREVIEW_LOC = 1005;
 
 using namespace std::placeholders;
 using libcamera::Stream;
@@ -40,6 +42,8 @@ extern bool stateChange;
 extern bool doCapture;
 extern bool doTimelapse;
 extern bool _previewOn;
+int previewX;
+int previewY;
 
 // General camera settings
 extern bool _hflip; // state of user request for horizontal flip
@@ -151,6 +155,14 @@ static void save_images(CompletedRequestPtr &payload)
 */    
 }
 
+static void previewLocation()
+{
+    if (!previewIsOn)
+        return; // if off, no window
+    _app->getPreview()->getWindowPos(previewX, previewY);
+    guiEvent(PREVIEW_LOC);
+}
+
 static void captureImage(LibcameraEncoder::Msg *msg)
 {
   try
@@ -235,6 +247,7 @@ static void changeSettings()
 {
   try
   {
+      previewLocation();
       _app->StopCamera();
       _app->StopEncoder();
       _app->Teardown();
@@ -273,6 +286,7 @@ static void changePreview()
 {
   try
   {
+      previewLocation();
     _app->StopCamera();
     _app->StopEncoder();
     _app->Teardown();
@@ -307,6 +321,11 @@ void* proc_func(void *p)
     // Initialize preview window [created as side-effect in OpenCamera]
     previewIsOn = _previewOn;
     options->nopreview = !previewIsOn;
+    
+    options->preview_width = 640;
+    options->preview_height = 480;
+    options->preview_x = previewX > 0 ? previewX : 750;
+    options->preview_y = previewY > 0 ? previewY :  25;
     
 	_app->OpenCamera();
 	_app->ConfigureVideo();   // TODO should this be ConfigurePreview instead?

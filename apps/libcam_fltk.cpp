@@ -21,6 +21,7 @@
 const int TIMELAPSE_COMPLETE = 1002;
 const int CAPTURE_FAIL = 1004;
 const int CAPTURE_SUCCESS = 1003;
+const int PREVIEW_LOC = 1005;
 
 #include "core/libcamera_encoder.hpp"
 #include "output/output.hpp"
@@ -36,6 +37,8 @@ extern void fire_proc_thread(int argc, char ** argv);
 bool OKTOSAVE;
 bool OKTOFIRE;
 extern bool _previewOn;
+extern int previewX;
+extern int previewY;
 
 static void popup(Fl_File_Chooser* filechooser)
 {
@@ -219,6 +222,11 @@ int handleSpecial(int event)
         dolog("Cap-fail from camthread");
         _window->captureStatus(event);
         break;
+    
+    case PREVIEW_LOC:
+		std::cerr << "Preview Location: (" << previewX << "," << previewY << ")" << std::endl;
+        _prefs->setWinRect("Preview", previewX, previewY, 640, 480);
+        break;
         
     default:
         return 0;
@@ -245,6 +253,10 @@ int main(int argc, char** argv)
     _prefs = new Prefs();
     _prefs->getWinRect("MainWin", x, y, w, h);
 
+    // Use remembered preview window size/pos
+    int pw, ph;
+    _prefs->getWinRect("Preview", previewX, previewY, pw, ph);
+    
     // TODO : use actual size when building controls?
     MainWin window(x, y, w, h, "libcam_fltk");
     window.callback(quit_cb);
@@ -269,8 +281,7 @@ int main(int argc, char** argv)
     
     onReset(nullptr,_window); // init camera to defaults [hack: force no save]
     
-    _window->loadSavedSettings(); // TODO is this necessary? or preferred over each tab doing it?
-    _window->loadZoomSettings(); // TODO is this necessary? or preferred over each tab doing it?
+    _window->loadSavedSettings(); // TODO consider moving to settings tab
 
     OKTOFIRE = true;
     onStateChange();
@@ -284,10 +295,4 @@ int main(int argc, char** argv)
 #ifdef __CLION_IDE__
 #pragma clang diagnostic pop
 #endif
-
-// options->preview_x
-// options->preview_y
-// options->preview_width
-// options->preview_height
-// May need to query actual physical window to get position at shutdown
 
