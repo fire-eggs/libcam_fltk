@@ -8,6 +8,7 @@
 #include "mainwin.h"
 #include "settings.h"
 #include "mylog.h"
+#include "zoom.h" // zoom settings for onStateChange
 
 // Camera settings : implementation
 bool _hflip;
@@ -21,11 +22,63 @@ double _evComp;
 // Inter-thread communication
 bool _previewOn;
 bool stateChange;
+// preview window dimensions/location
+int previewX;
+int previewY;
+int previewW;
+int previewH;
 
 extern Prefs *_prefs;
 extern MainWin* _window;
 
-extern void onStateChange();
+extern bool OKTOFIRE;
+extern bool OKTOSAVE;
+
+static Fl_Menu_Item menu_cmbPrevSize[] =
+        {
+                {" 640 x  480", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+                {" 800 x  600", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+                {"1024 x  768", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+                {"1280 x  960", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+                {"1600 x 1200", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+                {0,     0, 0, 0, 0,                      0, 0,  0, 0}
+        };
+
+static int previewWVals[] = {640, 800,1024, 1280, 1600};
+static int previewHVals[]  = {480, 600, 768, 960, 1200};
+
+void onStateChange()
+{
+    if (!OKTOFIRE)
+        return;
+
+    dolog("STATE:bright[%g]contrast[%g]sharp[%g]evcomp[%g]saturate[%g]",
+          _bright,_contrast,_sharp,_evComp,_saturate);
+    dolog("STATE:hflip[%d]vflip[%d]zoom[%d]panh[%g]panv[%g]preview[%d]",
+          _hflip,_vflip,_zoomChoice,_panH,_panV,_previewOn);
+
+    if (OKTOSAVE)
+    {
+        Prefs *setP = _prefs->getSubPrefs("camera");
+
+        setP->set("bright", _bright);
+        setP->set("contrast", _contrast);
+        setP->set("sharp", _sharp);
+        setP->set("evcomp", _evComp);
+        setP->set("saturate", _saturate);
+        setP->set("hflip", (int)_hflip);
+        setP->set("vflip", (int)_vflip);
+
+        setP->set("zoom", _zoomChoice);
+
+        // HACK if 'tripod pan' is active, the values have been negated; undo for save
+        setP->set("panh", _panH * (_lever ? -1.0 : 1.0));
+        setP->set("panv", _panV * (_lever ? -1.0 : 1.0));
+
+        setP->set("lever", (int)_lever);
+    }
+    stateChange = true;
+}
 
 // TODO goes in class?
 static Fl_Value_Slider *makeSlider(int x, int y, const char *label, int min, int max, double def, bool vert=false)
@@ -105,6 +158,15 @@ static void onVFlip(Fl_Widget*w, void *)
     onStateChange();
 }
 
+void onPreviewSizeChange(Fl_Widget *w, void *)
+{
+    int sizeChosen = ((Fl_Choice *)w)->value();
+    previewW = previewWVals[sizeChosen];
+    previewH = previewHVals[sizeChosen];
+
+    onStateChange(); // TODO a more direct 'preview change'?
+}
+
 void onReset(Fl_Widget *, void *d)
 {
     // TODO constants for defaults
@@ -127,6 +189,22 @@ void onReset(Fl_Widget *, void *d)
     _vflip = false;
 
     onStateChange(); // hack force not save
+}
+
+void getPreviewData()
+{
+    Prefs *setP = _prefs->getSubPrefs("preview"); // TODO move to settings.cpp
+    _previewOn = setP->get("on", true);
+
+    _prefs->getWinRect("Preview", previewX, previewY, previewW, previewH);
+
+    // TODO preview size choice for combobox
+}
+
+void savePreviewLocation()
+{
+    std::cerr << "Preview Location: (" << previewX << "," << previewY << ")" << std::endl;
+    _prefs->setWinRect("Preview", previewX, previewY, previewW, previewH);
 }
 
 static void cbHidePreview(Fl_Widget *w, void *)
@@ -239,6 +317,11 @@ Fl_Group *MainWin::makeSettingsTab(int w, int h)
         Prefs *setP = _prefs->getSubPrefs("preview");
         chkHidePreview->value(!setP->get("on", true));
     }
+
+    Fl_Choice *cmbPreviewSize = new Fl_Choice(slidX + 250, slidY, 150, 25, "Preview Window Size");
+    cmbPreviewSize->copy(menu_cmbPrevSize);
+    cmbPreviewSize->callback(onPreviewSizeChange);
+    cmbPreviewSize->align(FL_ALIGN_TOP);
 
     o->end();
     //Fl_Group::current()->resizable(o);

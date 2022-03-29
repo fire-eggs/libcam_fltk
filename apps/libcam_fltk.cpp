@@ -36,9 +36,6 @@ MainWin* _window;
 extern void fire_proc_thread(int argc, char ** argv);
 bool OKTOSAVE;
 bool OKTOFIRE;
-extern bool _previewOn;
-extern int previewX;
-extern int previewY;
 
 static void popup(Fl_File_Chooser* filechooser)
 {
@@ -81,69 +78,34 @@ void folderPick(Fl_Output *inp)
     inp->value(loaddir);
 }
 
-void onStateChange()
-{
-    if (!OKTOFIRE)
-        return;
-
-    dolog("STATE:bright[%g]contrast[%g]sharp[%g]evcomp[%g]saturate[%g]",
-          _bright,_contrast,_sharp,_evComp,_saturate);
-    dolog("STATE:hflip[%d]vflip[%d]zoom[%d]panh[%g]panv[%g]preview[%d]",
-          _hflip,_vflip,_zoomChoice,_panH,_panV,_previewOn);
-
-    if (OKTOSAVE)
-    {
-        Prefs *setP = _prefs->getSubPrefs("camera");
-
-        setP->set("bright", _bright);
-        setP->set("contrast", _contrast);
-        setP->set("sharp", _sharp);
-        setP->set("evcomp", _evComp);
-        setP->set("saturate", _saturate);
-        setP->set("hflip", (int)_hflip);
-        setP->set("vflip", (int)_vflip);
-
-        setP->set("zoom", _zoomChoice);
-
-        // HACK if 'tripod pan' is active, the values have been negated; undo for save
-        setP->set("panh", _panH * (_lever ? -1.0 : 1.0));
-        setP->set("panv", _panV * (_lever ? -1.0 : 1.0));
-
-        setP->set("lever", (int)_lever);
-    }
-    stateChange = true;
-}
 
 MainWin::MainWin(int x, int y, int w, int h,const char *L) : Fl_Double_Window(x, y, w,h,L)
-    {
-        int magicW = w - 20;
-        int magicH = h - 50;
+{
+    int magicW = w - 20;
+    int magicH = h - 50;
 
-        Fl_Tabs *tabs = new Fl_Tabs(10, MAGIC_Y, magicW, magicH);
-        magicH -= 25;
+    Fl_Tabs *tabs = new Fl_Tabs(10, MAGIC_Y, magicW, magicH);
+    magicH -= 25;
 
-        makeSettingsTab(magicW, magicH);
-        makeZoomTab(magicW, magicH);
-        makeCaptureTab(magicW, magicH);
-        m_tabTL = makeTimelapseTab(magicW, magicH);
-        makeVideoTab(magicW, magicH);
-        tabs->end();
+    makeSettingsTab(magicW, magicH);
+    makeZoomTab(magicW, magicH);
+    makeCaptureTab(magicW, magicH);
+    m_tabTL = makeTimelapseTab(magicW, magicH);
+    makeVideoTab(magicW, magicH);
+    tabs->end();
 
-        resizable(this);
-
-        //m_captureHVals = captureHVals;  // TODO hack
-        //m_captureWVals = captureWVals;  // TODO hack
-    }
+    resizable(this);
+}
 
 Fl_Group *MainWin::makeVideoTab(int w, int h)
-    {
-        Fl_Group *o = new Fl_Group(10,MAGIC_Y+25,w,h, "Video");
-        o->tooltip("Video Capture");
+{
+    Fl_Group *o = new Fl_Group(10,MAGIC_Y+25,w,h, "Video");
+    o->tooltip("Video Capture");
 
-        o->end();
-        o->deactivate();
-        return o;
-    }
+    o->end();
+    o->deactivate();
+    return o;
+}
 
 void MainWin::resize(int x, int y, int w, int h)
 {
@@ -151,13 +113,10 @@ void MainWin::resize(int x, int y, int w, int h)
     int oldh = this->h();
     Fl_Double_Window::resize(x, y, w, h);
     if (w == oldw && h == oldh)
-        ; //return; // merely moving window
+        ;  // merely moving window
     else {
         _menu->size(w, 25);
     }
-    //grp->size(w, h-25);
-    //_crop->size(w/2,h-25);
-    //_preview->size(w/2,h-25);
     _prefs->setWinRect("MainWin",x, y, w, h);
 }
 
@@ -224,8 +183,7 @@ int handleSpecial(int event)
         break;
     
     case PREVIEW_LOC:
-		std::cerr << "Preview Location: (" << previewX << "," << previewY << ")" << std::endl;
-        _prefs->setWinRect("Preview", previewX, previewY, 640, 480);
+        savePreviewLocation();
         break;
         
     default:
@@ -253,10 +211,6 @@ int main(int argc, char** argv)
     _prefs = new Prefs();
     _prefs->getWinRect("MainWin", x, y, w, h);
 
-    // Use remembered preview window size/pos
-    int pw, ph;
-    _prefs->getWinRect("Preview", previewX, previewY, pw, ph);
-    
     // TODO : use actual size when building controls?
     MainWin window(x, y, w, h, "libcam_fltk");
     window.callback(quit_cb);
@@ -271,10 +225,8 @@ int main(int argc, char** argv)
 
     window.show();
 
-    // Initialize the preview flag before starting the camera
-    Prefs *setP = _prefs->getSubPrefs("preview");
-    _previewOn = setP->get("on", true);
-    
+    // Need to initialize the preview state before starting the camera
+    getPreviewData();
     fire_proc_thread(argc, argv);
     
     OKTOSAVE = false;

@@ -20,5 +20,7 @@ extern double _evComp;
 extern bool stateChange;
 
 void onReset(Fl_Widget *, void *d);
+void savePreviewLocation();
+void getPreviewData();
 
 #endif //LIBCAMFLTK_SETTINGS_H
