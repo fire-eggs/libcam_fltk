@@ -57,7 +57,7 @@ void onStateChange()
     dolog("STATE:hflip[%d]vflip[%d]zoom[%d]panh[%g]panv[%g]preview[%d]",
           _hflip,_vflip,_zoomChoice,_panH,_panV,_previewOn);
     dolog("PREVIEW: (%d,%d,%d,%d) ; choice %d",
-          previewX, previewY, previewW, previewY, previewChoice);
+          previewX, previewY, previewW, previewH, previewChoice);
 
     if (OKTOSAVE)
     {
@@ -203,6 +203,11 @@ void getPreviewData()
     _previewOn = setP->get("on", true);
 
     _prefs->getWinRect("Preview", previewX, previewY, previewW, previewH);
+    if (previewW == 500)
+    { // first time defaults
+        previewW = 1024;
+        previewH = 768;
+    }
 }
 
 void savePreviewLocation()
@@ -252,6 +257,8 @@ void MainWin::loadSavedSettings()
     _sharp = sharpVal;
     _contrast = contrastVal;
     _evComp = evCompVal;
+    
+    previewChoice = setP->get("previewChoice", 2);
 }
 
 Fl_Group *MainWin::makeSettingsTab(int w, int h)

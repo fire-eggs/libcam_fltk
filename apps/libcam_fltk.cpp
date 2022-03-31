@@ -33,14 +33,12 @@ Fl_Menu_Bar *_menu;
 char *_loadfile;
 MainWin* _window;
 
-#if 0
-extern std::thread *fire_proc_thread(int argc, char ** argv);
-#endif
+extern pthread_t *fire_proc_thread(int argc, char ** argv);
 bool OKTOSAVE;
 bool OKTOFIRE;
 
 bool timeToQuit = false; // inter-thread flag
-std::thread camThread;
+pthread_t *camThread;
 
 static void popup(Fl_File_Chooser* filechooser)
 {
@@ -128,18 +126,26 @@ void MainWin::resize(int x, int y, int w, int h)
 void load_cb(Fl_Widget*, void*) {
 }
 
+bool _done;
+
 void quit_cb(Fl_Widget* , void* )
 {
     _window->save_capture_settings();
     _window->save_timelapse_settings();
 
-    // TODO how to kill camera thread?
+    // kill camera thread
+    _done = false;
     timeToQuit = true;
-    camThread->join();
+    void *retval = nullptr;
+    pthread_join(*camThread, &retval);
 
     // TODO grab preview window size/pos
     _window->hide();
 
+    while (!_done)
+    {
+        Fl::wait();
+    }
     dolog("quit_cb");
     exit(0);
 }
@@ -192,6 +198,7 @@ int handleSpecial(int event)
     
     case PREVIEW_LOC:
         savePreviewLocation();
+        _done = true;
         break;
         
     default:
@@ -235,9 +242,7 @@ int main(int argc, char** argv)
 
     // Need to initialize the preview state before starting the camera
     getPreviewData();
-#if 0
     camThread = fire_proc_thread(argc, argv);
-#endif
     OKTOSAVE = false;  // Note: hack to prevent save
     
     onReset(nullptr,_window); // init camera to defaults [hack: force no save]

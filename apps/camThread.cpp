@@ -37,13 +37,16 @@ const int PREVIEW_LOC = 1005;
 using namespace std::placeholders;
 using libcamera::Stream;
 
-// brute-force inter-process communication.
+// brute-force inter-thread communication.
 extern bool stateChange;
 extern bool doCapture;
 extern bool doTimelapse;
 extern bool _previewOn;
-int previewX;
-int previewY;
+extern int previewX;
+extern int previewY;
+extern int previewW;
+extern int previewH;
+extern bool timeToQuit;
 
 // General camera settings
 extern bool _hflip; // state of user request for horizontal flip
@@ -188,14 +191,8 @@ static void captureImage(LibcameraEncoder::Msg *msg)
   newopt->ev         = _evComp;
   
   // TODO is pan/zoom reset?  if NOT, even necessary to re-establish settings?
-
-  //newopt->viewfinder_height = 768;
-  //newopt->viewfinder_width = 1024;
-  //dolog("CT:captureImage:Preview: %d %d", newopt->viewfinder_width, newopt->viewfinder_height);
-  //newopt->viewfinder_mode_string = "1024:768:12";
-  //newopt->viewfinder_mode = Mode(newopt->viewfinder_mode_string);
-  newopt->width = 1024;
-  newopt->height=768;
+  newopt->width = previewW;
+  newopt->height= previewH;
   
   _app->ConfigureVideo();
   _app->StartEncoder();
@@ -322,10 +319,11 @@ void* proc_func(void *p)
     previewIsOn = _previewOn;
     options->nopreview = !previewIsOn;
     
-    options->preview_width = 640;
-    options->preview_height = 480;
+    options->preview_width = previewW;
+    options->preview_height = previewH;
     options->preview_x = previewX > 0 ? previewX : 750;
-    options->preview_y = previewY > 0 ? previewY :  25;
+    // TODO magic: needs to be adjusted by the height of the titlebar for some reason?
+    options->preview_y = previewY > 0 ? previewY - 25 :  25;
     
 	_app->OpenCamera();
 	_app->ConfigureVideo();   // TODO should this be ConfigurePreview instead?
@@ -339,6 +337,15 @@ void* proc_func(void *p)
     
     for (;;)
     {
+        if (timeToQuit)
+        {
+            previewLocation();
+            _app->StopCamera();
+            _app->StopEncoder();
+            _app->Teardown();
+            return nullptr;
+        }
+        
         LibcameraEncoder::Msg msg = _app->Wait();
         if (msg.type == LibcameraEncoder::MsgType::Quit)
             return nullptr;
@@ -441,7 +448,7 @@ void* proc_func(void *p)
 
 pthread_t proc_thread;
 
-void fire_proc_thread(int argc, char ** argv)
+pthread_t *fire_proc_thread(int argc, char ** argv)
 {
 
     // spawn the camera loop in a separate thread.
@@ -450,9 +457,10 @@ void fire_proc_thread(int argc, char ** argv)
     _app = new LibcameraEncoder();
     VideoOptions *options = _app->GetOptions();
     if (!options->Parse(argc, argv))
-	return;  // TODO some sort of error indication
-    
+        return nullptr;  // TODO some sort of error indication
+        
     pthread_create(&proc_thread, 0, proc_func, nullptr);
     pthread_detach(proc_thread);
+    return &proc_thread;
 }
 
