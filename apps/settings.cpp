@@ -3,7 +3,6 @@
 //
 
 #include <iostream>
-#include "capture.h"
 #include "prefs.h"
 #include "mainwin.h"
 #include "settings.h"
@@ -27,6 +26,7 @@ int previewX;
 int previewY;
 int previewW;
 int previewH;
+int previewChoice;
 
 extern Prefs *_prefs;
 extern MainWin* _window;
@@ -56,6 +56,8 @@ void onStateChange()
           _bright,_contrast,_sharp,_evComp,_saturate);
     dolog("STATE:hflip[%d]vflip[%d]zoom[%d]panh[%g]panv[%g]preview[%d]",
           _hflip,_vflip,_zoomChoice,_panH,_panV,_previewOn);
+    dolog("PREVIEW: (%d,%d,%d,%d) ; choice %d",
+          previewX, previewY, previewW, previewY, previewChoice);
 
     if (OKTOSAVE)
     {
@@ -76,6 +78,10 @@ void onStateChange()
         setP->set("panv", _panV * (_lever ? -1.0 : 1.0));
 
         setP->set("lever", (int)_lever);
+
+        setP->set("previewChoice", previewChoice);
+
+        savePreviewLocation();
     }
     stateChange = true;
 }
@@ -160,9 +166,9 @@ static void onVFlip(Fl_Widget*w, void *)
 
 void onPreviewSizeChange(Fl_Widget *w, void *)
 {
-    int sizeChosen = ((Fl_Choice *)w)->value();
-    previewW = previewWVals[sizeChosen];
-    previewH = previewHVals[sizeChosen];
+    previewChoice = ((Fl_Choice *)w)->value();
+    previewW = previewWVals[previewChoice];
+    previewH = previewHVals[previewChoice];
 
     onStateChange(); // TODO a more direct 'preview change'?
 }
@@ -193,12 +199,10 @@ void onReset(Fl_Widget *, void *d)
 
 void getPreviewData()
 {
-    Prefs *setP = _prefs->getSubPrefs("preview"); // TODO move to settings.cpp
+    Prefs *setP = _prefs->getSubPrefs("preview");
     _previewOn = setP->get("on", true);
 
     _prefs->getWinRect("Preview", previewX, previewY, previewW, previewH);
-
-    // TODO preview size choice for combobox
 }
 
 void savePreviewLocation()
@@ -219,6 +223,9 @@ static void cbHidePreview(Fl_Widget *w, void *)
 
 void MainWin::loadSavedSettings()
 {
+    // The purpose of this function is to initialize the camera to the last
+    // saved state.
+
     Prefs *setP = _prefs->getSubPrefs("camera");
 
     // TODO range check
@@ -259,6 +266,7 @@ Fl_Group *MainWin::makeSettingsTab(int w, int h)
     double evCompVal  = setP->get("evcomp",   0.0);
     bool hflipval     = setP->get("hflip",    false);
     bool vflipval     = setP->get("vflip",    false);
+    int previewChoice = setP->get("previewChoice", 2);
 
     Fl_Group *o = new Fl_Group(10,MAGIC_Y+25,w,h, "Settings");
     o->tooltip("Configure camera settings");
@@ -322,6 +330,7 @@ Fl_Group *MainWin::makeSettingsTab(int w, int h)
     cmbPreviewSize->copy(menu_cmbPrevSize);
     cmbPreviewSize->callback(onPreviewSizeChange);
     cmbPreviewSize->align(FL_ALIGN_TOP);
+    cmbPreviewSize->value(previewChoice);
 
     o->end();
     //Fl_Group::current()->resizable(o);

@@ -33,9 +33,14 @@ Fl_Menu_Bar *_menu;
 char *_loadfile;
 MainWin* _window;
 
-extern void fire_proc_thread(int argc, char ** argv);
+#if 0
+extern std::thread *fire_proc_thread(int argc, char ** argv);
+#endif
 bool OKTOSAVE;
 bool OKTOFIRE;
+
+bool timeToQuit = false; // inter-thread flag
+std::thread camThread;
 
 static void popup(Fl_File_Chooser* filechooser)
 {
@@ -129,6 +134,9 @@ void quit_cb(Fl_Widget* , void* )
     _window->save_timelapse_settings();
 
     // TODO how to kill camera thread?
+    timeToQuit = true;
+    camThread->join();
+
     // TODO grab preview window size/pos
     _window->hide();
 
@@ -227,18 +235,20 @@ int main(int argc, char** argv)
 
     // Need to initialize the preview state before starting the camera
     getPreviewData();
-    fire_proc_thread(argc, argv);
-    
-    OKTOSAVE = false;
+#if 0
+    camThread = fire_proc_thread(argc, argv);
+#endif
+    OKTOSAVE = false;  // Note: hack to prevent save
     
     onReset(nullptr,_window); // init camera to defaults [hack: force no save]
     
-    _window->loadSavedSettings(); // TODO consider moving to settings tab
+    // Initialize the camera to last saved settings
+    _window->loadSavedSettings(); // TODO can be combined with getPreviewData ???
+    _window->loadZoomSettings();
 
     OKTOFIRE = true;
     onStateChange();
-
-    OKTOSAVE = true;
+    OKTOSAVE = true; // TODO consider parameter
         
     dolog("fl_run");
     return Fl::run();   
