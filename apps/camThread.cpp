@@ -1,21 +1,9 @@
-#ifndef _WIN32
-#define HAVE_PTHREAD
-#define HAVE_PTHREAD_H
-#endif
 
-// TODO not an official part of FLTK?
-//#include "threads.h"
 #include <pthread.h>
-
-#ifdef _WIN32
-#include "stdlib.h"
-#define sleep _sleep
-#else
 #include <unistd.h>
-#endif
+#include <memory> // std::unique_ptr
 
 #include <FL/Fl.H>
-#include <memory> // std::unique_ptr
 
 #include "core/libcamera_encoder.hpp"
 #include "output/output.hpp"
