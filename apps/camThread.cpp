@@ -25,7 +25,7 @@ const int PREVIEW_LOC = 1005;
 using namespace std::placeholders;
 using libcamera::Stream;
 
-// brute-force inter-thread communication.
+// shared-memory inter-thread communication.
 extern bool stateChange;
 extern bool doCapture;
 extern bool doTimelapse;
@@ -230,13 +230,21 @@ static void switchToTimelapse(VideoOptions *options)
 
 static void changeSettings()
 {
+
   try
   {
       previewLocation();
+
+      // Is the preview window size being changed? If so, need to 
+      // close/open the camera so the preview window is re-created.
+      VideoOptions *newopt = _app->GetOptions();
+      bool restart = newopt->preview_height != (unsigned int)previewH;
+      
       _app->StopCamera();
       _app->StopEncoder();
       _app->Teardown();
-      VideoOptions *newopt = _app->GetOptions();
+      if (restart)
+          _app->CloseCamera();
 
       // Horizontal and vertical flip implemented via transforms
       newopt->transform = libcamera::Transform::Identity;
@@ -255,6 +263,12 @@ static void changeSettings()
       newopt->roi_y = _panV + (1.0-_zoom) / 2.0;
       newopt->roi_height = _zoom;
       newopt->roi_width = _zoom;
+    
+      newopt->preview_width = previewW;
+      newopt->preview_height = previewH;
+
+      if (restart)
+        _app->OpenCamera();  // preview window is created as a side-effect here
       
       _app->ConfigureVideo();
       _app->StartEncoder();
@@ -269,15 +283,20 @@ static void changeSettings()
 
 static void changePreview()
 {
+    // preview window is turned off/on
+    
   try
   {
-      previewLocation();
+    previewLocation();
     _app->StopCamera();
     _app->StopEncoder();
     _app->Teardown();
     _app->CloseCamera();
     
     VideoOptions *newopt = _app->GetOptions();
+    newopt->width = previewW;
+    newopt->height= previewH;
+    
     newopt->nopreview = !_previewOn;
     previewIsOn = _previewOn;
     

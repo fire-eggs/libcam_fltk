@@ -101,66 +101,48 @@ static Fl_Value_Slider *makeSlider(int x, int y, const char *label, int min, int
     return o;
 }
 
+// TODO for the various settings callbacks, consider passing the address of the variable
+// to change as the data parameter, and thus a couple of callback functions (one for 
+// sliders, one for checkboxen).
 static void onBright(Fl_Widget *w, void *)
 {
     _bright = ((Fl_Value_Slider *)w)->value();
-#ifdef NOISY
-    std::cerr << "brightness: " << _bright << std::endl;
-#endif
     onStateChange();
 }
 
 static void onContrast(Fl_Widget *w, void *)
 {
     _contrast = ((Fl_Value_Slider *)w)->value();
-#ifdef NOISY
-    std::cerr << "contrast: " << _contrast << std::endl;
-#endif
     onStateChange();
 }
 
 static void onSharp(Fl_Widget *w, void *)
 {
     _sharp = ((Fl_Value_Slider *)w)->value();
-#ifdef NOISY
-    std::cerr << "sharpness: " << _sharp << std::endl;
-#endif
     onStateChange();
 }
 
 static void onSaturate(Fl_Widget *w, void *)
 {
     _saturate = ((Fl_Value_Slider *)w)->value();
-#ifdef NOISY
-    std::cerr << "saturation: " << _saturate << std::endl;
-#endif
     onStateChange();
 }
 
 static void onEvComp(Fl_Widget *w, void *)
 {
     _evComp = ((Fl_Value_Slider *)w)->value();
-#ifdef NOISY
-    std::cerr << "Ev comp: " << _evComp << std::endl;
-#endif
     onStateChange();
 }
 
 static void onHFlip(Fl_Widget*w, void *)
 {
     _hflip = ((Fl_Check_Button *)w)->value();
-#ifdef NOISY
-    std::cerr << "H-Flip: " << _hflip << std::endl;
-#endif
     onStateChange();
 }
 
 static void onVFlip(Fl_Widget*w, void *)
 {
     _vflip = ((Fl_Check_Button *)w)->value();
-#ifdef NOISY
-    std::cerr << "V-Flip: " << _vflip << std::endl;
-#endif
     onStateChange();
 }
 
@@ -169,8 +151,7 @@ void onPreviewSizeChange(Fl_Widget *w, void *)
     previewChoice = ((Fl_Choice *)w)->value();
     previewW = previewWVals[previewChoice];
     previewH = previewHVals[previewChoice];
-
-    onStateChange(); // TODO a more direct 'preview change'?
+    onStateChange();
 }
 
 void onReset(Fl_Widget *, void *d)
@@ -212,7 +193,7 @@ void getPreviewData()
 
 void savePreviewLocation()
 {
-    std::cerr << "Preview Location: (" << previewX << "," << previewY << ")" << std::endl;
+    //std::cerr << "Preview Location: (" << previewX << "," << previewY << ")" << std::endl;
     _prefs->setWinRect("Preview", previewX, previewY, previewW, previewH);
 }
 
@@ -230,6 +211,7 @@ void MainWin::loadSavedSettings()
 {
     // The purpose of this function is to initialize the camera to the last
     // saved state.
+    // TODO does this mean that loading values in makeSettingsTab is unnecessary?
 
     Prefs *setP = _prefs->getSubPrefs("camera");
 
