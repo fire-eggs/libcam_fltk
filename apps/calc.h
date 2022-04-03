@@ -13,36 +13,37 @@
 
 #include "prefs.h"
 #include "FL_Flex/FL_Flex.H"
+#include "timeentry.h"
 
 class CalcWin : public Fl_Double_Window
 {
 private:
     Prefs *m_prefs;
-    Fl_Input *m_resFrameCount;
-    Fl_Input *m_resInterval;
+    void *_callbackData;
+    Fl_Callback *_callback;
 
-    Fl_Spinner *_destFrameCount;
-    Fl_Round_Button* _destRadio1;
-    Fl_Round_Button* _destRadio2;
-    Fl_Spinner *_destIntervalSpin;
-    Fl_Choice *_destIntervalType;
+    TimeEntry *tlTime;  // length of timelapse
+    TimeEntry *vidTime; // length of video
+    Fl_Choice *m_cmbFPS; // choice of FPS
+    Fl_Spinner *spinTLInterval; // interval in seconds
+    Fl_Output *outFrameCount; // display of framecount
 
-    double m_intervalSeconds;
-    int m_framecount;
+    static void onChange(Fl_Widget *, void *);
+    static void onChangeInterval(Fl_Widget *, void *);
+    static void onReset(Fl_Widget *, void *);
+    void recalcInterval();
+    void showFramecount(int value);
 
+    static void onUse(Fl_Widget*, void *);
 public:
     CalcWin(int w, int h, const char *l, Prefs *prefs);
     void showCalc();
-    void ControlsToUpdate(Fl_Spinner *, Fl_Round_Button*,Fl_Spinner*,Fl_Choice*,Fl_Round_Button*);
-    void updateTLControls();
 
-    Fl_Spinner *m_spinVidLen;
-    Fl_Choice *m_cmbFPS;
+    unsigned int getFrameCount();
+    unsigned int getInterval();
+    unsigned int getTimelapseLength();
 
-    void recalc();
-
-    Fl_Choice *m_cmbRunLenType;
-    Fl_Spinner *m_spinRecLen;
+    void onUseData(Fl_Callback *cb, void *d) {_callback = cb; _callbackData = d;}
 };
 
 #endif //LIBCAMFLTK_CALC_H

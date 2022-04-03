@@ -205,6 +205,8 @@ Fl_Group *MainWin::makeZoomTab(int w, int h)
 
 void MainWin::loadZoomSettings()
 {
+    // For camera initialization
+
     Prefs *setP = _prefs->getSubPrefs("camera");
 
     _zoomChoice = setP->get("zoom", 0);

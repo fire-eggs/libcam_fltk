@@ -3,11 +3,11 @@
 //
 
 #include <iostream>
-#include "capture.h"
 #include "prefs.h"
 #include "mainwin.h"
 #include "settings.h"
 #include "mylog.h"
+#include "zoom.h" // zoom settings for onStateChange
 
 // Camera settings : implementation
 bool _hflip;
@@ -21,11 +21,70 @@ double _evComp;
 // Inter-thread communication
 bool _previewOn;
 bool stateChange;
+// preview window dimensions/location
+int previewX;
+int previewY;
+int previewW;
+int previewH;
+int previewChoice;
 
 extern Prefs *_prefs;
 extern MainWin* _window;
 
-extern void onStateChange();
+extern bool OKTOFIRE;
+extern bool OKTOSAVE;
+
+static Fl_Menu_Item menu_cmbPrevSize[] =
+        {
+                {" 640 x  480", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+                {" 800 x  600", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+                {"1024 x  768", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+                {"1280 x  960", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+                {"1600 x 1200", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+                {0,     0, 0, 0, 0,                      0, 0,  0, 0}
+        };
+
+static int previewWVals[] = {640, 800,1024, 1280, 1600};
+static int previewHVals[]  = {480, 600, 768, 960, 1200};
+
+void onStateChange()
+{
+    if (!OKTOFIRE)
+        return;
+
+    dolog("STATE:bright[%g]contrast[%g]sharp[%g]evcomp[%g]saturate[%g]",
+          _bright,_contrast,_sharp,_evComp,_saturate);
+    dolog("STATE:hflip[%d]vflip[%d]zoom[%d]panh[%g]panv[%g]preview[%d]",
+          _hflip,_vflip,_zoomChoice,_panH,_panV,_previewOn);
+    dolog("PREVIEW: (%d,%d,%d,%d) ; choice %d",
+          previewX, previewY, previewW, previewH, previewChoice);
+
+    if (OKTOSAVE)
+    {
+        Prefs *setP = _prefs->getSubPrefs("camera");
+
+        setP->set("bright", _bright);
+        setP->set("contrast", _contrast);
+        setP->set("sharp", _sharp);
+        setP->set("evcomp", _evComp);
+        setP->set("saturate", _saturate);
+        setP->set("hflip", (int)_hflip);
+        setP->set("vflip", (int)_vflip);
+
+        setP->set("zoom", _zoomChoice);
+
+        // HACK if 'tripod pan' is active, the values have been negated; undo for save
+        setP->set("panh", _panH * (_lever ? -1.0 : 1.0));
+        setP->set("panv", _panV * (_lever ? -1.0 : 1.0));
+
+        setP->set("lever", (int)_lever);
+
+        setP->set("previewChoice", previewChoice);
+
+        savePreviewLocation();
+    }
+    stateChange = true;
+}
 
 // TODO goes in class?
 static Fl_Value_Slider *makeSlider(int x, int y, const char *label, int min, int max, double def, bool vert=false)
@@ -42,66 +101,56 @@ static Fl_Value_Slider *makeSlider(int x, int y, const char *label, int min, int
     return o;
 }
 
+// TODO for the various settings callbacks, consider passing the address of the variable
+// to change as the data parameter, and thus a couple of callback functions (one for 
+// sliders, one for checkboxen).
 static void onBright(Fl_Widget *w, void *)
 {
     _bright = ((Fl_Value_Slider *)w)->value();
-#ifdef NOISY
-    std::cerr << "brightness: " << _bright << std::endl;
-#endif
     onStateChange();
 }
 
 static void onContrast(Fl_Widget *w, void *)
 {
     _contrast = ((Fl_Value_Slider *)w)->value();
-#ifdef NOISY
-    std::cerr << "contrast: " << _contrast << std::endl;
-#endif
     onStateChange();
 }
 
 static void onSharp(Fl_Widget *w, void *)
 {
     _sharp = ((Fl_Value_Slider *)w)->value();
-#ifdef NOISY
-    std::cerr << "sharpness: " << _sharp << std::endl;
-#endif
     onStateChange();
 }
 
 static void onSaturate(Fl_Widget *w, void *)
 {
     _saturate = ((Fl_Value_Slider *)w)->value();
-#ifdef NOISY
-    std::cerr << "saturation: " << _saturate << std::endl;
-#endif
     onStateChange();
 }
 
 static void onEvComp(Fl_Widget *w, void *)
 {
     _evComp = ((Fl_Value_Slider *)w)->value();
-#ifdef NOISY
-    std::cerr << "Ev comp: " << _evComp << std::endl;
-#endif
     onStateChange();
 }
 
 static void onHFlip(Fl_Widget*w, void *)
 {
     _hflip = ((Fl_Check_Button *)w)->value();
-#ifdef NOISY
-    std::cerr << "H-Flip: " << _hflip << std::endl;
-#endif
     onStateChange();
 }
 
 static void onVFlip(Fl_Widget*w, void *)
 {
     _vflip = ((Fl_Check_Button *)w)->value();
-#ifdef NOISY
-    std::cerr << "V-Flip: " << _vflip << std::endl;
-#endif
+    onStateChange();
+}
+
+void onPreviewSizeChange(Fl_Widget *w, void *)
+{
+    previewChoice = ((Fl_Choice *)w)->value();
+    previewW = previewWVals[previewChoice];
+    previewH = previewHVals[previewChoice];
     onStateChange();
 }
 
@@ -129,6 +178,25 @@ void onReset(Fl_Widget *, void *d)
     onStateChange(); // hack force not save
 }
 
+void getPreviewData()
+{
+    Prefs *setP = _prefs->getSubPrefs("preview");
+    _previewOn = setP->get("on", true);
+
+    _prefs->getWinRect("Preview", previewX, previewY, previewW, previewH);
+    if (previewW == 500)
+    { // first time defaults
+        previewW = 1024;
+        previewH = 768;
+    }
+}
+
+void savePreviewLocation()
+{
+    //std::cerr << "Preview Location: (" << previewX << "," << previewY << ")" << std::endl;
+    _prefs->setWinRect("Preview", previewX, previewY, previewW, previewH);
+}
+
 static void cbHidePreview(Fl_Widget *w, void *)
 {
     dolog("cbHidePreview:%d", _previewOn);
@@ -141,6 +209,10 @@ static void cbHidePreview(Fl_Widget *w, void *)
 
 void MainWin::loadSavedSettings()
 {
+    // The purpose of this function is to initialize the camera to the last
+    // saved state.
+    // TODO does this mean that loading values in makeSettingsTab is unnecessary?
+
     Prefs *setP = _prefs->getSubPrefs("camera");
 
     // TODO range check
@@ -167,6 +239,8 @@ void MainWin::loadSavedSettings()
     _sharp = sharpVal;
     _contrast = contrastVal;
     _evComp = evCompVal;
+    
+    previewChoice = setP->get("previewChoice", 2);
 }
 
 Fl_Group *MainWin::makeSettingsTab(int w, int h)
@@ -181,6 +255,7 @@ Fl_Group *MainWin::makeSettingsTab(int w, int h)
     double evCompVal  = setP->get("evcomp",   0.0);
     bool hflipval     = setP->get("hflip",    false);
     bool vflipval     = setP->get("vflip",    false);
+    int previewChoice = setP->get("previewChoice", 2);
 
     Fl_Group *o = new Fl_Group(10,MAGIC_Y+25,w,h, "Settings");
     o->tooltip("Configure camera settings");
@@ -239,6 +314,12 @@ Fl_Group *MainWin::makeSettingsTab(int w, int h)
         Prefs *setP = _prefs->getSubPrefs("preview");
         chkHidePreview->value(!setP->get("on", true));
     }
+
+    Fl_Choice *cmbPreviewSize = new Fl_Choice(slidX + 250, slidY, 150, 25, "Preview Window Size");
+    cmbPreviewSize->copy(menu_cmbPrevSize);
+    cmbPreviewSize->callback(onPreviewSizeChange);
+    cmbPreviewSize->align(FL_ALIGN_TOP);
+    cmbPreviewSize->value(previewChoice);
 
     o->end();
     //Fl_Group::current()->resizable(o);

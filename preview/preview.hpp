@@ -38,6 +38,8 @@ public:
 	// Return the maximum image size allowed.
 	virtual void MaxImageSize(unsigned int &w, unsigned int &h) const = 0;
 
+    virtual void getWindowPos(int &x, int &y) {}
+    
 protected:
 	DoneCallback done_callback_;
 	Options const *options_;

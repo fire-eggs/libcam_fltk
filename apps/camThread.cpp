@@ -1,21 +1,9 @@
-#ifndef _WIN32
-#define HAVE_PTHREAD
-#define HAVE_PTHREAD_H
-#endif
 
-// TODO not an official part of FLTK?
-//#include "threads.h"
 #include <pthread.h>
-
-#ifdef _WIN32
-#include "stdlib.h"
-#define sleep _sleep
-#else
 #include <unistd.h>
-#endif
+#include <memory> // std::unique_ptr
 
 #include <FL/Fl.H>
-#include <memory> // std::unique_ptr
 
 #include "core/libcamera_encoder.hpp"
 #include "output/output.hpp"
@@ -23,21 +11,30 @@
 
 #include "libcamera/logging.h"
 #include "libcamera/transform.h"
+#include "preview/preview.hpp"
 
 #include "image/image.hpp" // jpeg_save
 
 #include "mylog.h"
 
 const int TIMELAPSE_COMPLETE = 1002; // TODO need a better hack
+const int CAPTURE_FAIL = 1004;
+const int CAPTURE_SUCCESS = 1003;
+const int PREVIEW_LOC = 1005;
 
 using namespace std::placeholders;
 using libcamera::Stream;
 
-// brute-force inter-process communication.
+// shared-memory inter-thread communication.
 extern bool stateChange;
 extern bool doCapture;
 extern bool doTimelapse;
 extern bool _previewOn;
+extern int previewX;
+extern int previewY;
+extern int previewW;
+extern int previewH;
+extern bool timeToQuit;
 
 // General camera settings
 extern bool _hflip; // state of user request for horizontal flip
@@ -134,6 +131,7 @@ static void save_images(CompletedRequestPtr &payload)
 {
 	Options *options = _app->GetOptions();
 	std::string filename = generate_filename(options);
+    options->output=filename; // KBR for exception
 	save_image(payload, _app->StillStream(), filename);
 	//update_latest_link(filename, options);
 /*    
@@ -148,10 +146,21 @@ static void save_images(CompletedRequestPtr &payload)
 */    
 }
 
+static void previewLocation()
+{
+    if (!previewIsOn)
+        return; // if off, no window
+    _app->getPreview()->getWindowPos(previewX, previewY);
+    guiEvent(PREVIEW_LOC);
+}
+
 static void captureImage(LibcameraEncoder::Msg *msg)
 {
+  try
+  {
   _app->StopCamera();
   save_images(std::get<CompletedRequestPtr>(msg->payload));
+  guiEvent(CAPTURE_SUCCESS);
   _app->Teardown();
 
   VideoOptions *newopt = _app->GetOptions();
@@ -170,18 +179,18 @@ static void captureImage(LibcameraEncoder::Msg *msg)
   newopt->ev         = _evComp;
   
   // TODO is pan/zoom reset?  if NOT, even necessary to re-establish settings?
-
-  //newopt->viewfinder_height = 768;
-  //newopt->viewfinder_width = 1024;
-  //dolog("CT:captureImage:Preview: %d %d", newopt->viewfinder_width, newopt->viewfinder_height);
-  //newopt->viewfinder_mode_string = "1024:768:12";
-  //newopt->viewfinder_mode = Mode(newopt->viewfinder_mode_string);
-  newopt->width = 1024;
-  newopt->height=768;
+  newopt->width = previewW;
+  newopt->height= previewH;
   
   _app->ConfigureVideo();
   _app->StartEncoder();
   _app->StartCamera();
+  }
+  catch (std::runtime_error& e)
+  {
+    dolog("CT:captureImage: exception |%s|", e.what());
+    guiEvent(CAPTURE_FAIL);
+  }
 }
 
 static void switchToCapture(VideoOptions *options)
@@ -221,49 +230,86 @@ static void switchToTimelapse(VideoOptions *options)
 
 static void changeSettings()
 {
-                _app->StopCamera();
-                _app->StopEncoder();
-                _app->Teardown();
-                VideoOptions *newopt = _app->GetOptions();
 
-                // Horizontal and vertical flip implemented via transforms
-                newopt->transform = libcamera::Transform::Identity;
-                if (_vflip)
-                    newopt->transform = libcamera::Transform::VFlip * newopt->transform;
-                if (_hflip)
-                    newopt->transform = libcamera::Transform::HFlip * newopt->transform;
-                    
-                newopt->brightness = _bright;
-                newopt->contrast   = _contrast;
-                newopt->saturation = _saturate;
-                newopt->sharpness  = _sharp;
-                newopt->ev         = _evComp;
-                
-                newopt->roi_x = _panH + (1.0-_zoom) / 2.0;  // pan values are relative to 'center'
-                newopt->roi_y = _panV + (1.0-_zoom) / 2.0;
-                newopt->roi_height = _zoom;
-                newopt->roi_width = _zoom;
-                
-                _app->ConfigureVideo();
-                _app->StartEncoder();
-                _app->StartCamera();   
+  try
+  {
+      previewLocation();
+
+      // Is the preview window size being changed? If so, need to 
+      // close/open the camera so the preview window is re-created.
+      VideoOptions *newopt = _app->GetOptions();
+      bool restart = newopt->preview_height != (unsigned int)previewH;
+      
+      _app->StopCamera();
+      _app->StopEncoder();
+      _app->Teardown();
+      if (restart)
+          _app->CloseCamera();
+
+      // Horizontal and vertical flip implemented via transforms
+      newopt->transform = libcamera::Transform::Identity;
+      if (_vflip)
+          newopt->transform = libcamera::Transform::VFlip * newopt->transform;
+      if (_hflip)
+          newopt->transform = libcamera::Transform::HFlip * newopt->transform;
+          
+      newopt->brightness = _bright;
+      newopt->contrast   = _contrast;
+      newopt->saturation = _saturate;
+      newopt->sharpness  = _sharp;
+      newopt->ev         = _evComp;
+      
+      newopt->roi_x = _panH + (1.0-_zoom) / 2.0;  // pan values are relative to 'center'
+      newopt->roi_y = _panV + (1.0-_zoom) / 2.0;
+      newopt->roi_height = _zoom;
+      newopt->roi_width = _zoom;
+    
+      newopt->preview_width = previewW;
+      newopt->preview_height = previewH;
+
+      if (restart)
+        _app->OpenCamera();  // preview window is created as a side-effect here
+      
+      _app->ConfigureVideo();
+      _app->StartEncoder();
+      _app->StartCamera();   
+  }
+  catch (std::runtime_error& e)
+  {
+    dolog("CT:changeSettings: exception |%s|", e.what());
+    // TODO notify GUI
+  }
 }
 
 static void changePreview()
 {
+    // preview window is turned off/on
+    
+  try
+  {
+    previewLocation();
     _app->StopCamera();
     _app->StopEncoder();
     _app->Teardown();
     _app->CloseCamera();
     
     VideoOptions *newopt = _app->GetOptions();
-   newopt->nopreview = !_previewOn;
+    newopt->width = previewW;
+    newopt->height= previewH;
+    
+    newopt->nopreview = !_previewOn;
     previewIsOn = _previewOn;
     
     _app->OpenCamera();  // preview window is created as a side-effect here
     _app->ConfigureVideo();
     _app->StartEncoder();
     _app->StartCamera();   
+  }
+  catch (std::runtime_error& e)
+  {
+    dolog("CT:changePreview: exception |%s|", e.what());
+    // TODO notify GUI
+  }
 }
 
 // This is the "master loop" function.
@@ -280,6 +326,12 @@ void* proc_func(void *p)
     previewIsOn = _previewOn;
     options->nopreview = !previewIsOn;
     
+    options->preview_width = previewW;
+    options->preview_height = previewH;
+    options->preview_x = previewX > 0 ? previewX : 750;
+    // TODO magic: needs to be adjusted by the height of the titlebar for some reason?
+    options->preview_y = previewY > 0 ? previewY - 25 :  25;
+    
 	_app->OpenCamera();
 	_app->ConfigureVideo();   // TODO should this be ConfigurePreview instead?
 	_app->StartEncoder();
@@ -292,6 +344,15 @@ void* proc_func(void *p)
     
     for (;;)
     {
+        if (timeToQuit)
+        {
+            previewLocation();
+            _app->StopCamera();
+            _app->StopEncoder();
+            _app->Teardown();
+            return nullptr;
+        }
+        
         LibcameraEncoder::Msg msg = _app->Wait();
         if (msg.type == LibcameraEncoder::MsgType::Quit)
             return nullptr;
@@ -316,7 +377,18 @@ void* proc_func(void *p)
             // have we hit a timelapse trigger?
             auto now = std::chrono::high_resolution_clock::now();
             timelapseTrigger = activeTimelapse && (now - timelapseStart) > timelapseStep;
-            
+
+            // My misunderstanding: the timelapse runs until the user stops it.
+            // However, I can see the need for a "stop at end" option...
+            if (!doTimelapse)
+            {
+                dolog("CT:timelapse stopped in GUI");
+                activeTimelapse = false;
+                timelapseTrigger = false;
+                doTimelapse = false;
+                guiEvent(TIMELAPSE_COMPLETE);
+            }
+/* revisit for "force stop"            
             if ((_timelapseCount-1) < timelapseFrameCount || !doTimelapse)
             {
                 if (!doTimelapse)
@@ -332,8 +404,9 @@ void* proc_func(void *p)
                 doTimelapse = false;
                 guiEvent(TIMELAPSE_COMPLETE);
             }
+*/
         }
-        
+
         if (_app->VideoStream())
         {
             if (doCapture) // user has requested still capture
@@ -377,13 +450,12 @@ void* proc_func(void *p)
             changePreview();
         }
 	}
-
     return nullptr;
 }
 
 pthread_t proc_thread;
 
-void fire_proc_thread(int argc, char ** argv)
+pthread_t *fire_proc_thread(int argc, char ** argv)
 {
 
     // spawn the camera loop in a separate thread.
@@ -392,9 +464,10 @@ void fire_proc_thread(int argc, char ** argv)
     _app = new LibcameraEncoder();
     VideoOptions *options = _app->GetOptions();
     if (!options->Parse(argc, argv))
-	return;  // TODO some sort of error indication
-    
+        return nullptr;  // TODO some sort of error indication
+        
     pthread_create(&proc_thread, 0, proc_func, nullptr);
     pthread_detach(proc_thread);
+    return &proc_thread;
 }
 

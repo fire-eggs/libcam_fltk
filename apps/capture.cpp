@@ -7,6 +7,9 @@
 #include "mainwin.h"
 #include "capture.h"
 
+const int CAPTURE_FAIL = 1004; // TODO Hack
+const int CAPTURE_SUCCESS = 1003; // TODO Hack
+
 // Inter-process communication
 bool doCapture;
 
@@ -52,6 +55,26 @@ static void capFolderPick(Fl_Widget*, void *)
 static int captureWVals[] = {640, 1024, 1280, 1920, 2272, 3072, 4056};
 static int captureHVals[]  = {480, 768, 960, 1080, 1704, 2304, 3040};
 
+
+void MainWin::captureStatus(int val)
+{
+    if (val == CAPTURE_SUCCESS)
+    {
+        m_lblCapStatus->label("Capture success");
+        m_lblCapStatus->labelcolor(FL_DARK_GREEN);
+        m_lblCapStatus->labelfont(FL_BOLD);
+    }
+    else if (val == CAPTURE_FAIL)
+    {
+        m_lblCapStatus->label("Capture fail");
+        m_lblCapStatus->labelcolor(FL_DARK_RED);
+        m_lblCapStatus->labelfont(FL_BOLD);
+    }
+    else
+        m_lblCapStatus->label("");
+   Fl::flush();       
+}
+
 static void onCapture(Fl_Widget *w, void *)
 {
     // TODO pass mainwin as data
@@ -60,7 +83,7 @@ static void onCapture(Fl_Widget *w, void *)
     _captureH = captureHVals[sizeVal];
     _captureW = captureWVals[sizeVal];
     _captureFolder = inpFileNameDisplay->value();
-
+   _window->captureStatus(0);
     doCapture = true;
 }
 
@@ -84,6 +107,9 @@ Fl_Group *MainWin::makeCaptureTab(int w, int h)
     bBurst->tooltip("Capture multiple still images");
     bBurst->deactivate();
 
+    m_lblCapStatus = new Fl_Box(50, MAGIC_Y+310, 200, 25);
+    m_lblCapStatus->label("");
+    m_lblCapStatus->box(FL_NO_BOX);
 
     Fl_Group *sGroup = new Fl_Group(220, MAGIC_Y+60, 270, 250, "Settings");
     sGroup->box(FL_ENGRAVED_FRAME);

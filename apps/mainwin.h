@@ -21,6 +21,7 @@
 
 #include "prefs.h"
 #include "FL_Flex/FL_Flex.H"
+#include "timeentry.h"
 
 class MainWin : public Fl_Double_Window
 {
@@ -40,6 +41,7 @@ public:
     // Capture settings
     Fl_Choice *cmbSize = nullptr;
     Fl_Choice *cmbFormat = nullptr;
+    Fl_Box *m_lblCapStatus = nullptr;
 
     // Zoom settings
     Fl_Roller *m_rlPanH;
@@ -53,9 +55,10 @@ public:
     Fl_Choice *m_cmbTLTimeType;        // timelapse interval "type"
     Fl_Round_Button *m_rdTLFrameCount; // is timelapse length frames or time?
     Fl_Round_Button *m_rdTLLength;     // ditto
-    Fl_Choice *m_cmbTLLenType;         // timelapse length "type"
+    //Fl_Choice *m_cmbTLLenType;         // timelapse length "type"
     Fl_Group *m_tabTL;                 // the timelapse tab itself
-    Fl_Spinner *m_spTLLenVal;          // timelapse length value [not framecount]
+    //Fl_Spinner *m_spTLLenVal;          // timelapse length value [not framecount]
+    TimeEntry *m_TLLengthOfTime;
     Fl_Choice *m_cmbTLSize;
     Fl_Choice *m_cmbTLFormat;
     Fl_Light_Button *m_btnDoTimelapse;
@@ -65,6 +68,8 @@ public:
     std::time_t m_TLStart;
     std::time_t m_TLEnd;
     Fl_Box *m_lblCountdown;
+
+    static void onCalcResults(Fl_Widget *, void *);
 
 public:
     MainWin(int x, int y, int w, int h, const char *L=0); // : Fl_Double_Window(x, y, w,h);
@@ -76,6 +81,7 @@ public:
     void leftTimelapse(Fl_Flex *col);
     void rightTimelapse(Fl_Flex *col);
     void timelapseEnded();
+    void captureStatus(int event);
     void doCalc();
 
     Fl_Group *makeZoomTab(int w, int h);
