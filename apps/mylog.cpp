@@ -1,6 +1,9 @@
-//
-// Created by kevin on 2/25/22.
-//
+/* SPDX-License-Identifier: BSD-3-Clause-Clear */
+/*
+ * Copyright (C) 2021-2022, Kevin Routley
+ *
+ * Logging functions using spdlog.
+ */
 #include <stdio.h>
 #include <stdarg.h>
 

@@ -1,11 +1,12 @@
-//
-// Created by kevin on 2/13/22.
-//
+/* SPDX-License-Identifier: BSD-3-Clause-Clear */
+/*
+ * Copyright (C) 2021-2022, Kevin Routley
+ *
+ * The "capture" tab: GUI definition, callback functions, and inter-thread communication.
+ */
 
-#include <iostream>
 #include "prefs.h"
 #include "mainwin.h"
-#include "capture.h"
 
 const int CAPTURE_FAIL = 1004; // TODO Hack
 const int CAPTURE_SUCCESS = 1003; // TODO Hack
@@ -103,9 +104,12 @@ Fl_Group *MainWin::makeCaptureTab(int w, int h)
     Fl_Button *bStill = new Fl_Button(50, MAGIC_Y+60, 150, 30, "Still Capture");
     bStill->tooltip("Single still image");
     bStill->callback(onCapture);
+
+    /* POST-V0.5
     Fl_Button *bBurst = new Fl_Button(50, MAGIC_Y+100, 150, 30, "Burst Capture");
     bBurst->tooltip("Capture multiple still images");
     bBurst->deactivate();
+    */
 
     m_lblCapStatus = new Fl_Box(50, MAGIC_Y+310, 200, 25);
     m_lblCapStatus->label("");

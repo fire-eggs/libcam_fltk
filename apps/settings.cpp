@@ -1,6 +1,9 @@
-//
-// Created by kevin on 2/13/22.
-//
+/* SPDX-License-Identifier: BSD-3-Clause-Clear */
+/*
+ * Copyright (C) 2021-2022, Kevin Routley
+ *
+ * The "settings" tab: GUI definition, callback functions, and inter-thread communication.
+ */
 
 #include <iostream>
 #include "prefs.h"

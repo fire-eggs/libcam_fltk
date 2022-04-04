@@ -1,3 +1,10 @@
+/* SPDX-License-Identifier: BSD-3-Clause-Clear */
+/*
+ * Copyright (C) 2021-2022, Kevin Routley
+ *
+ * The main window. GUI definition, callback functions, and inter-thread communication.
+ */
+
 // TODO disable tab tooltips inside the tab [inner group with no tooltip?]
 
 #ifdef __CLION_IDE__
@@ -8,16 +15,12 @@
 #endif
 
 #include "mainwin.h"
-
 #include "prefs.h"
-#include "capture.h"
 #include "settings.h"
 #include "zoom.h"
 #include "mylog.h"
 
-#include <iostream>
-
-#define KBR_UPD_PREVIEW 1001
+// TODO must match in camThread.cpp; needs better definition mechanism
 const int TIMELAPSE_COMPLETE = 1002;
 const int CAPTURE_FAIL = 1004;
 const int CAPTURE_SUCCESS = 1003;
@@ -30,15 +33,17 @@ const int PREVIEW_LOC = 1005;
 
 Prefs *_prefs; // TODO HACK
 Fl_Menu_Bar *_menu;
-char *_loadfile;
 MainWin* _window;
+bool _done; // shutdown status : used for final cleanup
 
 extern pthread_t *fire_proc_thread(int argc, char ** argv);
-bool OKTOSAVE;
-bool OKTOFIRE;
+bool OKTOSAVE; // initial loading of settings: is it OK to save these?
+bool OKTOFIRE; // initial loading of settings: is it OK to send to the camera?
 
 bool timeToQuit = false; // inter-thread flag
-pthread_t *camThread;
+pthread_t *camThread; // co-ordinate shutdown
+
+extern void do_about();
 
 static void popup(Fl_File_Chooser* filechooser)
 {
@@ -81,7 +86,6 @@ void folderPick(Fl_Output *inp)
     inp->value(loaddir);
 }
 
-
 MainWin::MainWin(int x, int y, int w, int h,const char *L) : Fl_Double_Window(x, y, w,h,L)
 {
     int magicW = w - 20;
@@ -94,20 +98,9 @@ MainWin::MainWin(int x, int y, int w, int h,const char *L) : Fl_Double_Window(x,
     makeZoomTab(magicW, magicH);
     makeCaptureTab(magicW, magicH);
     m_tabTL = makeTimelapseTab(magicW, magicH);
-    makeVideoTab(magicW, magicH);
     tabs->end();
 
     resizable(this);
-}
-
-Fl_Group *MainWin::makeVideoTab(int w, int h)
-{
-    Fl_Group *o = new Fl_Group(10,MAGIC_Y+25,w,h, "Video");
-    o->tooltip("Video Capture");
-
-    o->end();
-    o->deactivate();
-    return o;
 }
 
 void MainWin::resize(int x, int y, int w, int h)
@@ -122,11 +115,6 @@ void MainWin::resize(int x, int y, int w, int h)
     }
     _prefs->setWinRect("MainWin",x, y, w, h);
 }
-
-void load_cb(Fl_Widget*, void*) {
-}
-
-bool _done;
 
 void quit_cb(Fl_Widget* , void* )
 {
@@ -150,10 +138,6 @@ void quit_cb(Fl_Widget* , void* )
     exit(0);
 }
 
-void save_cb(Fl_Widget*, void*) {
-}
-
-extern void do_about();
 void about_cb(Fl_Widget*, void*)
 {
     do_about();
@@ -162,10 +146,6 @@ void about_cb(Fl_Widget*, void*)
 Fl_Menu_Item mainmenuItems[] =
 {
     {"&File", 0, nullptr, nullptr, FL_SUBMENU, 0, 0, 0, 0},
-/*
-    {"&Load...", 0, load_cb, 0, 0, 0, 0, 0, 0},
-    {"Save", 0, save_cb, 0, 0, 0, 0, 0, 0},
-*/
     {"E&xit", 0, quit_cb, nullptr, 0, 0, 0, 0, 0},
     {0, 0, 0, 0, 0, 0, 0, 0, 0},
     {"&About", 0, about_cb, nullptr, 0, 0, 0, 0, 0},
@@ -177,10 +157,6 @@ int handleSpecial(int event)
 {
     switch (event)
     {
-    case KBR_UPD_PREVIEW:
-//        _window->updatePreview();
-        return 1;
-
     case TIMELAPSE_COMPLETE:
         dolog("TL-end from camthread");
         _window->timelapseEnded();

@@ -1,6 +1,9 @@
-//
-// Created by kevin on 1/31/22.
-//
+/* SPDX-License-Identifier: BSD-3-Clause-Clear */
+/*
+ * Copyright (C) 2021-2022, Kevin Routley
+ *
+ * The timelapse tab. GUI definition, callbacks, inter-thread communication.
+ */
 
 #include <iostream>
 #include <ctime>
@@ -19,7 +22,7 @@
 
 #define TL_ACTIVE_COLOR FL_RED
 
-// Inter-process communication
+// Inter-thread communication
 bool doTimelapse;
 
 // Timelapse settings
@@ -43,10 +46,6 @@ static unsigned long intervalToMilliseconds(int intervalType)
 
     switch (intervalType)
     {
-        /* 20220211 milliseconds no longer an option
-        case 0:
-            return 1;
-            */
         case 0:
             return 1000; // seconds
         case 1:
@@ -59,30 +58,29 @@ static unsigned long intervalToMilliseconds(int intervalType)
 
 Fl_Menu_Item menu_cmbTLType[] =
         {
-//{"Milliseconds", 0, nullptr, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-                {"Seconds", 0, nullptr, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-                {"Minutes", 0, nullptr, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-                {"Hours", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-                {0,     0, 0, 0, 0,                      0, 0,  0, 0}
+            {"Seconds", 0, nullptr, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+            {"Minutes", 0, nullptr, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+            {"Hours", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+            {0,     0, 0, 0, 0,                      0, 0,  0, 0}
         };
 
 static Fl_Menu_Item menu_cmbSize[] =
         {
-                {" 640 x  480", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-                {"1024 x  768", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-                {"1280 x  960", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-                {"1920 x 1080", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-                {"2272 x 1704", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-                {"3072 x 2304", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-                {"4056 x 3040", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-                {0,     0, 0, 0, 0,                      0, 0,  0, 0}
+            {" 640 x  480", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+            {"1024 x  768", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+            {"1280 x  960", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+            {"1920 x 1080", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+            {"2272 x 1704", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+            {"3072 x 2304", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+            {"4056 x 3040", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+            {0,     0, 0, 0, 0,                      0, 0,  0, 0}
         };
 
 static Fl_Menu_Item menu_cmbFormat[] =
         {
-                {"JPG", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-                {"PNG", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-                {0,     0, 0, 0, 0,                      0, 0,  0, 0}
+            {"JPG", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+            {"PNG", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+            {0,     0, 0, 0, 0,                      0, 0,  0, 0}
         };
 
 static void capTLFolderPick(Fl_Widget* w, void *d)
@@ -146,7 +144,7 @@ static void cbTimelapse(Fl_Widget *w, void *d)
 {
     dolog("cbTimelapse");
     MainWin *mw = static_cast<MainWin *>(d);
-    Fl_Light_Button *btn = static_cast<Fl_Light_Button *>(w);
+    Fl_Light_Button *btn = dynamic_cast<Fl_Light_Button *>(w);
 
     if (!btn->value())
     {
@@ -159,28 +157,13 @@ static void cbTimelapse(Fl_Widget *w, void *d)
     int intervalType = mw->m_cmbTLTimeType->value();
     double intervalStep = mw->m_spTLDblVal->value();
 
-    /* 20220211 milliseconds no longer an option
-    // don't attempt fractions of milliseconds
-    if (intervalType == 0)
-        intervalStep = (int)intervalStep;
-    */
-
     int framecount = -1;
-    //int lenType = -1;
     unsigned int lenval = 0;
     if (mw->m_rdTLFrameCount->value())
         framecount = mw->m_spTLFrameCount->value();
     else
         lenval = mw->m_TLLengthOfTime->getSeconds();
 
-    /*
-    std::cerr << "Timelapse step: " << intervalStep << " " << mw->m_cmbTLTimeType->text() << std::endl;
-    if (framecount > 0)
-        std::cerr << "   Run for " << framecount << " frames" << std::endl;
-    else
-        std::cerr << "   Run for " << lenval << " " << mw->m_cmbTLLenType->text() << std::endl;
-*/
-    
     dolog("cbTimelapse: step:%g %s frames: %d", intervalStep, mw->m_cmbTLTimeType->text(), framecount);
     
     // Convert interval, length into milliseconds
@@ -189,7 +172,7 @@ static void cbTimelapse(Fl_Widget *w, void *d)
         _timelapseCount = framecount;
     else
     {
-        _timelapseLimit = lenval * 1000; //intervalToMilliseconds(lenType);
+        _timelapseLimit = lenval * 1000;
         _timelapseCount = _timelapseLimit / _timelapseStep;
     }
 
@@ -265,7 +248,6 @@ static void onCalc(Fl_Widget *w, void *d)
 void MainWin::doCalc()
 {
     CalcWin *calc = new CalcWin(400, 350, "Calculator", _prefs);
-    //calc->callback(onCalcResults, this);
     calc->onUseData(onCalcResults, this);
     calc->showCalc();
 }
@@ -371,24 +353,9 @@ void MainWin::leftTimelapse(Fl_Flex *col)
         Fl_Box *pad = new Fl_Box(0, 0, 0, 0, "");
         m_TLLengthOfTime = new TimeEntry(0,0,0,0);
 
-/*
-        Fl_Spinner *spinLengthVal = new Fl_Spinner(0, 0, 0, 0);
-        spinLengthVal->type(1); // FL_FLOAT
-        spinLengthVal->minimum(1);
-        spinLengthVal->maximum(500);
-        spinLengthVal->step(0.5);
-        spinLengthVal->value(lengthVal);
-        m_spTLLenVal = spinLengthVal;
-
-        m_cmbTLLenType = new Fl_Choice(0, 0, 0, 0);
-        m_cmbTLLenType->down_box(FL_BORDER_BOX);
-        m_cmbTLLenType->menu(menu_cmbTLType);
-        m_cmbTLLenType->value(lengthChoice);
-*/
         row5->end();
         row5->setSize(pad, 25);
         row5->setSize(m_TLLengthOfTime, 120);
-        //row5->setSize(spinLengthVal, 85);
     }
     
     col->setSize(row0, 25);
@@ -410,7 +377,6 @@ void MainWin::rightTimelapse(Fl_Flex *col)
     // TODO check for valid folder
     char * foldBuffer;
     setP->_prefs->get("folder", foldBuffer, "/home/pi/Pictures");
-
 
     Fl_Box *b = new Fl_Box(0, 0, 0, 0, "Image Settings");
     b->align(FL_ALIGN_INSIDE | FL_ALIGN_TOP_LEFT);
@@ -536,10 +502,6 @@ void MainWin::save_timelapse_settings()
     setP->set("frameLimit", m_rdTLFrameCount->value());
 
     setP->set("interval", m_spTLDblVal->value());
-
-    // TODO m_TLLengthOfTime
-    //setP->set("lengthType", m_cmbTLLenType->value());
-    //setP->set("length",   m_spTLLenVal->value());
 
     setP->_prefs->flush();
 }

@@ -1,6 +1,9 @@
-//
-// Created by kevin on 2/16/22.
-//
+/* SPDX-License-Identifier: BSD-3-Clause-Clear */
+/*
+ * Copyright (C) 2021-2022, Kevin Routley
+ *
+ * The "timelapse calculator" dialog box. GUI definition, callback functions.
+ */
 
 #ifndef LIBCAMFLTK_CALC_H
 #define LIBCAMFLTK_CALC_H
@@ -18,7 +21,6 @@
 class CalcWin : public Fl_Double_Window
 {
 private:
-    Prefs *m_prefs;
     void *_callbackData;
     Fl_Callback *_callback;
 

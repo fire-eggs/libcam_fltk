@@ -1,9 +1,12 @@
-//
-// Created by kevin on 1/6/22.
-//
+/* SPDX-License-Identifier: BSD-3-Clause-Clear */
+/*
+ * Copyright (C) 2021-2022, Kevin Routley
+ *
+ * Preferences class.
+ */
 
-#ifndef CROPPER_PREFS_H
-#define CROPPER_PREFS_H
+#ifndef LIBCAMFLTK_PREFS_H
+#define LIBCAMFLTK_PREFS_H
 
 #define APPLICATION "libcam_fltk"
 #define ORGANIZATION "fire-eggs"
@@ -88,4 +91,4 @@ public:
     }
 };
 
-#endif //CROPPER_PREFS_H
+#endif //LIBCAMFLTK_PREFS_H

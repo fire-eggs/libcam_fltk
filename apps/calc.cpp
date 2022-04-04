@@ -1,6 +1,9 @@
-//
-// Created by kevin on 2/16/22.
-//
+/* SPDX-License-Identifier: BSD-3-Clause-Clear */
+/*
+ * Copyright (C) 2021-2022, Kevin Routley
+ *
+ * The "timelapse calculator" dialog box. GUI definition, callback functions.
+ */
 #include <cmath>
 
 #include <FL/Fl_Box.H>
@@ -129,7 +132,6 @@ void CalcWin::onUse(Fl_Widget *w, void *d)
 {
     CalcWin *cw = static_cast<CalcWin *>(d);
     cw->_callback(cw, cw->_callbackData);
-    //cw->do_callback();
 }
 
 CalcWin::CalcWin(int w, int h, const char *l, Prefs *prefs)

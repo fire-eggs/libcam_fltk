@@ -1,10 +1,9 @@
-//
-// Created by kevin on 2/13/22.
-//
-
-#ifdef NOISY
-#include <iostream>
-#endif
+/* SPDX-License-Identifier: BSD-3-Clause-Clear */
+/*
+ * Copyright (C) 2021-2022, Kevin Routley
+ *
+ * The "zoom" tab: GUI definition, callback functions, and inter-thread communication.
+ */
 
 #include <FL/fl_draw.H>
 #include "settings.h"
@@ -82,10 +81,6 @@ static void onPanH(Fl_Widget *w, void *d)
 {
     _panH = ((Fl_Roller *)w)->value();
 
-#ifdef NOISY
-    std::cerr << "panH: " << _panH << std::endl;
-#endif
-
     MainWin *mw = (MainWin *)d;
     mw->m_rlPanH->value(_panH);
 
@@ -101,10 +96,6 @@ static void onPanH(Fl_Widget *w, void *d)
 static void onPanV(Fl_Widget *w, void *d)
 {
     _panV = ((Fl_Roller *)w)->value();
-
-#ifdef NOISY
-    std::cerr << "panV: " << _panV << std::endl;
-#endif
 
     MainWin *mw = (MainWin *)d;
     mw->m_rlPanV->value(_panV);

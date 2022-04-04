@@ -1,6 +1,9 @@
-//
-// Created by kevin on 3/14/22.
-//
+/* SPDX-License-Identifier: BSD-3-Clause-Clear */
+/*
+ * Copyright (C) 2021-2022, Kevin Routley
+ *
+ * The "about" dialog box. GUI definition, callback functions.
+ */
 #include <FL/Fl_Button.H>
 #include <FL/Fl_Return_Button.H>
 #include <FL/Fl_Box.H>

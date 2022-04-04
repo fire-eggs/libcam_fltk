@@ -1,6 +1,9 @@
-//
-// Created by kevin on 1/31/22.
-//
+/* SPDX-License-Identifier: BSD-3-Clause-Clear */
+/*
+ * Copyright (C) 2021-2022, Kevin Routley
+ *
+ * The main window. GUI definition, callback functions, and inter-thread communication.
+ */
 
 #ifndef LIBCAMFLTK_MAINWIN_H
 #define LIBCAMFLTK_MAINWIN_H
@@ -72,11 +75,10 @@ public:
     static void onCalcResults(Fl_Widget *, void *);
 
 public:
-    MainWin(int x, int y, int w, int h, const char *L=0); // : Fl_Double_Window(x, y, w,h);
+    MainWin(int x, int y, int w, int h, const char *L=nullptr); // : Fl_Double_Window(x, y, w,h);
 
     Fl_Group *makeSettingsTab(int w, int h);
     Fl_Group *makeCaptureTab(int w, int h);
-    Fl_Group *makeVideoTab(int w, int h);
     Fl_Group *makeTimelapseTab(int w, int h);
     void leftTimelapse(Fl_Flex *col);
     void rightTimelapse(Fl_Flex *col);
@@ -94,10 +96,6 @@ public:
     void save_timelapse_settings();
 
     void updateCountdown(bool repeat=true);
-
-public:
-    int *m_captureWVals;
-    int *m_captureHVals;
 };
 
 void folderPick(Fl_Output *);
