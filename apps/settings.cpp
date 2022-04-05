@@ -188,8 +188,9 @@ void getPreviewData()
     _previewOn = setP->get("on", true);
 
     _prefs->getWinRect("Preview", previewX, previewY, previewW, previewH);
-    if (previewW == 500)
-    { // first time defaults
+    if (previewW == 500 || previewW > 1024 || previewW < 0 ||
+        previewH == 500 || previewH > 768  || previewH < 0)
+    { // first time / error defaults
         previewW = 1024;
         previewH = 768;
     }
@@ -197,7 +198,6 @@ void getPreviewData()
 
 void savePreviewLocation()
 {
-    //std::cerr << "Preview Location: (" << previewX << "," << previewY << ")" << std::endl;
     _prefs->setWinRect("Preview", previewX, previewY, previewW, previewH);
 }
 
