@@ -47,13 +47,13 @@ static unsigned long intervalToMilliseconds(int intervalType)
     switch (intervalType)
     {
         case 0:
+        default:
             return 1000; // seconds
         case 1:
             return 60 * 1000; // minutes
         case 2:
             return 60 * 60 * 1000; // hours
     }
-    return -1;
 }
 
 Fl_Menu_Item menu_cmbTLType[] =
@@ -91,14 +91,21 @@ static void capTLFolderPick(Fl_Widget* w, void *d)
 
 static void cbRadio(Fl_Widget *w, void *d)
 {
-    // Fl_Flex uses FL_Group to contain rows/columns. This breaks radio button
-    // behavior when they are in different rows/columns.
+    // Fl_Flex uses FL_Group to contain rows/columns. As a result, "automatic"
+    // radio button behavior breaks when they are in different rows/columns.
+    // So manually setting and clearing the buttons is applied here.
 
     MainWin *mw = static_cast<MainWin *>(d);
+    mw->m_rdTLFrameCount->value(0);
+    mw->m_rdTLLength->value(0);
+    mw->m_rdTLIndefinite->value(0);
+
     if (w == mw->m_rdTLLength)
-        mw->m_rdTLFrameCount->value(0);
+        mw->m_rdTLLength->value(1);
+    else if (w == mw->m_rdTLFrameCount)
+        mw->m_rdTLFrameCount->value(1);
     else
-        mw->m_rdTLLength->value(0);
+        mw->m_rdTLIndefinite->value(1);
 }
 
 static int captureWVals[] = {640,1024,1280,1920,2272,3072,4056};
@@ -193,7 +200,7 @@ static void cbTimelapse(Fl_Widget *w, void *d)
     {
         std::time_t raw_time;
         std::time(&raw_time);
-        mw->m_TLStart = raw_time;
+        //mw->m_TLStart = raw_time;
 
         char time_string[64];
         std::tm *time_info = std::localtime(&raw_time);
@@ -275,15 +282,17 @@ void MainWin::onCalcResults(Fl_Widget *calc, void *d)
 
 void MainWin::leftTimelapse(Fl_Flex *col)
 {
+    // Create all controls on the "left side" of the timelapse tab
+
     Prefs *setP = _prefs->getSubPrefs("timelapse");
 
     int intervalChoice = setP->get("intervalType", 0);
-    //int lengthChoice = setP->get("lengthType", 1);
     int frameCount = setP->get("frameCount", 1);
     int limitOnFrames = setP->get("frameLimit", 1);
+    int limitOnLength = setP->get("lengthLimit", 0);
     double intervalVal = setP->get("interval", 1.0);
-    //double lengthVal   = setP->get("length",   1.0);   
 
+    // Label
     Fl_Flex *row0 = new Fl_Flex(Fl_Flex::ROW);
     {
         Fl_Box *b = new Fl_Box(0, 0, 0, 0, "Length Settings");
@@ -295,6 +304,7 @@ void MainWin::leftTimelapse(Fl_Flex *col)
 
     Fl_Box* pad1 = new Fl_Box(0, 0, 0, 0, "");
 
+    // "Interval"
     Fl_Flex *row1 = new Fl_Flex(Fl_Flex::ROW);
     {
         Fl_Spinner *spinDblVal = new Fl_Spinner(0, 0, 0, 0);
@@ -315,6 +325,7 @@ void MainWin::leftTimelapse(Fl_Flex *col)
         row1->setSize(spinDblVal, 85);
     }
 
+    // Radio
     Fl_Flex *row2 = new Fl_Flex(Fl_Flex::ROW);
     Fl_Round_Button *rdFrameCount = new Fl_Round_Button(0,0,0,0, "Number of frames");
     rdFrameCount->type(102);
@@ -324,6 +335,7 @@ void MainWin::leftTimelapse(Fl_Flex *col)
     m_rdTLFrameCount = rdFrameCount;
     row2->end();
 
+    // frame count
     Fl_Flex *row3 = new Fl_Flex(Fl_Flex::ROW);
     {
         Fl_Box *pad = new Fl_Box(0, 0, 0, 0, "");
@@ -339,15 +351,17 @@ void MainWin::leftTimelapse(Fl_Flex *col)
         row3->setSize(spinFrameCount, 85);
     }
 
+    // radio
     Fl_Flex *row4 = new Fl_Flex(Fl_Flex::ROW);
     Fl_Round_Button *rdMaxTime = new Fl_Round_Button(0,0,0,0, "Length of time");
     rdMaxTime->type(102);
     rdMaxTime->down_box(FL_ROUND_DOWN_BOX);
-    if (!limitOnFrames) rdMaxTime->value(1);
+    if (!limitOnFrames && limitOnLength) rdMaxTime->value(1);
     rdMaxTime->callback(cbRadio, this);
     m_rdTLLength = rdMaxTime;
     row4->end();
 
+    // time entry
     Fl_Flex *row5 = new Fl_Flex(Fl_Flex::ROW);
     {
         Fl_Box *pad = new Fl_Box(0, 0, 0, 0, "");
@@ -357,7 +371,16 @@ void MainWin::leftTimelapse(Fl_Flex *col)
         row5->setSize(pad, 25);
         row5->setSize(m_TLLengthOfTime, 120);
     }
-    
+
+    // radio
+    Fl_Flex *row6 = new Fl_Flex(Fl_Flex::ROW);
+    m_rdTLIndefinite = new Fl_Round_Button(0,0,0,0, "Run indefinitely");
+    m_rdTLIndefinite->type(102);
+    m_rdTLIndefinite->down_box(FL_ROUND_DOWN_BOX);
+    if (!limitOnFrames && !limitOnLength) m_rdTLIndefinite->value(1);
+    m_rdTLIndefinite->callback(cbRadio, this);
+    row6->end();
+
     col->setSize(row0, 25);
     col->setSize(pad1, 25);
     col->setSize(row1, 30);
@@ -365,6 +388,7 @@ void MainWin::leftTimelapse(Fl_Flex *col)
     col->setSize(row3, 30);
     col->setSize(row4, 30);
     col->setSize(row5, 30);
+    col->setSize(row6, 30);
 }
 
 void MainWin::rightTimelapse(Fl_Flex *col)
@@ -452,7 +476,7 @@ Fl_Group *MainWin::makeTimelapseTab(int w, int h)
     }
 
     // TODO consider a Fl_Pack
-    int calc_Y = MAGIC_Y + 300;
+    int calc_Y = MAGIC_Y + 350;
 
     Fl_Button *bCalc = new Fl_Button(35, calc_Y, 150, 25, "Calculator");
     bCalc->callback(onCalc, this);
@@ -499,7 +523,9 @@ void MainWin::save_timelapse_settings()
     
     setP->set("frameCount", m_spTLFrameCount->value());
     setP->set("intervalType", m_cmbTLTimeType->value());
-    setP->set("frameLimit", m_rdTLFrameCount->value());
+
+    setP->set("frameLimit", m_rdTLFrameCount->value()); // TODO assuming radios properly set
+    setP->set("lengthLimit",  m_rdTLLength->value()); // TODO assuming radios properly set
 
     setP->set("interval", m_spTLDblVal->value());
 

@@ -52,30 +52,31 @@ public:
     Fl_Choice *cmbZoom = nullptr;
     Fl_Check_Button *m_chkLever;
 
-    // Timelapse settings
+    // Timelapse settings and controls [left side]
     Fl_Spinner *m_spTLDblVal;          // timelapse interval step
     Fl_Spinner *m_spTLFrameCount;      // timelapse length frame count
     Fl_Choice *m_cmbTLTimeType;        // timelapse interval "type"
-    Fl_Round_Button *m_rdTLFrameCount; // is timelapse length frames or time?
+    Fl_Round_Button *m_rdTLFrameCount; // is timelapse length: frames, time or indefinite?
     Fl_Round_Button *m_rdTLLength;     // ditto
-    //Fl_Choice *m_cmbTLLenType;         // timelapse length "type"
+    Fl_Round_Button *m_rdTLIndefinite; // ditto
     Fl_Group *m_tabTL;                 // the timelapse tab itself
-    //Fl_Spinner *m_spTLLenVal;          // timelapse length value [not framecount]
-    TimeEntry *m_TLLengthOfTime;
-    Fl_Choice *m_cmbTLSize;
-    Fl_Choice *m_cmbTLFormat;
+    TimeEntry *m_TLLengthOfTime;       // timelapse length of time limit
+
+    // Timelapse settings and controls [right side]
+    Fl_Choice *m_cmbTLSize;            // timelapse image size
+    Fl_Choice *m_cmbTLFormat;          // timelapse image format
+    Fl_Output* inpTLFileNameDisplay;   // timelapse folder display
+
     Fl_Light_Button *m_btnDoTimelapse;
 
-    Fl_Output* inpTLFileNameDisplay;
-
-    std::time_t m_TLStart;
+    // Display the timelapse countdown
     std::time_t m_TLEnd;
     Fl_Box *m_lblCountdown;
 
     static void onCalcResults(Fl_Widget *, void *);
 
 public:
-    MainWin(int x, int y, int w, int h, const char *L=nullptr); // : Fl_Double_Window(x, y, w,h);
+    MainWin(int x, int y, int w, int h, const char *L=nullptr);
 
     Fl_Group *makeSettingsTab(int w, int h);
     Fl_Group *makeCaptureTab(int w, int h);
