@@ -42,8 +42,9 @@ static Fl_Menu_Item menu_cmbPrevSize[] =
                 {" 640 x  480", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
                 {" 800 x  600", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
                 {"1024 x  768", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-                {"1280 x  960", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-                {"1600 x 1200", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+// 1024x768 may effectively be the upper limit
+//                {"1280 x  960", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+//                {"1600 x 1200", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
                 {0,     0, 0, 0, 0,                      0, 0,  0, 0}
         };
 
