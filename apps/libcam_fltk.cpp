@@ -86,17 +86,31 @@ void folderPick(Fl_Output *inp)
     inp->value(loaddir);
 }
 
+void MainWin::onTabChange(Fl_Widget *w, void *d)
+{
+    MainWin * mw = static_cast<MainWin*>(d);
+    Fl_Tabs *tabs = dynamic_cast<Fl_Tabs*>(w);
+    if (tabs->value() != mw->m_tabCap)
+    {
+        // user has tabbed away from the capture tab. insure last capture status is cleared
+        _window->captureStatus(-1);
+    }
+}
+
 MainWin::MainWin(int x, int y, int w, int h,const char *L) : Fl_Double_Window(x, y, w,h,L)
 {
     int magicW = w - 20;
     int magicH = h - 50;
 
     Fl_Tabs *tabs = new Fl_Tabs(10, MAGIC_Y, magicW, magicH);
+    tabs->callback(onTabChange, this);
+    tabs->when(FL_WHEN_CHANGED);
+
     magicH -= 25;
 
     makeSettingsTab(magicW, magicH);
     makeZoomTab(magicW, magicH);
-    makeCaptureTab(magicW, magicH);
+    m_tabCap = makeCaptureTab(magicW, magicH);
     m_tabTL = makeTimelapseTab(magicW, magicH);
     tabs->end();
 

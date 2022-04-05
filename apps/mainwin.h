@@ -45,6 +45,7 @@ public:
     Fl_Choice *cmbSize = nullptr;
     Fl_Choice *cmbFormat = nullptr;
     Fl_Box *m_lblCapStatus = nullptr;
+    Fl_Group *m_tabCap; // the capture tab itself
 
     // Zoom settings
     Fl_Roller *m_rlPanH;
@@ -74,6 +75,7 @@ public:
     Fl_Box *m_lblCountdown;
 
     static void onCalcResults(Fl_Widget *, void *);
+    static void onTabChange(Fl_Widget *, void *);
 
 public:
     MainWin(int x, int y, int w, int h, const char *L=nullptr);
