@@ -166,16 +166,19 @@ static void cbTimelapse(Fl_Widget *w, void *d)
 
     int framecount = -1;
     unsigned int lenval = 0;
-    if (mw->m_rdTLFrameCount->value())
+    if (mw->m_rdTLFrameCount->value()) // TODO helper, manifest constants
         framecount = mw->m_spTLFrameCount->value();
-    else
+    else if (mw->m_rdTLLength->value()) 
         lenval = mw->m_TLLengthOfTime->getSeconds();
+    else if (mw->m_rdTLIndefinite->value())
+        framecount = __INT_MAX__;
 
     dolog("cbTimelapse: step:%g %s frames: %d", intervalStep, mw->m_cmbTLTimeType->text(), framecount);
     
     // Convert interval, length into milliseconds
     _timelapseStep = intervalStep * intervalToMilliseconds(intervalType);
-    if (framecount > 0)
+    _timelapseLimit = 0;
+    if (framecount > 0 || mw->m_rdTLIndefinite->value())
         _timelapseCount = framecount;
     else
     {
