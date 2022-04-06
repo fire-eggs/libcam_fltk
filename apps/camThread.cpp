@@ -370,7 +370,8 @@ void* proc_func(void *p)
             timelapseFrameCount = 0;
         }
         
-        // Don't continue the timelapse if the limit has been reached
+        // Don't continue the timelapse if the limit has been reached,
+        // as indicated by flag state
         bool timelapseTrigger = false;
         if (activeTimelapse)
         {
@@ -378,8 +379,7 @@ void* proc_func(void *p)
             auto now = std::chrono::high_resolution_clock::now();
             timelapseTrigger = activeTimelapse && (now - timelapseStart) > timelapseStep;
 
-            // My misunderstanding: the timelapse runs until the user stops it.
-            // However, I can see the need for a "stop at end" option...
+            // User has turned off the timelapse in the GUI
             if (!doTimelapse)
             {
                 dolog("CT:timelapse stopped in GUI");
@@ -388,23 +388,18 @@ void* proc_func(void *p)
                 doTimelapse = false;
                 guiEvent(TIMELAPSE_COMPLETE);
             }
-/* revisit for "force stop"            
-            if ((_timelapseCount-1) < timelapseFrameCount || !doTimelapse)
+
+            // Limit reached ["run indefinitely" indicated by _timelapseCount
+            // being effectively infinite]
+            else if ((_timelapseCount-1) < timelapseFrameCount)
             {
-                if (!doTimelapse)
-                {
-                    dolog("CT:timelapse stopped in GUI");
-                }
-                else
-                {
-                    dolog("CT:timelapse frame count reached; ended");
-                }
+                dolog("CT:timelapse frame count reached; ended");
                 activeTimelapse = false;
                 timelapseTrigger = false;
                 doTimelapse = false;
                 guiEvent(TIMELAPSE_COMPLETE);
             }
-*/
+
         }
 
         if (_app->VideoStream())
