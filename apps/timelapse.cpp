@@ -210,25 +210,31 @@ static void cbTimelapse(Fl_Widget *w, void *d)
         std::strftime(time_string, sizeof(time_string), "Timelapse started at: %H:%M:%S %b %d", time_info);
         lblStart->copy_label(time_string);
 
-        // effective timelapse length -> seconds
-        int tLseconds = lround(_timelapseLimit / 1000.0);
-        if (_timelapseCount)
+        if (mw->m_rdTLIndefinite->value())
         {
-            tLseconds = lround(_timelapseCount * _timelapseStep / 1000.0);
+            lblEnd->copy_label("Running indefinitely");
         }
+        else
+        {
+            // effective timelapse length -> seconds
+            int tLseconds = lround(_timelapseLimit / 1000.0);
+            if (_timelapseCount)
+            {
+                tLseconds = lround(_timelapseCount * _timelapseStep / 1000.0);
+            }
 
-        // raw_time + seconds
-        std::time_t end_time = raw_time + tLseconds; // test: 37 minutes
-        time_info = std::localtime(&end_time);
-        std::strftime(time_string, sizeof(time_string), "Timelapse will end at: %H:%M:%S %b %d (est.)", time_info);
-        lblEnd->copy_label(time_string);
+            // raw_time + seconds
+            std::time_t end_time = raw_time + tLseconds; // test: 37 minutes
+            time_info = std::localtime(&end_time);
+            std::strftime(time_string, sizeof(time_string), "Timelapse will end at: %H:%M:%S %b %d (est.)", time_info);
+            lblEnd->copy_label(time_string);
 
-        mw->m_TLEnd = end_time;
-        // TODO to function
-        int countdownSeconds = tLseconds > 3600 ? LONGTICK : tLseconds > 100 ? SHORTTICK : 1;
-        Fl::add_timeout(countdownSeconds, cbTLcountdown, mw);
-        mw->updateCountdown(false);
-
+            mw->m_TLEnd = end_time;
+            // TODO to function
+            int countdownSeconds = tLseconds > 3600 ? LONGTICK : tLseconds > 100 ? SHORTTICK : 1;
+            Fl::add_timeout(countdownSeconds, cbTLcountdown, mw);
+            mw->updateCountdown(false);
+        }
     }
 
     // activate timelapse flag
