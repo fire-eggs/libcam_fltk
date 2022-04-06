@@ -198,7 +198,9 @@ void getPreviewData()
 
 void savePreviewLocation()
 {
-    _prefs->setWinRect("Preview", previewX, previewY, previewW, previewH);
+    // both values at -1 indicates preview window not open at shutdown
+    if (previewX != -1 && previewY != -1)
+        _prefs->setWinRect("Preview", previewX, previewY, previewW, previewH);
 }
 
 static void cbHidePreview(Fl_Widget *w, void *)

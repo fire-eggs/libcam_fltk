@@ -148,10 +148,10 @@ static void save_images(CompletedRequestPtr &payload)
 
 static void previewLocation()
 {
-    if (!previewIsOn)
-        return; // if off, no window
-    _app->getPreview()->getWindowPos(previewX, previewY);
-    guiEvent(PREVIEW_LOC);
+    previewX = previewY = -1;
+    if (previewIsOn)
+        _app->getPreview()->getWindowPos(previewX, previewY);
+    guiEvent(PREVIEW_LOC); // app won't shut down without this ...
 }
 
 static void captureImage(LibcameraEncoder::Msg *msg)
@@ -346,6 +346,7 @@ void* proc_func(void *p)
     {
         if (timeToQuit)
         {
+            // GUI thread has indicated it's time to shut down
             previewLocation();
             _app->StopCamera();
             _app->StopEncoder();
