@@ -391,7 +391,7 @@ void MainWin::leftTimelapse(Fl_Flex *col)
     row6->end();
 
     col->setSize(row0, 25);
-    col->setSize(pad1, 25);
+    col->setSize(pad1, 20);
     col->setSize(row1, 30);
     col->setSize(row2, 30);
     col->setSize(row3, 30);
@@ -453,8 +453,8 @@ void MainWin::rightTimelapse(Fl_Flex *col)
         row4->end();
         row4->setSize(btn,50);
     }
-    col->setSize(b, 35);
-    col->setSize(pad1, 15);
+    col->setSize(b, 25);
+    col->setSize(pad1, 20);
     col->setSize(row2, 30);
     col->setSize(pad2, 15);
     col->setSize(row3, 30);
@@ -467,7 +467,7 @@ Fl_Group *MainWin::makeTimelapseTab(int w, int h)
     Fl_Group *o = new Fl_Group(10,MAGIC_Y+25,w,h, "TimeLapse");
     o->tooltip("Make timelapse");
 
-    Fl_Flex *row0 = new Fl_Flex(30, MAGIC_Y + 50, w-60, h-100,Fl_Flex::ROW);
+    Fl_Flex *row0 = new Fl_Flex(30, MAGIC_Y + 40, w-30, 250, Fl_Flex::ROW);
     {
         Fl_Flex *colLeft = new Fl_Flex(Fl_Flex::COLUMN);
         leftTimelapse(colLeft);
@@ -483,9 +483,9 @@ Fl_Group *MainWin::makeTimelapseTab(int w, int h)
 
         row0->end();
     }
-
+    
     // TODO consider a Fl_Pack
-    int calc_Y = MAGIC_Y + 350;
+    int calc_Y = MAGIC_Y + 315;
 
     Fl_Button *bCalc = new Fl_Button(35, calc_Y, 150, 25, "Calculator");
     bCalc->callback(onCalc, this);
@@ -498,19 +498,19 @@ Fl_Group *MainWin::makeTimelapseTab(int w, int h)
     btnDoit->callback(cbTimelapse, this);
     m_btnDoTimelapse = btnDoit;
 
-    calc_Y += 35;
+    calc_Y += 30;
 
     lblStart = new Fl_Box(35, calc_Y, 350, 25);
     //lblStart->box(FL_BORDER_BOX);
     lblStart->align(Fl_Align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT));
 
-    calc_Y += 30;
+    calc_Y += 25;
 
     lblEnd = new Fl_Box(35, calc_Y, 350, 25);
     //lblEnd->box(FL_BORDER_BOX);
     lblEnd->align(Fl_Align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT));
 
-    calc_Y += 30;
+    calc_Y += 25;
 
     m_lblCountdown = new Fl_Box(35, calc_Y, 350, 25);
     m_lblCountdown->align(Fl_Align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT));
