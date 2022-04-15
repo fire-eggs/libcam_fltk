@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Terminal=false
+Name=libcam_fltk
+Exec=/usr/local/bin/libcam_fltk
+Icon=/usr/local/share/libcam_fltk/slr-camera-24.png
+Cagetories=AudioVideo;Video;Photography;
+
