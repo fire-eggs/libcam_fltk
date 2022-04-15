@@ -1,17 +1,40 @@
-# libcamera-apps
+# libcam_fltk
 
-This is a small suite of libcamera-based apps that aim to copy the functionality of the existing "raspicam" apps. 
+This is a GUI version of [libcamera-apps](https://github.com/raspberrypi/libcamera-apps). It provides visual, interactive access to some of the
+functionality of said suite of command line programs. The GUI is implemented using the lightweight framework [FLTK](https://fltk.org).
 
-Build
------
-For usage and build instructions, see the official Raspberry Pi documenation pages [here.](https://www.raspberrypi.com/documentation/accessories/camera.html#libcamera-and-libcamera-apps)
+Documentation
+-------------
+
+All documentation, including getting started, is in the [Wiki](https://github.com/fire-eggs/libcam_fltk/wiki).
+
+Screenshots
+-----------
+The following screen captures show the primary features of libcam_fltk. 
+
+The Settings tab, along with the Preview Window:
+
+![s1](doc/screen1.png)
+
+The Zoom tab, a convenient means to change the "region of interest":
+
+![s2](doc/screen2.png)
+
+The Capture tab, where image capture takes place:
+
+![s3](doc/screen3.png)
+
+The Timelapse tab, with a timelapse capture in progress:
+
+![s4](doc/screen4.png)
+
+The Timelapse Calculator dialog, an assistant for determining the ideal timelapse settings:
+
+![s5](doc/screen5.png)
+
 
 License
 -------
 
-The source code is made available under the simplified [BSD 2-Clause license](https://spdx.org/licenses/BSD-2-Clause.html).
+The source code is made available under the [BSD 3-Clause-Clear license](https://spdx.org/licenses/BSD-3-Clause-Clear.html).
 
-Status
-------
-
-[![ToT libcamera build/run test](https://github.com/raspberrypi/libcamera-apps/actions/workflows/libcamera-test.yml/badge.svg)](https://github.com/raspberrypi/libcamera-apps/actions/workflows/libcamera-test.yml)
