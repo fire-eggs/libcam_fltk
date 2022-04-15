@@ -24,7 +24,7 @@ void initlog()
 {
     auto max_size = 1048576 * 5;
     auto max_files = 3;
-    auto logger = spdlog::rotating_logger_mt(":", "logs/libcam_fltk.log", max_size, max_files);
+    auto logger = spdlog::rotating_logger_mt(":", "/tmp/libcam_fltk.log", max_size, max_files);
     spdlog::set_default_logger(logger);
     spdlog::flush_every(std::chrono::seconds(3));
     spdlog::set_level(spdlog::level::debug); // Set global log level to debug
