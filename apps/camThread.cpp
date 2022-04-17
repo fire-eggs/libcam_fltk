@@ -72,6 +72,7 @@ extern unsigned int _timelapseCount;
 bool saveToPNG;
 const char *saveToFolder;
 bool previewIsOn;
+extern Preview *_previewWin;
 
 extern void guiEvent(int);
 
@@ -268,7 +269,7 @@ static void changeSettings()
       newopt->preview_height = previewH;
 
       if (restart)
-        _app->OpenCamera();  // preview window is created as a side-effect here
+        _app->OpenCamera(_previewWin);  // preview window is created as a side-effect here
       
       _app->ConfigureVideo();
       _app->StartEncoder();
@@ -300,7 +301,7 @@ static void changePreview()
     newopt->nopreview = !_previewOn;
     previewIsOn = _previewOn;
     
-    _app->OpenCamera();  // preview window is created as a side-effect here
+    _app->OpenCamera(_previewWin);  // preview window is created as a side-effect here
     _app->ConfigureVideo();
     _app->StartEncoder();
     _app->StartCamera();   
@@ -332,7 +333,7 @@ void* proc_func(void *p)
     // TODO magic: needs to be adjusted by the height of the titlebar for some reason?
     options->preview_y = previewY > 0 ? previewY - 25 :  25;
     
-	_app->OpenCamera();
+	_app->OpenCamera(_previewWin);
 	_app->ConfigureVideo();   // TODO should this be ConfigurePreview instead?
 	_app->StartEncoder();
 	_app->StartCamera();

@@ -11,6 +11,7 @@
 #include "settings.h"
 #include "mylog.h"
 #include "zoom.h" // zoom settings for onStateChange
+#include "fltk_preview.h"
 
 // Camera settings : implementation
 bool _hflip;
@@ -30,6 +31,8 @@ int previewY;
 int previewW;
 int previewH;
 int previewChoice;
+
+Preview *_previewWin;
 
 extern Prefs *_prefs;
 extern MainWin* _window;
@@ -194,6 +197,10 @@ void getPreviewData()
         previewW = 1024;
         previewH = 768;
     }
+    
+    _previewWin = new FltkPreview(previewX, previewY, previewW, previewH);
+    if (_previewOn)
+        (dynamic_cast<FltkPreview*>(_previewWin))->showMe();
 }
 
 void savePreviewLocation()
