@@ -182,8 +182,9 @@ static void captureImage(LibcameraEncoder::Msg *msg)
   newopt->width = previewW;
   newopt->height= previewH;
   
-  _app->ConfigureVideo();
-  _app->StartEncoder();
+  //_app->ConfigureVideo();
+  //_app->StartEncoder();
+  _app->ConfigureViewfinder();
   _app->StartCamera();
   }
   catch (std::runtime_error& e)
@@ -196,7 +197,7 @@ static void captureImage(LibcameraEncoder::Msg *msg)
 static void switchToCapture(VideoOptions *options)
 {
   _app->StopCamera();
-  _app->StopEncoder();
+  // KBR TEST _app->StopEncoder();
   _app->Teardown();
 
   options->width  = _captureW;
@@ -213,7 +214,7 @@ static void switchToCapture(VideoOptions *options)
 static void switchToTimelapse(VideoOptions *options)
 {
   _app->StopCamera();
-  _app->StopEncoder();
+  // KBR TEST _app->StopEncoder();
   _app->Teardown();
 
   options->width  = _timelapseW;
@@ -241,7 +242,7 @@ static void changeSettings()
       bool restart = newopt->preview_height != (unsigned int)previewH;
       
       _app->StopCamera();
-      _app->StopEncoder();
+      // KBR TEST _app->StopEncoder();
       _app->Teardown();
       if (restart)
           _app->CloseCamera();
@@ -270,8 +271,9 @@ static void changeSettings()
       if (restart)
         _app->OpenCamera();  // preview window is created as a side-effect here
       
-      _app->ConfigureVideo();
-      _app->StartEncoder();
+      // _app->ConfigureVideo();
+      // _app->StartEncoder();
+      _app->ConfigureViewfinder();
       _app->StartCamera();   
   }
   catch (std::runtime_error& e)
@@ -289,7 +291,7 @@ static void changePreview()
   {
     previewLocation();
     _app->StopCamera();
-    _app->StopEncoder();
+    // KBR TEST _app->StopEncoder();
     _app->Teardown();
     _app->CloseCamera();
     
@@ -301,8 +303,9 @@ static void changePreview()
     previewIsOn = _previewOn;
     
     _app->OpenCamera();  // preview window is created as a side-effect here
-    _app->ConfigureVideo();
-    _app->StartEncoder();
+    // KBR TEST _app->ConfigureVideo();
+    // KBR TEST _app->StartEncoder();
+    _app->ConfigureViewfinder();
     _app->StartCamera();   
   }
   catch (std::runtime_error& e)
@@ -333,8 +336,9 @@ void* proc_func(void *p)
     options->preview_y = previewY > 0 ? previewY - 25 :  25;
     
 	_app->OpenCamera();
-	_app->ConfigureVideo();   // TODO should this be ConfigurePreview instead?
-	_app->StartEncoder();
+	// KBR TEST _app->ConfigureVideo();
+    _app->ConfigureViewfinder();
+	// KBR TEST _app->StartEncoder();
 	_app->StartCamera();
 
     bool activeTimelapse = false;
@@ -402,8 +406,10 @@ void* proc_func(void *p)
             }
 
         }
+        
+		if (_app->ViewfinderStream())
 
-        if (_app->VideoStream())
+        //if (_app->VideoStream())
         {
             if (doCapture) // user has requested still capture
             {
@@ -426,8 +432,9 @@ void* proc_func(void *p)
             {
                 // normal video stream processing
                 CompletedRequestPtr &completed_request = std::get<CompletedRequestPtr>(msg.payload);
-                _app->EncodeBuffer(completed_request, _app->VideoStream());
-                _app->ShowPreview(completed_request, _app->VideoStream());
+                // KBR TEST _app->EncodeBuffer(completed_request, _app->VideoStream());
+                // KBR TEST _app->ShowPreview(completed_request, _app->VideoStream());
+				_app->ShowPreview(completed_request, _app->ViewfinderStream());
             }
         }
         else if (_app->StillStream()) // still capture complete
