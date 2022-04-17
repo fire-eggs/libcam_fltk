@@ -84,11 +84,14 @@ std::string const &LibcameraApp::CameraId() const
 	return camera_->id();
 }
 
-void LibcameraApp::OpenCamera()
+void LibcameraApp::OpenCamera(Preview *preview)
 {
 	// Make a preview window.
-	preview_ = std::unique_ptr<Preview>(make_preview(options_.get()));
-	preview_->SetDoneCallback(std::bind(&LibcameraApp::previewDoneCallback, this, std::placeholders::_1));
+    if (options_->nopreview || preview == nullptr)
+        preview_ = std::unique_ptr<Preview>(make_preview(options_.get()));
+    else
+        preview_ = std::unique_ptr<Preview>(preview);
+    preview_->SetDoneCallback(std::bind(&LibcameraApp::previewDoneCallback, this, std::placeholders::_1));
 
 	if (options_->verbose)
 		std::cerr << "Opening camera..." << std::endl;
@@ -193,7 +196,7 @@ void LibcameraApp::ConfigureViewfinder()
 	}
 
 	// Now we get to override any of the default settings from the options_->
-	configuration_->at(0).pixelFormat = libcamera::formats::YUV420;
+	configuration_->at(0).pixelFormat = preview_->getDesiredFormat(); //libcamera::formats::YUV420;
 	configuration_->at(0).size = size;
 
 	if (have_lores_stream)
@@ -635,13 +638,18 @@ void LibcameraApp::setupCapture()
 {
 	// First finish setting up the configuration.
 
+    auto form1 = configuration_->at(0).pixelFormat;
+    
 	CameraConfiguration::Status validation = configuration_->validate();
 	if (validation == CameraConfiguration::Invalid)
 		throw std::runtime_error("failed to valid stream configurations");
 	else if (validation == CameraConfiguration::Adjusted)
 		std::cerr << "Stream configuration adjusted" << std::endl;
 
-	if (camera_->configure(configuration_.get()) < 0)
+    if (configuration_->at(0).pixelFormat != form1)
+        throw std::runtime_error("configuration format changed");
+    
+    if (camera_->configure(configuration_.get()) < 0)
 		throw std::runtime_error("failed to configure streams");
 	if (options_->verbose)
 		std::cerr << "Camera streams configured" << std::endl;
@@ -787,7 +795,7 @@ void LibcameraApp::previewThread()
 				preview_cond_var_.wait(lock);
 		}
 
-		if (item.stream->configuration().pixelFormat != libcamera::formats::YUV420)
+		if (item.stream->configuration().pixelFormat != preview_->getDesiredFormat()) //libcamera::formats::YUV420)
 			throw std::runtime_error("Preview windows only support YUV420");
 
 		StreamInfo info = GetStreamInfo(item.stream);

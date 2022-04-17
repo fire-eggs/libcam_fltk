@@ -11,6 +11,7 @@
 #include <string>
 
 #include <libcamera/base/span.h>
+#include <libcamera/formats.h>
 
 #include "core/stream_info.hpp"
 
@@ -39,6 +40,8 @@ public:
 	virtual void MaxImageSize(unsigned int &w, unsigned int &h) const = 0;
 
     virtual void getWindowPos(int &x, int &y) {}
+
+    virtual libcamera::PixelFormat getDesiredFormat() { return libcamera::formats::YUV420; }
     
 protected:
 	DoneCallback done_callback_;
