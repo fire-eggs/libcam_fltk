@@ -3,6 +3,11 @@
 This is a GUI version of [libcamera-apps](https://github.com/raspberrypi/libcamera-apps). It provides visual, interactive access to some of the
 functionality of said suite of command line programs. The GUI is implemented using the lightweight framework [FLTK](https://fltk.org).
 
+Releases
+--------
+
+Download the latest release from [Releases](https://github.com/fire-eggs/libcam_fltk/releases).
+
 Documentation
 -------------
 
