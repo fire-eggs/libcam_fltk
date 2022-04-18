@@ -35,7 +35,8 @@ public:
 	
     virtual void getWindowPos(int &x, int& y) override;
     
-    virtual libcamera::PixelFormat getDesiredFormat() override { return libcamera::formats::RGB888; }
+    virtual libcamera::PixelFormat getDesiredFormat() override { return libcamera::formats::BGR888; }
+    //virtual libcamera::PixelFormat getDesiredFormat() override { return libcamera::formats::RGB888; }
     
     void showMe() { _win->show(); }
 
