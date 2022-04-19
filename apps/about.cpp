@@ -32,7 +32,7 @@ Fl_Double_Window *make_about()
 
     new Fl_Box(10, 5, 330, 150,
 "libcam_fltk : an interactive GUI\nfor libcamera-apps on Raspberry Pi\n"
-"\nVersion 0.5 (Alpha)\n\nProgrammer: Kevin Routley\nProduct Manager: Ted Barnard");
+"\nVersion 0.5 (Beta)\n\nProgrammer: Kevin Routley\nProduct Manager: TedPete Barnard");
 
     int Y = 150;
     int STEP_Y = 30;
