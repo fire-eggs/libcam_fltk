@@ -15,7 +15,7 @@ All documentation, including getting started, is in the [Wiki](https://github.co
 
 Screenshots
 -----------
-The following screen captures show the first view of libcam_fltk: the Settings tab, along with the Preview Window:
+The following screen capture show the first view of libcam_fltk: the Settings tab, along with the Preview Window:
 
 ![s1](doc/screen1.png)
 
