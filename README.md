@@ -15,28 +15,11 @@ All documentation, including getting started, is in the [Wiki](https://github.co
 
 Screenshots
 -----------
-The following screen captures show the primary features of libcam_fltk. 
-
-The Settings tab, along with the Preview Window:
+The following screen captures show the first view of libcam_fltk: the Settings tab, along with the Preview Window:
 
 ![s1](doc/screen1.png)
 
-The Zoom tab, a convenient means to change the "region of interest":
-
-![s2](doc/screen2.png)
-
-The Capture tab, where image capture takes place:
-
-![s3](doc/screen3.png)
-
-The Timelapse tab, with a timelapse capture in progress:
-
-![s4](doc/screen4.png)
-
-The Timelapse Calculator dialog, an assistant for determining the ideal timelapse settings:
-
-![s5](doc/screen5.png)
-
+For more screen shots, see the [Wiki](https://github.com/fire-eggs/libcam_fltk/wiki/Screen-Shots).
 
 License
 -------
