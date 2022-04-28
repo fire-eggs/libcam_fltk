@@ -44,6 +44,7 @@ bool timeToQuit = false; // inter-thread flag
 pthread_t *camThread; // co-ordinate shutdown
 
 extern void do_about();
+extern void do_advanced();
 
 static void popup(Fl_File_Chooser* filechooser)
 {
@@ -139,12 +140,12 @@ void quit_cb(Fl_Widget* , void* )
     _done = false;
     timeToQuit = true;
     void *retval = nullptr;
-    pthread_join(*camThread, &retval);
+    if (camThread)
+        pthread_join(*camThread, &retval);
 
-    // TODO grab preview window size/pos
     _window->hide();
-
-    while (!_done)
+    // Wait for camthread shutdown callback
+    while (!_done && camThread)
     {
         Fl::wait();
     }
@@ -157,9 +158,15 @@ void about_cb(Fl_Widget*, void*)
     do_about();
 }
 
+void adv_cb(Fl_Widget *, void *)
+{
+    do_advanced();
+}
+
 Fl_Menu_Item mainmenuItems[] =
 {
     {"&File", 0, nullptr, nullptr, FL_SUBMENU, 0, 0, 0, 0},
+    {"Ad&vanced", 0, adv_cb, nullptr, 0, 0, 0, 0, 0},
     {"E&xit", 0, quit_cb, nullptr, 0, 0, 0, 0, 0},
     {0, 0, 0, 0, 0, 0, 0, 0, 0},
     {"&About", 0, about_cb, nullptr, 0, 0, 0, 0, 0},
