@@ -7,6 +7,8 @@
 
 #include <iostream>
 
+#include <libcamera/control_ids.h>
+
 #include <FL/Fl_Double_Window.H>
 #include <FL/Fl_Choice.H>
 #include <FL/Fl_Return_Button.H>
@@ -63,15 +65,15 @@ public:
 
 
 int awb_table[] = {
-/*    
-libcamera::controls::AwbAuto, 
-                    libcamera::controls::AwbCloudy, 
-                    libcamera::controls::AwbDaylight,
+    
+    libcamera::controls::AwbAuto, 
+    libcamera::controls::AwbCloudy, 
+    libcamera::controls::AwbDaylight,
     libcamera::controls::AwbFluorescent,
     libcamera::controls::AwbIncandescent,
     libcamera::controls::AwbIndoor,
     libcamera::controls::AwbTungsten
-*/
+
 };
 
 static Fl_Menu_Item menu_cmbFormat[] =
@@ -87,11 +89,11 @@ static Fl_Menu_Item menu_cmbFormat[] =
 };
 
 int exp_table[] = {
-/*
+
     libcamera::controls::ExposureNormal,
     libcamera::controls::ExposureShort,
     libcamera::controls::ExposureLong,
-*/    
+    
 };
 
 static Fl_Menu_Item menu_cmbExposure[] =
@@ -103,11 +105,11 @@ static Fl_Menu_Item menu_cmbExposure[] =
 };
 
 int meter_tbl[] = {
-    /* libcamera::controls::MeteringCentreWeighted,
-     * libcamera::controls::MeteringSpot,
-     * libcamera::controls::MeteringMatrix
-     */
+libcamera::controls::MeteringCentreWeighted,
+libcamera::controls::MeteringSpot,
+libcamera::controls::MeteringMatrix
 };
+
 static Fl_Menu_Item menu_cmbMetering[] =
 {
     {"centre", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
@@ -201,9 +203,9 @@ static void onGain(Fl_Widget *w, void *)
     stateChange = true;
 }
 
-Fl_Double_Window *make_advanced()
+Fl_Double_Window *make_advanced(int _x, int _y)
 {
-    auto panel = new Fl_Double_Window(345, 350, "Advanced Settings");
+    auto panel = new Fl_Double_Window(_x, _y, 345, 350, "Advanced Settings");
 
     int Y = 25;
     
@@ -280,14 +282,14 @@ Fl_Double_Window *make_advanced()
     
 }
 
-static void cbClose(Fl_Widget *w, void *d)
+static void cbClose(Fl_Widget *, void *)
 {
     advanced->hide();
 }
 
-void do_advanced()
+void do_advanced(int x, int y)
 {
-    advanced = make_advanced();
+    advanced = make_advanced(x, y);
     
     advanced->show();
 
@@ -301,9 +303,18 @@ void do_advanced()
     if (g) // regrab the previous popup menu, if there was one
         Fl::grab(g);
     
-//    advanced->set_modal();
-//    advanced->show();
     delete advanced;
     advanced = nullptr;
 }
 
+void init_advanced()
+{
+    _metering_index = libcamera::controls::MeteringCentreWeighted;
+    _exposure_index =     libcamera::controls::ExposureNormal;
+    _awb_index =     libcamera::controls::AwbAuto;
+
+    _AwbEnable = true;
+    _awb_gain_r = 0.0;
+    _awb_gain_b = 0.0;
+    _analogGain = 1;   
+}

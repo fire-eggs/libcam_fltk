@@ -75,6 +75,16 @@ bool previewIsOn;
 
 extern void guiEvent(int);
 
+// Advanced settings
+extern int32_t _metering_index;
+extern int32_t _exposure_index;
+extern int32_t _awb_index;
+extern bool    _AwbEnable;
+extern float   _awb_gain_r;
+extern float   _awb_gain_b;
+extern float   _analogGain;
+extern float   _shutter;
+
 static std::string generate_filename(Options const *options)
 {
 	char filename[256];
@@ -266,6 +276,15 @@ static void changeSettings()
     
       newopt->preview_width = previewW;
       newopt->preview_height = previewH;
+      
+      newopt->metering_index = _metering_index;
+      newopt->exposure_index = _exposure_index;
+      newopt->awb_index = _awb_index;
+      // TODO if not zero, need to disable AWB Mode ?
+      newopt->awb_gain_b = _awb_gain_b;
+      newopt->awb_gain_r = _awb_gain_r;
+      newopt->gain = _analogGain;
+      // TODO newopt->shutter = _shutter;
 
       if (restart)
         _app->OpenCamera();  // preview window is created as a side-effect here

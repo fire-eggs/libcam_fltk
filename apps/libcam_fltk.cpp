@@ -44,7 +44,8 @@ bool timeToQuit = false; // inter-thread flag
 pthread_t *camThread; // co-ordinate shutdown
 
 extern void do_about();
-extern void do_advanced();
+extern void do_advanced(int x, int y);
+extern void init_advanced();
 
 static void popup(Fl_File_Chooser* filechooser)
 {
@@ -160,7 +161,10 @@ void about_cb(Fl_Widget*, void*)
 
 void adv_cb(Fl_Widget *, void *)
 {
-    do_advanced();
+    int x = _window->x();
+    int y = _window->y();
+    int h = _window->h();
+    do_advanced(x, y+h);
 }
 
 Fl_Menu_Item mainmenuItems[] =
@@ -245,6 +249,7 @@ int main(int argc, char** argv)
     onReset(nullptr,_window); // init camera to defaults [hack: force no save]
     
     // Initialize the camera to last saved settings
+    init_advanced();
     _window->loadSavedSettings(); // TODO can be combined with getPreviewData ???
     _window->loadZoomSettings();
 
