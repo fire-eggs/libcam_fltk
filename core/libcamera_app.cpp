@@ -424,6 +424,15 @@ void LibcameraApp::StartCamera()
 		}
 	}
 
+    bool enable = !(options_->awb_gain_b && options_->awb_gain_r);
+    controls_.set(controls::AWB_ENABLE, enable);
+    std::cerr << "Awb Enabled: " << enable << std::endl;
+
+	//if (!controls_.contains(controls::AwbMode))
+	//	controls_.set(controls::AwbMode, options_->awb_index);
+	controls_.set(controls::AwbMode, options_->awb_index);
+
+    
 	if (!controls_.contains(controls::ExposureTime) && options_->shutter)
 		controls_.set(controls::ExposureTime, options_->shutter);
 	if (!controls_.contains(controls::AnalogueGain) && options_->gain)
@@ -434,10 +443,12 @@ void LibcameraApp::StartCamera()
 		controls_.set(controls::AeExposureMode, options_->exposure_index);
 	if (!controls_.contains(controls::ExposureValue))
 		controls_.set(controls::ExposureValue, options_->ev);
-	if (!controls_.contains(controls::AwbMode))
-		controls_.set(controls::AwbMode, options_->awb_index);
-	if (!controls_.contains(controls::ColourGains) && options_->awb_gain_r && options_->awb_gain_b)
-		controls_.set(controls::ColourGains, { options_->awb_gain_r, options_->awb_gain_b });
+	
+    //if (!controls_.contains(controls::ColourGains) && options_->awb_gain_r && options_->awb_gain_b)
+	//	controls_.set(controls::ColourGains, { options_->awb_gain_r, options_->awb_gain_b });
+    
+    controls_.set(controls::ColourGains, { options_->awb_gain_r, options_->awb_gain_b });
+    
 	if (!controls_.contains(controls::Brightness))
 		controls_.set(controls::Brightness, options_->brightness);
 	if (!controls_.contains(controls::Contrast))

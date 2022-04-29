@@ -123,12 +123,13 @@ static void onAWBMode(Fl_Widget *w, void *)
     // AWB Mode choice change
     Fl_Choice *o = dynamic_cast<Fl_Choice*>(w);
     int val = o->value();
-    const char *txt = menu_cmbFormat[val].text;
     
     // examine the state of overrideAWB
     int overV = overrideAWB->value();
-    std::cerr << "AWB Mode:" << txt << std::endl;
-    std::cerr << "Override:" << (overV == 0 ? "OFF" : "ON") << std::endl;
+    
+    //const char *txt = menu_cmbFormat[val].text;
+    //std::cerr << "AWB Mode:" << txt << std::endl;
+    //std::cerr << "Override:" << (overV == 0 ? "OFF" : "ON") << std::endl;
 
     _AwbEnable = overV == 0 ? false : true;    
     _awb_index = awb_table[val];
@@ -143,8 +144,8 @@ static void cb_GainsB(Fl_Widget *w, void *)
     
     // examine the state of overrideAWB
     int overV = overrideAWB->value();
-    std::cerr << "AWB Gains (Blue):" << val << std::endl;
-    std::cerr << "Override:" << (overV == 0 ? "OFF" : "ON") << std::endl;    
+    //std::cerr << "AWB Gains (Blue):" << val << std::endl;
+    //std::cerr << "Override:" << (overV == 0 ? "OFF" : "ON") << std::endl;    
     
     _awb_gain_b = val;
     _AwbEnable = overV == 0 ? false : true;
@@ -159,8 +160,8 @@ static void cb_GainsR(Fl_Widget *w, void *)
     
     // examine the state of overrideAWB
     int overV = overrideAWB->value();
-    std::cerr << "AWB Gains (Red):" << val << std::endl;
-    std::cerr << "Override:" << (overV == 0 ? "OFF" : "ON") << std::endl;    
+    //std::cerr << "AWB Gains (Red):" << val << std::endl;
+    //std::cerr << "Override:" << (overV == 0 ? "OFF" : "ON") << std::endl;    
     
     _awb_gain_r = val;
     _AwbEnable = overV == 0 ? false : true;
@@ -174,9 +175,10 @@ static void onMeter(Fl_Widget *w, void *)
     
     Fl_Choice *o = dynamic_cast<Fl_Choice*>(w);
     int val = o->value();
-    const char *txt = menu_cmbMetering[val].text;
     
-    std::cerr << "Metering:" << txt << std::endl;
+//    const char *txt = menu_cmbMetering[val].text;  
+    //std::cerr << "Metering:" << txt << std::endl;
+    
     _metering_index = meter_tbl[val];
     stateChange = true;
 }
@@ -187,9 +189,9 @@ static void onExp(Fl_Widget *w, void *)
     
     Fl_Choice *o = dynamic_cast<Fl_Choice*>(w);
     int val = o->value();
-    const char *txt = menu_cmbExposure[val].text;
-            
-    std::cerr << "Exposure:" << txt << std::endl;
+    
+    //const char *txt = menu_cmbExposure[val].text;            
+    //std::cerr << "Exposure:" << txt << std::endl;
 
     _exposure_index = exp_table[val];
     stateChange = true;
