@@ -36,7 +36,7 @@ extern MainWin* _window;
 
 extern bool OKTOFIRE;
 extern bool OKTOSAVE;
-
+/*
 static Fl_Menu_Item menu_cmbPrevSize[] =
         {
                 {" 640 x  480", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
@@ -47,9 +47,9 @@ static Fl_Menu_Item menu_cmbPrevSize[] =
 //                {"1600 x 1200", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
                 {0,     0, 0, 0, 0,                      0, 0,  0, 0}
         };
+*/
 
-static int previewWVals[] = {640, 800,1024, 1280, 1600};
-static int previewHVals[]  = {480, 600, 768, 960, 1200};
+
 
 void onStateChange()
 {
@@ -149,10 +149,23 @@ static void onVFlip(Fl_Widget*w, void *)
     _vflip = ((Fl_Check_Button *)w)->value();
     onStateChange();
 }
-
+/*
 void onPreviewSizeChange(Fl_Widget *w, void *)
 {
     previewChoice = ((Fl_Choice *)w)->value();
+    previewW = previewWVals[previewChoice];
+    previewH = previewHVals[previewChoice];
+    onStateChange();
+}
+*/
+
+// User has selected a preview size via the main menu bar
+void onPreviewSizeChange(int choice)
+{
+    static int previewWVals[] = {640, 800,1024, 1280, 1600};
+    static int previewHVals[] = {480, 600, 768, 960, 1200};
+    
+    previewChoice = choice;
     previewW = previewWVals[previewChoice];
     previewH = previewHVals[previewChoice];
     onStateChange();
@@ -203,6 +216,17 @@ void savePreviewLocation()
         _prefs->setWinRect("Preview", previewX, previewY, previewW, previewH);
 }
 
+// User has toggled the "preview shown" menu
+void togglePreview(bool on)
+{
+    // NOTE: magic! camThread is monitoring this location and handles it.
+    _previewOn = on;
+    
+    Prefs *setP = _prefs->getSubPrefs("preview");
+    setP->set("on", _previewOn);
+}
+
+/*
 static void cbHidePreview(Fl_Widget *w, void *)
 {
     dolog("cbHidePreview:%d", _previewOn);
@@ -212,6 +236,7 @@ static void cbHidePreview(Fl_Widget *w, void *)
     Prefs *setP = _prefs->getSubPrefs("preview");
     setP->set("on", _previewOn);
 }
+*/
 
 void MainWin::loadSavedSettings()
 {
@@ -261,7 +286,6 @@ Fl_Group *MainWin::makeSettingsTab(int w, int h)
     double evCompVal  = setP->get("evcomp",   0.0);
     bool hflipval     = setP->get("hflip",    false);
     bool vflipval     = setP->get("vflip",    false);
-    int previewChoice = setP->get("previewChoice", 2);
 
     Fl_Group *o = new Fl_Group(10,MAGIC_Y+25,w,h, "Settings");
     o->tooltip("Configure camera settings");
@@ -313,21 +337,38 @@ Fl_Group *MainWin::makeSettingsTab(int w, int h)
     m_slevComp->when(FL_WHEN_RELEASE);
     slidY += yStep;
 
-
+/*
     Fl_Check_Button *chkHidePreview = new Fl_Check_Button(slidX, slidY, 200, 25, "Turn off preview window");
     chkHidePreview->callback(cbHidePreview, this);
     {
         Prefs *setP = _prefs->getSubPrefs("preview");
         chkHidePreview->value(!setP->get("on", true));
     }
-
+*/
+/*
+    int previewChoice = setP->get("previewChoice", 2);
+    
     Fl_Choice *cmbPreviewSize = new Fl_Choice(slidX + 250, slidY, 150, 25, "Preview Window Size");
     cmbPreviewSize->copy(menu_cmbPrevSize);
     cmbPreviewSize->callback(onPreviewSizeChange);
     cmbPreviewSize->align(FL_ALIGN_TOP);
     cmbPreviewSize->value(previewChoice);
-
+*/
     o->end();
     //Fl_Group::current()->resizable(o);
     return o;
+}
+
+int getPreviewSizeChoice()
+{
+    Prefs *setP = _prefs->getSubPrefs("camera");
+    int previewChoice = setP->get("previewChoice", 2);
+    return previewChoice;
+}
+
+bool isPreviewShown()
+{
+    Prefs *setP = _prefs->getSubPrefs("preview");
+    int v = setP->get("on", 1);
+    return v != 0;    
 }

@@ -132,7 +132,7 @@ void MainWin::resize(int x, int y, int w, int h)
     _prefs->setWinRect("MainWin",x, y, w, h);
 }
 
-void quit_cb(Fl_Widget* , void* )
+void cb_quit(Fl_Widget* , void* )
 {
     _window->save_capture_settings();
     _window->save_timelapse_settings();
@@ -154,7 +154,7 @@ void quit_cb(Fl_Widget* , void* )
     exit(0);
 }
 
-void about_cb(Fl_Widget*, void*)
+void cb_about(Fl_Widget*, void*)
 {
     do_about();
 }
@@ -167,17 +167,38 @@ void adv_cb(Fl_Widget *, void *)
     do_advanced(x, y+h);
 }
 
+void cb_PreviewSize(Fl_Widget *, void *d)
+{
+    auto val = (int)(long)(d);
+    onPreviewSizeChange(val);
+}
+
+void cb_ShowPreview(Fl_Widget *w, void *)
+{
+    const Fl_Menu_Item *mi = ((Fl_Menu_ *)w)->mvalue();
+    auto v = mi->checked();   
+    togglePreview(v != 0);
+}
+
 Fl_Menu_Item mainmenuItems[] =
 {
     {"&File", 0, nullptr, nullptr, FL_SUBMENU, 0, 0, 0, 0},
     {"Ad&vanced", 0, adv_cb, nullptr, 0, 0, 0, 0, 0},
-    {"E&xit", 0, quit_cb, nullptr, 0, 0, 0, 0, 0},
-    {0, 0, 0, 0, 0, 0, 0, 0, 0},
-    {"&About", 0, about_cb, nullptr, 0, 0, 0, 0, 0},
-    {0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {"E&xit", 0, cb_quit, nullptr, 0, 0, 0, 0, 0},
+    {0},
+    {"&Preview", 0, nullptr, nullptr, FL_SUBMENU, 0,0,0,0},
+    {"&Shown", 0, cb_ShowPreview, nullptr, FL_MENU_TOGGLE | FL_MENU_DIVIDER, 0,0,0,0},
+    {"640 x 480", 0, cb_PreviewSize, (void *)0, FL_MENU_RADIO, 0, 0, 0, 0},
+    {"800 x 600", 0, cb_PreviewSize, (void*)1, FL_MENU_RADIO, 0, 0, 0, 0},
+    {"1024 x 768", 0, cb_PreviewSize, (void *)2, FL_MENU_RADIO, 0, 0, 0, 0},
+    {0},
+    {"&About", 0, cb_about, nullptr, 0, 0, 0, 0, 0},
+    {0},
     {0, 0, 0, 0, 0, 0, 0, 0, 0},
 };
 
+/* Events coming from camThread.
+*/
 int handleSpecial(int event)
 {
     switch (event)
@@ -208,9 +229,27 @@ int handleSpecial(int event)
     return 1;
 }
 
+// Helper to fire an event. Invoked by camThread, but defined here
+// so as to avoid including FLTK header(s) in camThread.
 void guiEvent(int val)
 {
     Fl::handle_(val, nullptr);
+}
+
+void initPreviewMenu()
+{
+    // TODO initialize the preview shown check state
+    Fl_Menu_Item *mi = (Fl_Menu_Item *)(_menu->find_item(cb_ShowPreview));
+    if (isPreviewShown())
+        mi->set();
+    else
+        mi->clear();
+    
+    // TODO initialize the preview size radio state
+    mi = (Fl_Menu_Item *)(_menu->find_item(cb_PreviewSize));
+    int v = getPreviewSizeChoice();
+    mi = mi->next(v);
+    mi->set();
 }
 
 int main(int argc, char** argv)
@@ -229,7 +268,7 @@ int main(int argc, char** argv)
 
     // TODO : use actual size when building controls?
     MainWin window(x, y, w, h, "libcam_fltk");
-    window.callback(quit_cb);
+    window.callback(cb_quit);
 
     _menu = new Fl_Menu_Bar(0, 0, window.w(), 25);
     _menu->copy(mainmenuItems);
@@ -243,11 +282,13 @@ int main(int argc, char** argv)
 
     // Need to initialize the preview state before starting the camera
     getPreviewData();
+    initPreviewMenu();
+    
     camThread = fire_proc_thread(argc, argv);
     OKTOSAVE = false;  // Note: hack to prevent save
     
     onReset(nullptr,_window); // init camera to defaults [hack: force no save]
-    
+
     // Initialize the camera to last saved settings
     init_advanced();
     _window->loadSavedSettings(); // TODO can be combined with getPreviewData ???
@@ -256,7 +297,7 @@ int main(int argc, char** argv)
     OKTOFIRE = true;
     onStateChange();
     OKTOSAVE = true; // TODO consider parameter
-        
+
     dolog("fl_run");
     return Fl::run();   
 }

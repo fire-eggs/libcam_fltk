@@ -25,5 +25,9 @@ extern bool stateChange;
 void onReset(Fl_Widget *, void *d);
 void savePreviewLocation();
 void getPreviewData();
+void togglePreview(bool on);
+void onPreviewSizeChange(int);
+bool isPreviewShown();
+int getPreviewSizeChoice();
 
 #endif //LIBCAMFLTK_SETTINGS_H
