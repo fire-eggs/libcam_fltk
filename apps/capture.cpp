@@ -160,6 +160,8 @@ Fl_Group *MainWin::makeCaptureTab(int w, int h)
     Fl_Button* btn = new Fl_Button(435, MAGIC_Y+200, 50, 25, "Pick");
     btn->callback(capFolderPick);
 
+    sGroup->end();
+    
     // Flip options moved from settings tab to capture tab
     Prefs *setP = _prefs->getSubPrefs("camera");   
     bool hflipval = setP->get("hflip", false);
