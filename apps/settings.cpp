@@ -20,6 +20,10 @@ double _saturate;
 double _sharp;
 double _contrast;
 double _evComp;
+int32_t _metering_index;
+int32_t _exposure_index;
+float   _analogGain;
+
 
 // Inter-thread communication
 bool _previewOn;
@@ -36,18 +40,38 @@ extern MainWin* _window;
 
 extern bool OKTOFIRE;
 extern bool OKTOSAVE;
-/*
-static Fl_Menu_Item menu_cmbPrevSize[] =
-        {
-                {" 640 x  480", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-                {" 800 x  600", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-                {"1024 x  768", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-// 1024x768 may effectively be the upper limit
-//                {"1280 x  960", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-//                {"1600 x 1200", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-                {0,     0, 0, 0, 0,                      0, 0,  0, 0}
-        };
-*/
+
+static Fl_Menu_Item menu_cmbExposure[] =
+{
+    {"normal", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+    {"short", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+    {"long", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+    {0,     0, 0, 0, 0,                      0, 0,  0, 0}
+};
+
+static Fl_Menu_Item menu_cmbMetering[] =
+{
+    {"centre", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+    {"spot", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+    {"matrix", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+    {0,     0, 0, 0, 0,                      0, 0,  0, 0}
+};
+
+
+// TODO move to own header
+class HackSpin : public Fl_Spinner
+{
+    // Modify the default callback logic of the Fl_Spinner so that the callback
+    // will occur whenever the user types in the input field [not just waiting for
+    // focus change].
+
+public:
+    HackSpin(int X, int Y, int W, int H, const char *L= nullptr)
+    : Fl_Spinner(X,Y,W,H,L)
+    {
+        input_.when(FL_WHEN_CHANGED | FL_WHEN_RELEASE | FL_WHEN_ENTER_KEY);
+    }
+};
 
 
 
@@ -84,6 +108,8 @@ void onStateChange()
         setP->set("lever", (int)_lever);
 
         setP->set("previewChoice", previewChoice);
+        
+        // TODO save meter,exp,gain
 
         savePreviewLocation();
     }
@@ -138,6 +164,46 @@ static void onEvComp(Fl_Widget *w, void *)
     onStateChange();
 }
 
+static void onMeter(Fl_Widget *w, void *)
+{
+    // metering choice change
+    
+    Fl_Choice *o = dynamic_cast<Fl_Choice*>(w);
+    int val = o->value();
+    const char *txt = menu_cmbMetering[val].text;
+    
+    std::cerr << "Metering:" << txt << std::endl;
+    // TODO have camThread do the lookup
+    //_metering_index = meter_tbl[val];
+    _metering_index = val;
+    
+    stateChange = true;
+}
+
+static void onExp(Fl_Widget *w, void *)
+{
+    // Exposure choice change
+    
+    Fl_Choice *o = dynamic_cast<Fl_Choice*>(w);
+    int val = o->value();
+    const char *txt = menu_cmbExposure[val].text;
+            
+    std::cerr << "Exposure:" << txt << std::endl;
+
+    // TODO have camThread do the lookup
+    //_exposure_index = exp_table[val];
+    _exposure_index = val;
+    stateChange = true;
+}
+
+static void onGain(Fl_Widget *w, void *)
+{
+    // Gain value change
+    Fl_Spinner *o = dynamic_cast<Fl_Spinner*>(w);
+    _analogGain = o->value();
+    stateChange = true;
+}
+
 // User has selected a preview size via the main menu bar
 void onPreviewSizeChange(int choice)
 {
@@ -175,6 +241,8 @@ void onReset(Fl_Widget *, void *d)
     _saturate = 1.0;
     _evComp = 0.0;
 
+    // TODO reset meter,exp,gain
+    
     onStateChange(); // hack force not save
 }
 
@@ -226,6 +294,8 @@ void MainWin::loadSavedSettings()
     bool hflipval     = setP->get("hflip",    false);
     bool vflipval     = setP->get("vflip",    false);
 
+    // TODO load meter,exp,gain    
+    
     m_chkHflip->value(hflipval);
     m_chkVflip->value(vflipval);
     m_slBright->value(brightVal);
@@ -257,13 +327,12 @@ Fl_Group *MainWin::makeSettingsTab(int w, int h)
     double contrastVal= setP->get("contrast", 1.0);
     double evCompVal  = setP->get("evcomp",   0.0);
 
+    // TODO load meter,exp,gain    
+    // gain default: 8
+    
     Fl_Group *setGroup = new Fl_Group(10,MAGIC_Y+25,w,h, "Settings");
     setGroup->tooltip("Configure camera settings");
     
-    Fl_Button *bReset = new Fl_Button(270, MAGIC_Y+200, 100, 25, "Reset");
-    bReset->tooltip("Reset all settings to default");
-    bReset->callback(onReset, this);
-
     int slidX = 40;
     int slidY = MAGIC_Y + 60;
     int yStep = 60;
@@ -298,6 +367,48 @@ Fl_Group *MainWin::makeSettingsTab(int w, int h)
     m_slevComp->when(FL_WHEN_RELEASE);
     slidY += yStep;
 
+    // Position reset button below all other controls
+    Fl_Button *bReset = new Fl_Button(270, slidY-20, 100, 25, "Reset");
+    bReset->tooltip("Reset all settings to default");
+    bReset->callback(onReset, this);
+    
+
+    // Add metering, exposure and analog gains as "common" settings
+    int Y = MAGIC_Y + 60;
+    
+    auto cmbMeter = new Fl_Choice(275, Y, 150, 25, "Metering");
+    cmbMeter->down_box(FL_BORDER_BOX);
+    cmbMeter->copy(menu_cmbMetering);
+    cmbMeter->callback(onMeter);
+    cmbMeter->align(Fl_Align(FL_ALIGN_LEFT | FL_ALIGN_TOP));
+    // TODO tooltip
+
+    Y += 60;   
+    
+    auto cmbExp = new Fl_Choice(275, Y, 150, 25, "Exposure");
+    cmbExp->down_box(FL_BORDER_BOX);
+    cmbExp->copy(menu_cmbExposure);
+    cmbExp->callback(onExp);
+    cmbExp->align(Fl_Align(FL_ALIGN_LEFT | FL_ALIGN_TOP));
+    // TODO tooltip
+
+    Y += 60;   
+    
+    {
+        auto o = new HackSpin(275, Y, 80, 30);
+        o->type(FL_FLOAT_INPUT);
+        o->minimum(0.25); // Ted suggests the minimum can be 0.25
+        o->maximum(50);   // arbitrary
+        o->value(8);      // TODO from preferences
+        o->step(0.25);
+        o->wrap(false);   // TODO check calculator?
+        o->label("Analog Gain");
+        o->align(Fl_Align(FL_ALIGN_LEFT | FL_ALIGN_TOP));
+        o->callback(onGain);
+        // TODO tooltip
+    }
+    
+    
     setGroup->end();
     //Fl_Group::current()->resizable(o);
     return setGroup;

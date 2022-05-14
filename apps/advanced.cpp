@@ -18,13 +18,13 @@
 
 extern bool stateChange;
 
-int32_t _metering_index;
-int32_t _exposure_index;
+extern int32_t _metering_index;
+extern int32_t _exposure_index;
 int32_t _awb_index;
 bool    _AwbEnable;
 float   _awb_gain_r;
 float   _awb_gain_b;
-float   _analogGain;
+extern float _analogGain;
 float   _shutter;
 
 
