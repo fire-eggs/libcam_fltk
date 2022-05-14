@@ -14,6 +14,12 @@ const int CAPTURE_SUCCESS = 1003; // TODO Hack
 // Inter-process communication
 bool doCapture;
 
+// Settings settings
+// TODO consolidate
+extern bool _hflip;
+extern bool _vflip;
+extern void onStateChange();
+
 // capture settings
 int _captureW;
 int _captureH;
@@ -88,18 +94,30 @@ static void onCapture(Fl_Widget *w, void *)
     doCapture = true;
 }
 
+static void onHFlip(Fl_Widget*w, void *)
+{
+    _hflip = ((Fl_Check_Button *)w)->value();
+    onStateChange();
+}
+
+static void onVFlip(Fl_Widget*w, void *)
+{
+    _vflip = ((Fl_Check_Button *)w)->value();
+    onStateChange();
+}
+
 Fl_Group *MainWin::makeCaptureTab(int w, int h)
 {
-    Prefs *setP = _prefs->getSubPrefs("capture");
-    int sizeChoice = setP->get("size", 1);
-    int formChoice = setP->get("format", 0);
+    Prefs *capP = _prefs->getSubPrefs("capture");
+    int sizeChoice = capP->get("size", 1);
+    int formChoice = capP->get("format", 0);
     char * foldBuffer;
-    setP->_prefs->get("folder", foldBuffer, "/home/pi/Pictures");
+    capP->_prefs->get("folder", foldBuffer, "/home/pi/Pictures");
     // TODO check for valid folder
 
 
-    Fl_Group *o = new Fl_Group(10,MAGIC_Y+25,w,h, "Capture");
-    o->tooltip("Image Capture");
+    Fl_Group *capGroup = new Fl_Group(10,MAGIC_Y+25,w,h, "Capture");
+    capGroup->tooltip("Image Capture");
 
     Fl_Button *bStill = new Fl_Button(50, MAGIC_Y+60, 150, 30, "Still Capture");
     bStill->tooltip("Single still image");
@@ -115,7 +133,7 @@ Fl_Group *MainWin::makeCaptureTab(int w, int h)
     m_lblCapStatus->label("");
     m_lblCapStatus->box(FL_NO_BOX);
 
-    Fl_Group *sGroup = new Fl_Group(220, MAGIC_Y+60, 270, 250, "Settings");
+    Fl_Group *sGroup = new Fl_Group(220, MAGIC_Y+60, 270, 200, "Settings");
     sGroup->box(FL_ENGRAVED_FRAME);
     sGroup->align(Fl_Align(FL_ALIGN_TOP_LEFT));
 
@@ -142,9 +160,23 @@ Fl_Group *MainWin::makeCaptureTab(int w, int h)
     Fl_Button* btn = new Fl_Button(435, MAGIC_Y+200, 50, 25, "Pick");
     btn->callback(capFolderPick);
 
-    o->end();
+    // Flip options moved from settings tab to capture tab
+    Prefs *setP = _prefs->getSubPrefs("camera");   
+    bool hflipval = setP->get("hflip", false);
+    bool vflipval = setP->get("vflip", false);   
+    
+    m_chkHflip = new Fl_Check_Button(230, MAGIC_Y+275, 150, 20, "Horizontal Flip");
+    m_chkHflip->callback(onHFlip);
+    m_chkHflip->value(hflipval);
+    m_chkHflip->tooltip("Flip camera image horizontally");
+    m_chkVflip = new Fl_Check_Button(230, MAGIC_Y+305, 150, 20, "Vertical Flip");
+    m_chkVflip->callback(onVFlip);
+    m_chkVflip->value(vflipval);
+    m_chkVflip->tooltip("Flip camera image vertically");
+    
+    capGroup->end();
     // TODO why crash? current()->resizable(o);
-    return o;
+    return capGroup;
 }
 
 void MainWin::save_capture_settings()
@@ -155,4 +187,6 @@ void MainWin::save_capture_settings()
     const char *val = inpFileNameDisplay->value();
     setP->_prefs->set("folder", val);
     setP->_prefs->flush();
+    
+    // NOTE not saving hflip, vflip here; relying on onStateChange
 }

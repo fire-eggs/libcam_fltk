@@ -138,27 +138,6 @@ static void onEvComp(Fl_Widget *w, void *)
     onStateChange();
 }
 
-static void onHFlip(Fl_Widget*w, void *)
-{
-    _hflip = ((Fl_Check_Button *)w)->value();
-    onStateChange();
-}
-
-static void onVFlip(Fl_Widget*w, void *)
-{
-    _vflip = ((Fl_Check_Button *)w)->value();
-    onStateChange();
-}
-/*
-void onPreviewSizeChange(Fl_Widget *w, void *)
-{
-    previewChoice = ((Fl_Choice *)w)->value();
-    previewW = previewWVals[previewChoice];
-    previewH = previewHVals[previewChoice];
-    onStateChange();
-}
-*/
-
 // User has selected a preview size via the main menu bar
 void onPreviewSizeChange(int choice)
 {
@@ -181,16 +160,20 @@ void onReset(Fl_Widget *, void *d)
     mw->m_slSaturate->value(1.0);
     mw->m_slSharp->value(1.0);
     mw->m_slevComp->value(0.0);
+    
+    /* TODO moved to capture tab, no longer reset-able
     mw->m_chkHflip->value(false);
     mw->m_chkVflip->value(false);
-
+    
+    _hflip = false;
+    _vflip = false;
+    */
+    
     _bright = 0.0;
     _contrast = 1.0;
     _sharp = 1.0;
     _saturate = 1.0;
     _evComp = 0.0;
-    _hflip = false;
-    _vflip = false;
 
     onStateChange(); // hack force not save
 }
@@ -226,18 +209,6 @@ void togglePreview(bool on)
     setP->set("on", _previewOn);
 }
 
-/*
-static void cbHidePreview(Fl_Widget *w, void *)
-{
-    dolog("cbHidePreview:%d", _previewOn);
-    Fl_Check_Button* btn = dynamic_cast<Fl_Check_Button*>(w);
-    _previewOn = !btn->value();
-
-    Prefs *setP = _prefs->getSubPrefs("preview");
-    setP->set("on", _previewOn);
-}
-*/
-
 void MainWin::loadSavedSettings()
 {
     // The purpose of this function is to initialize the camera to the last
@@ -263,14 +234,15 @@ void MainWin::loadSavedSettings()
     m_slSharp->value(sharpVal);
     m_slevComp->value(evCompVal);
 
-    _hflip = hflipval;
-    _vflip = vflipval;
-    _bright= brightVal;
+    _hflip    = hflipval;
+    _vflip    = vflipval;
+    _bright   = brightVal;
     _saturate = saturateVal;
-    _sharp = sharpVal;
+    _sharp    = sharpVal;
     _contrast = contrastVal;
-    _evComp = evCompVal;
-    
+    _evComp   = evCompVal;
+
+    // TODO ???    
     previewChoice = setP->get("previewChoice", 2);
 }
 
@@ -284,21 +256,10 @@ Fl_Group *MainWin::makeSettingsTab(int w, int h)
     double sharpVal   = setP->get("sharp",    1.0);
     double contrastVal= setP->get("contrast", 1.0);
     double evCompVal  = setP->get("evcomp",   0.0);
-    bool hflipval     = setP->get("hflip",    false);
-    bool vflipval     = setP->get("vflip",    false);
 
-    Fl_Group *o = new Fl_Group(10,MAGIC_Y+25,w,h, "Settings");
-    o->tooltip("Configure camera settings");
-
-    m_chkHflip = new Fl_Check_Button(270, MAGIC_Y+60, 150, 20, "Horizontal Flip");
-    m_chkHflip->callback(onHFlip);
-    m_chkHflip->value(hflipval);
-    m_chkHflip->tooltip("Flip camera image horizontally");
-    m_chkVflip = new Fl_Check_Button(270, MAGIC_Y+90, 150, 20, "Vertical Flip");
-    m_chkVflip->callback(onVFlip);
-    m_chkVflip->value(vflipval);
-    m_chkVflip->tooltip("Flip camera image vertically");
-
+    Fl_Group *setGroup = new Fl_Group(10,MAGIC_Y+25,w,h, "Settings");
+    setGroup->tooltip("Configure camera settings");
+    
     Fl_Button *bReset = new Fl_Button(270, MAGIC_Y+200, 100, 25, "Reset");
     bReset->tooltip("Reset all settings to default");
     bReset->callback(onReset, this);
@@ -337,26 +298,9 @@ Fl_Group *MainWin::makeSettingsTab(int w, int h)
     m_slevComp->when(FL_WHEN_RELEASE);
     slidY += yStep;
 
-/*
-    Fl_Check_Button *chkHidePreview = new Fl_Check_Button(slidX, slidY, 200, 25, "Turn off preview window");
-    chkHidePreview->callback(cbHidePreview, this);
-    {
-        Prefs *setP = _prefs->getSubPrefs("preview");
-        chkHidePreview->value(!setP->get("on", true));
-    }
-*/
-/*
-    int previewChoice = setP->get("previewChoice", 2);
-    
-    Fl_Choice *cmbPreviewSize = new Fl_Choice(slidX + 250, slidY, 150, 25, "Preview Window Size");
-    cmbPreviewSize->copy(menu_cmbPrevSize);
-    cmbPreviewSize->callback(onPreviewSizeChange);
-    cmbPreviewSize->align(FL_ALIGN_TOP);
-    cmbPreviewSize->value(previewChoice);
-*/
-    o->end();
+    setGroup->end();
     //Fl_Group::current()->resizable(o);
-    return o;
+    return setGroup;
 }
 
 int getPreviewSizeChoice()
