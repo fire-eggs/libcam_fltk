@@ -18,13 +18,10 @@
 
 extern bool stateChange;
 
-extern int32_t _metering_index;
-extern int32_t _exposure_index;
 int32_t _awb_index;
 bool    _AwbEnable;
 float   _awb_gain_r;
 float   _awb_gain_b;
-extern float _analogGain;
 float   _shutter;
 
 
@@ -35,20 +32,6 @@ Fl_Double_Window *advanced;
 Fl_Check_Button *overrideAWB;
 
 static void cbClose(Fl_Widget *, void *);
-
-class HackSpin : public Fl_Spinner
-{
-    // Modify the default callback logic of the Fl_Spinner so that the callback
-    // will occur whenever the user types in the input field [not just waiting for
-    // focus change].
-
-public:
-    HackSpin(int X, int Y, int W, int H, const char *L= nullptr)
-    : Fl_Spinner(X,Y,W,H,L)
-    {
-        input_.when(FL_WHEN_CHANGED | FL_WHEN_RELEASE | FL_WHEN_ENTER_KEY);
-    }
-};
 
 /*
 	std::map<std::string, int> awb_table =
@@ -88,35 +71,21 @@ static Fl_Menu_Item menu_cmbFormat[] =
     {0,     0, 0, 0, 0,                      0, 0,  0, 0}
 };
 
-int exp_table[] = {
+// TODO move to camThread.cpp
+/*
 
+int exp_table[] = {
     libcamera::controls::ExposureNormal,
     libcamera::controls::ExposureShort,
     libcamera::controls::ExposureLong,
-    
-};
-
-static Fl_Menu_Item menu_cmbExposure[] =
-{
-    {"normal", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-    {"short", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-    {"long", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-    {0,     0, 0, 0, 0,                      0, 0,  0, 0}
 };
 
 int meter_tbl[] = {
-libcamera::controls::MeteringCentreWeighted,
-libcamera::controls::MeteringSpot,
-libcamera::controls::MeteringMatrix
+    libcamera::controls::MeteringCentreWeighted,
+    libcamera::controls::MeteringSpot,
+    libcamera::controls::MeteringMatrix
 };
-
-static Fl_Menu_Item menu_cmbMetering[] =
-{
-    {"centre", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-    {"spot", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-    {"matrix", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
-    {0,     0, 0, 0, 0,                      0, 0,  0, 0}
-};
+*/
 
 static void onAWBMode(Fl_Widget *w, void *)
 {
@@ -169,42 +138,6 @@ static void cb_GainsR(Fl_Widget *w, void *)
     
 }
 
-static void onMeter(Fl_Widget *w, void *)
-{
-    // metering choice change
-    
-    Fl_Choice *o = dynamic_cast<Fl_Choice*>(w);
-    int val = o->value();
-    
-//    const char *txt = menu_cmbMetering[val].text;  
-    //std::cerr << "Metering:" << txt << std::endl;
-    
-    _metering_index = meter_tbl[val];
-    stateChange = true;
-}
-
-static void onExp(Fl_Widget *w, void *)
-{
-    // Exposure choice change
-    
-    Fl_Choice *o = dynamic_cast<Fl_Choice*>(w);
-    int val = o->value();
-    
-    //const char *txt = menu_cmbExposure[val].text;            
-    //std::cerr << "Exposure:" << txt << std::endl;
-
-    _exposure_index = exp_table[val];
-    stateChange = true;
-}
-
-static void onGain(Fl_Widget *w, void *)
-{
-    // Gain value change
-    Fl_Spinner *o = dynamic_cast<Fl_Spinner*>(w);
-    _analogGain = o->value();
-    stateChange = true;
-}
-
 Fl_Double_Window *make_advanced(int _x, int _y)
 {
     auto panel = new Fl_Double_Window(_x, _y, 345, 350, "Advanced Settings");
@@ -245,33 +178,6 @@ Fl_Double_Window *make_advanced(int _x, int _y)
         o->when(FL_WHEN_RELEASE);
         o->callback(cb_GainsR);
         o->align(Fl_Align(FL_ALIGN_LEFT | FL_ALIGN_TOP));
-    }
-    
-    Y += 50;   
-
-    auto cmbMeter = new Fl_Choice(10, Y, 150, 25, "Metering");
-    cmbMeter->down_box(FL_BORDER_BOX);
-    cmbMeter->copy(menu_cmbMetering);
-    cmbMeter->callback(onMeter);
-    cmbMeter->align(Fl_Align(FL_ALIGN_LEFT | FL_ALIGN_TOP));
-
-    Y += 50;   
-    
-    auto cmbExp = new Fl_Choice(10, Y, 150, 25, "Exposure");
-    cmbExp->down_box(FL_BORDER_BOX);
-    cmbExp->copy(menu_cmbExposure);
-    cmbExp->callback(onExp);
-    cmbExp->align(Fl_Align(FL_ALIGN_LEFT | FL_ALIGN_TOP));
-
-    Y += 50;   
-    
-    {
-        HackSpin *o = new HackSpin(10, Y, 80, 30);
-        o->type(FL_FLOAT_INPUT);
-        o->step(0.25);
-        o->label("Analog Gain");
-        o->align(Fl_Align(FL_ALIGN_LEFT | FL_ALIGN_TOP));
-        o->callback(onGain);
     }
 
     Y += 30;   
