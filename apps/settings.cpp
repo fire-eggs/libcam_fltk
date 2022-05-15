@@ -109,7 +109,10 @@ void onStateChange()
 
         setP->set("previewChoice", previewChoice);
         
-        // TODO save meter,exp,gain
+        // save meter,exp,gain
+        setP->set("meterChoice",_metering_index);
+        setP->set("exposureChoice", _exposure_index);
+        setP->set("analogGain", _analogGain);
 
         savePreviewLocation();
     }
@@ -173,11 +176,11 @@ static void onMeter(Fl_Widget *w, void *)
     const char *txt = menu_cmbMetering[val].text;
     
     std::cerr << "Metering:" << txt << std::endl;
+    
     // TODO have camThread do the lookup
     //_metering_index = meter_tbl[val];
     _metering_index = val;
-    
-    stateChange = true;
+    onStateChange();
 }
 
 static void onExp(Fl_Widget *w, void *)
@@ -193,7 +196,7 @@ static void onExp(Fl_Widget *w, void *)
     // TODO have camThread do the lookup
     //_exposure_index = exp_table[val];
     _exposure_index = val;
-    stateChange = true;
+    onStateChange();
 }
 
 static void onGain(Fl_Widget *w, void *)
@@ -201,7 +204,7 @@ static void onGain(Fl_Widget *w, void *)
     // Gain value change
     Fl_Spinner *o = dynamic_cast<Fl_Spinner*>(w);
     _analogGain = o->value();
-    stateChange = true;
+    onStateChange();
 }
 
 // User has selected a preview size via the main menu bar
@@ -226,24 +229,22 @@ void onReset(Fl_Widget *, void *d)
     mw->m_slSaturate->value(1.0);
     mw->m_slSharp->value(1.0);
     mw->m_slevComp->value(0.0);
-    
-    /* TODO moved to capture tab, no longer reset-able
-    mw->m_chkHflip->value(false);
-    mw->m_chkVflip->value(false);
-    
-    _hflip = false;
-    _vflip = false;
-    */
-    
+        
     _bright = 0.0;
     _contrast = 1.0;
     _sharp = 1.0;
     _saturate = 1.0;
     _evComp = 0.0;
 
-    // TODO reset meter,exp,gain
+    // reset meter,exp,gain
+    _metering_index = 0;
+    _exposure_index = 0;
+    _analogGain     = 8.0;
+    mw->m_cmbMeter->value(_metering_index);
+    mw->m_cmbExp  ->value(_exposure_index);
+    mw->m_spinGain->value(_analogGain);
     
-    onStateChange(); // hack force not save
+    onStateChange();
 }
 
 void getPreviewData()
@@ -294,7 +295,13 @@ void MainWin::loadSavedSettings()
     bool hflipval     = setP->get("hflip",    false);
     bool vflipval     = setP->get("vflip",    false);
 
-    // TODO load meter,exp,gain    
+    // load meter,exp,gain
+    _metering_index = setP->get("meterChoice", 0);
+    _exposure_index = setP->get("exposureChoice", 0);
+    _analogGain     = setP->get("analogGain", 8.0);
+    m_cmbMeter->value(_metering_index);
+    m_cmbExp  ->value(_exposure_index);
+    m_spinGain->value(_analogGain);
     
     m_chkHflip->value(hflipval);
     m_chkVflip->value(vflipval);
@@ -327,8 +334,10 @@ Fl_Group *MainWin::makeSettingsTab(int w, int h)
     double contrastVal= setP->get("contrast", 1.0);
     double evCompVal  = setP->get("evcomp",   0.0);
 
-    // TODO load meter,exp,gain    
-    // gain default: 8
+    // load meter,exp,gain
+    _metering_index = setP->get("meterChoice", 0);
+    _exposure_index = setP->get("exposureChoice", 0);
+    _analogGain     = setP->get("analogGain", 8.0);
     
     Fl_Group *setGroup = new Fl_Group(10,MAGIC_Y+25,w,h, "Settings");
     setGroup->tooltip("Configure camera settings");
@@ -376,22 +385,24 @@ Fl_Group *MainWin::makeSettingsTab(int w, int h)
     // Add metering, exposure and analog gains as "common" settings
     int Y = MAGIC_Y + 60;
     
-    auto cmbMeter = new Fl_Choice(275, Y, 150, 25, "Metering");
-    cmbMeter->down_box(FL_BORDER_BOX);
-    cmbMeter->copy(menu_cmbMetering);
-    cmbMeter->callback(onMeter);
-    cmbMeter->align(Fl_Align(FL_ALIGN_LEFT | FL_ALIGN_TOP));
-    // TODO tooltip
+    m_cmbMeter = new Fl_Choice(275, Y, 150, 25, "Metering");
+    m_cmbMeter->down_box(FL_BORDER_BOX);
+    m_cmbMeter->copy(menu_cmbMetering);
+    m_cmbMeter->value(_metering_index);
+    m_cmbMeter->callback(onMeter);
+    m_cmbMeter->align(Fl_Align(FL_ALIGN_LEFT | FL_ALIGN_TOP));
+    m_cmbMeter->tooltip("Select the camera metering mode");
 
     Y += 60;   
     
-    auto cmbExp = new Fl_Choice(275, Y, 150, 25, "Exposure");
-    cmbExp->down_box(FL_BORDER_BOX);
-    cmbExp->copy(menu_cmbExposure);
-    cmbExp->callback(onExp);
-    cmbExp->align(Fl_Align(FL_ALIGN_LEFT | FL_ALIGN_TOP));
-    // TODO tooltip
-
+    m_cmbExp = new Fl_Choice(275, Y, 150, 25, "Exposure");
+    m_cmbExp->down_box(FL_BORDER_BOX);
+    m_cmbExp->copy(menu_cmbExposure);
+    m_cmbExp->value(_exposure_index);
+    m_cmbExp->callback(onExp);
+    m_cmbExp->align(Fl_Align(FL_ALIGN_LEFT | FL_ALIGN_TOP));
+    m_cmbExp->tooltip("Select the camera exposure mode");
+    
     Y += 60;   
     
     {
@@ -399,13 +410,14 @@ Fl_Group *MainWin::makeSettingsTab(int w, int h)
         o->type(FL_FLOAT_INPUT);
         o->minimum(0.25); // Ted suggests the minimum can be 0.25
         o->maximum(50);   // arbitrary
-        o->value(8);      // TODO from preferences
+        o->value(_analogGain);
         o->step(0.25);
-        o->wrap(false);   // TODO check calculator?
+        o->wrap(false);   // TODO check calculator: spinners to not wrap?
         o->label("Analog Gain");
         o->align(Fl_Align(FL_ALIGN_LEFT | FL_ALIGN_TOP));
         o->callback(onGain);
-        // TODO tooltip
+        o->tooltip("Specify the camera analogue gain value");
+        m_spinGain = o;
     }
     
     

@@ -146,7 +146,7 @@ Fl_Group *MainWin::makeCaptureTab(int w, int h)
     cmbFormat = new Fl_Choice(230, MAGIC_Y+140, 150, 25, "File Format:");
     cmbFormat->down_box(FL_BORDER_BOX);
     cmbFormat->align(Fl_Align(FL_ALIGN_TOP_LEFT));
-    cmbFormat->menu(menu_cmbFormat);
+    cmbFormat->copy(menu_cmbFormat);
     cmbFormat->value(formChoice);
 
     // TODO Quality? (for jpg)

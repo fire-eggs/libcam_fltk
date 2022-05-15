@@ -41,6 +41,11 @@ public:
     Fl_Check_Button *m_chkHflip;
     Fl_Check_Button *m_chkVflip;
 
+    // Expanded camera settings
+    Fl_Spinner *m_spinGain;
+    Fl_Choice  *m_cmbMeter;
+    Fl_Choice  *m_cmbExp;
+    
     // Capture settings
     Fl_Choice *cmbSize = nullptr;
     Fl_Choice *cmbFormat = nullptr;
