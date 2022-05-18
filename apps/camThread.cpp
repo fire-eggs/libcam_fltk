@@ -238,6 +238,19 @@ static void switchToTimelapse(VideoOptions *options)
   _app->StartCamera();
 }
 
+int exp_table[] = {
+    libcamera::controls::ExposureNormal,
+    libcamera::controls::ExposureShort,
+    libcamera::controls::ExposureLong,
+};
+
+int meter_tbl[] = {
+    libcamera::controls::MeteringCentreWeighted,
+    libcamera::controls::MeteringSpot,
+    libcamera::controls::MeteringMatrix
+};
+
+
 static void changeSettings()
 {
 
@@ -277,9 +290,12 @@ static void changeSettings()
       newopt->preview_width = previewW;
       newopt->preview_height = previewH;
       
-      newopt->metering_index = _metering_index;
-      newopt->exposure_index = _exposure_index;
+      // GUI values are merely indices to libcamera::controls values
+      newopt->metering_index = meter_tbl[_metering_index];
+      newopt->exposure_index = exp_table[_exposure_index];
+      
       newopt->awb_index = _awb_index;
+      
       // TODO if not zero, need to disable AWB Mode ?
       newopt->awb_gain_b = _awb_gain_b;
       newopt->awb_gain_r = _awb_gain_r;
