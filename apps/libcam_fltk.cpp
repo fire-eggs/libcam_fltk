@@ -185,15 +185,15 @@ Fl_Menu_Item mainmenuItems[] =
     {"&File", 0, nullptr, nullptr, FL_SUBMENU, 0, 0, 0, 0},
     {"Ad&vanced", 0, adv_cb, nullptr, 0, 0, 0, 0, 0},
     {"E&xit", 0, cb_quit, nullptr, 0, 0, 0, 0, 0},
-    {0},
+    {0, 0, 0, 0, 0, 0, 0, 0, 0},
     {"&Preview", 0, nullptr, nullptr, FL_SUBMENU, 0,0,0,0},
     {"&Shown", 0, cb_ShowPreview, nullptr, FL_MENU_TOGGLE | FL_MENU_DIVIDER, 0,0,0,0},
     {"640 x 480", 0, cb_PreviewSize, (void *)0, FL_MENU_RADIO, 0, 0, 0, 0},
     {"800 x 600", 0, cb_PreviewSize, (void*)1, FL_MENU_RADIO, 0, 0, 0, 0},
     {"1024 x 768", 0, cb_PreviewSize, (void *)2, FL_MENU_RADIO, 0, 0, 0, 0},
-    {0},
+    {0, 0, 0, 0, 0, 0, 0, 0, 0},
     {"&About", 0, cb_about, nullptr, 0, 0, 0, 0, 0},
-    {0},
+    {0, 0, 0, 0, 0, 0, 0, 0, 0},
     {0, 0, 0, 0, 0, 0, 0, 0, 0},
 };
 

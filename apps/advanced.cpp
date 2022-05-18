@@ -217,12 +217,9 @@ void do_advanced(int x, int y)
 
 void init_advanced()
 {
-    _metering_index = libcamera::controls::MeteringCentreWeighted;
-    _exposure_index =     libcamera::controls::ExposureNormal;
     _awb_index =     libcamera::controls::AwbAuto;
 
     _AwbEnable = true;
     _awb_gain_r = 0.0;
     _awb_gain_b = 0.0;
-    _analogGain = 1;   
 }
