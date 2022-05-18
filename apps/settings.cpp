@@ -173,9 +173,9 @@ static void onMeter(Fl_Widget *w, void *)
     
     Fl_Choice *o = dynamic_cast<Fl_Choice*>(w);
     int val = o->value();
-    const char *txt = menu_cmbMetering[val].text;
-    
-    std::cerr << "Metering:" << txt << std::endl;
+
+    //const char *txt = menu_cmbMetering[val].text;
+    //std::cerr << "Metering:" << txt << std::endl;
     
     // TODO have camThread do the lookup
     //_metering_index = meter_tbl[val];
@@ -189,9 +189,9 @@ static void onExp(Fl_Widget *w, void *)
     
     Fl_Choice *o = dynamic_cast<Fl_Choice*>(w);
     int val = o->value();
-    const char *txt = menu_cmbExposure[val].text;
-            
-    std::cerr << "Exposure:" << txt << std::endl;
+
+    //const char *txt = menu_cmbExposure[val].text;
+    //std::cerr << "Exposure:" << txt << std::endl;
 
     // TODO have camThread do the lookup
     //_exposure_index = exp_table[val];

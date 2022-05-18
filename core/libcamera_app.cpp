@@ -426,7 +426,7 @@ void LibcameraApp::StartCamera()
 
     bool enable = !(options_->awb_gain_b && options_->awb_gain_r);
     controls_.set(controls::AWB_ENABLE, enable);
-    std::cerr << "Awb Enabled: " << enable << std::endl;
+    //std::cerr << "Awb Enabled: " << enable << std::endl;
 
 	//if (!controls_.contains(controls::AwbMode))
 	//	controls_.set(controls::AwbMode, options_->awb_index);
