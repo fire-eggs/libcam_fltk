@@ -1,3 +1,9 @@
+/* SPDX-License-Identifier: BSD-3-Clause-Clear */
+/*
+ * Copyright (C) 2021-2022, Kevin Routley
+ *
+ * The camera state machine. This is executed in a separate thread from the GUI.
+ */
 
 #include <pthread.h>
 #include <unistd.h>

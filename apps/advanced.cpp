@@ -24,28 +24,12 @@ float   _awb_gain_r;
 float   _awb_gain_b;
 float   _shutter;
 
-
 Fl_Double_Window *advanced;
-
 
 // Modifies behavior of AWB Mode, AWB Gains
 Fl_Check_Button *overrideAWB;
 
 static void cbClose(Fl_Widget *, void *);
-
-/*
-	std::map<std::string, int> awb_table =
-		{ { "auto", libcamera::controls::AwbAuto },
-			{ "normal", libcamera::controls::AwbAuto },
-			{ "incandescent", libcamera::controls::AwbIncandescent },
-			{ "tungsten", libcamera::controls::AwbTungsten },
-			{ "fluorescent", libcamera::controls::AwbFluorescent },
-			{ "indoor", libcamera::controls::AwbIndoor },
-			{ "daylight", libcamera::controls::AwbDaylight },
-			{ "cloudy", libcamera::controls::AwbCloudy },
-			{ "custom", libcamera::controls::AwbCustom } };
-*/
-
 
 int awb_table[] = {
     
@@ -70,22 +54,6 @@ static Fl_Menu_Item menu_cmbFormat[] =
     {"tungsten", 0, 0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
     {0,     0, 0, 0, 0,                      0, 0,  0, 0}
 };
-
-// TODO move to camThread.cpp
-/*
-
-int exp_table[] = {
-    libcamera::controls::ExposureNormal,
-    libcamera::controls::ExposureShort,
-    libcamera::controls::ExposureLong,
-};
-
-int meter_tbl[] = {
-    libcamera::controls::MeteringCentreWeighted,
-    libcamera::controls::MeteringSpot,
-    libcamera::controls::MeteringMatrix
-};
-*/
 
 static void onAWBMode(Fl_Widget *w, void *)
 {
