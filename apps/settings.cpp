@@ -24,7 +24,6 @@ int32_t _metering_index;
 int32_t _exposure_index;
 float   _analogGain;
 
-
 // Inter-thread communication
 bool _previewOn;
 bool stateChange;
@@ -40,6 +39,8 @@ extern MainWin* _window;
 
 extern bool OKTOFIRE;
 extern bool OKTOSAVE;
+
+int frameSkip = 1;
 
 static Fl_Menu_Item menu_cmbExposure[] =
 {
@@ -72,8 +73,6 @@ public:
         input_.when(FL_WHEN_CHANGED | FL_WHEN_RELEASE | FL_WHEN_ENTER_KEY);
     }
 };
-
-
 
 void onStateChange()
 {

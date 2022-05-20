@@ -180,6 +180,13 @@ void cb_ShowPreview(Fl_Widget *w, void *)
     togglePreview(v != 0);
 }
 
+extern int frameSkip;
+void cb_PreviewSpeed(Fl_Widget *, void *d)
+{
+    auto val = (int)(long)(d);
+    frameSkip = val;
+}
+
 Fl_Menu_Item mainmenuItems[] =
 {
     {"&File", 0, nullptr, nullptr, FL_SUBMENU, 0, 0, 0, 0},
@@ -190,7 +197,11 @@ Fl_Menu_Item mainmenuItems[] =
     {"&Shown", 0, cb_ShowPreview, nullptr, FL_MENU_TOGGLE | FL_MENU_DIVIDER, 0,0,0,0},
     {"640 x 480", 0, cb_PreviewSize, (void *)0, FL_MENU_RADIO, 0, 0, 0, 0},
     {"800 x 600", 0, cb_PreviewSize, (void*)1, FL_MENU_RADIO, 0, 0, 0, 0},
-    {"1024 x 768", 0, cb_PreviewSize, (void *)2, FL_MENU_RADIO, 0, 0, 0, 0},
+    {"1024 x 768", 0, cb_PreviewSize, (void *)2, FL_MENU_RADIO | FL_MENU_DIVIDER, 0, 0, 0, 0},
+    {"1:1", 0, cb_PreviewSpeed, (void *)1, FL_MENU_RADIO, 0, 0, 0, 0},
+    {"1:2", 0, cb_PreviewSpeed, (void *)2, FL_MENU_RADIO, 0, 0, 0, 0},
+    {"1:3", 0, cb_PreviewSpeed, (void *)3, FL_MENU_RADIO, 0, 0, 0, 0},
+    {"1:4", 0, cb_PreviewSpeed, (void *)4, FL_MENU_RADIO, 0, 0, 0, 0},
     {0, 0, 0, 0, 0, 0, 0, 0, 0},
     {"&About", 0, cb_about, nullptr, 0, 0, 0, 0, 0},
     {0, 0, 0, 0, 0, 0, 0, 0, 0},

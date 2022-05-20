@@ -91,6 +91,9 @@ extern float   _awb_gain_b;
 extern float   _analogGain;
 extern float   _shutter;
 
+// playback limit
+extern int frameSkip;
+
 static std::string generate_filename(Options const *options)
 {
 	char filename[256];
@@ -256,7 +259,6 @@ int meter_tbl[] = {
     libcamera::controls::MeteringMatrix
 };
 
-
 static void changeSettings()
 {
 
@@ -352,6 +354,8 @@ static void changePreview()
     // TODO notify GUI
   }
 }
+
+int frameCount = 1;
 
 // This is the "master loop" function.
 void* proc_func(void *p)
@@ -467,8 +471,14 @@ void* proc_func(void *p)
             {
                 // normal video stream processing
                 CompletedRequestPtr &completed_request = std::get<CompletedRequestPtr>(msg.payload);
-                _app->EncodeBuffer(completed_request, _app->VideoStream());
-                _app->ShowPreview(completed_request, _app->VideoStream());
+                //if ((frameCount % frameSkip) == 1 || frameSkip == 1)
+                if (frameCount == frameSkip)
+                {
+                    _app->EncodeBuffer(completed_request, _app->VideoStream());
+                    _app->ShowPreview(completed_request, _app->VideoStream());
+                    frameCount = 0;
+                }
+                frameCount++;
             }
         }
         else if (_app->StillStream()) // still capture complete
