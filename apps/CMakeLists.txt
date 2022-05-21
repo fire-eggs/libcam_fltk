@@ -24,7 +24,7 @@ target_link_libraries(libcamera-jpeg libcamera_app images)
 
 project(libcam_fltk)
 add_executable(libcam_fltk libcam_fltk.cpp camThread.cpp timelapse.cpp capture.cpp settings.cpp zoom.cpp 
-               calc.cpp FL_Flex/FL_Flex.cpp mylog.cpp about.cpp timeentry.cpp advanced.cpp)
+               calc.cpp FL_Flex/FL_Flex.cpp mylog.cpp about.cpp timeentry.cpp advanced.cpp servoTab.cpp)
 target_link_libraries(libcam_fltk libcamera_app encoders outputs fltk m X11 Xext pthread Xinerama Xfixes 
                       Xcursor Xft Xrender m fontconfig dl)
 

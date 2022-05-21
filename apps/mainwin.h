@@ -88,6 +88,7 @@ public:
     Fl_Group *makeSettingsTab(int w, int h);
     Fl_Group *makeCaptureTab(int w, int h);
     Fl_Group *makeTimelapseTab(int w, int h);
+    Fl_Group *makeServoTab(int w, int h);
     void leftTimelapse(Fl_Flex *col);
     void rightTimelapse(Fl_Flex *col);
     void timelapseEnded();

@@ -114,6 +114,7 @@ MainWin::MainWin(int x, int y, int w, int h,const char *L) : Fl_Double_Window(x,
     makeZoomTab(magicW, magicH);
     m_tabCap = makeCaptureTab(magicW, magicH);
     m_tabTL = makeTimelapseTab(magicW, magicH);
+    makeServoTab(magicW, magicH);
     tabs->end();
 
     resizable(this);
@@ -289,7 +290,7 @@ int main(int argc, char** argv)
     _window = &window;
     Fl::add_handler(handleSpecial); // handle internal events
 
-    window.show();
+    window.show(argc, argv);
 
     // Need to initialize the preview state before starting the camera
     getPreviewData();
