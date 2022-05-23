@@ -57,6 +57,7 @@ static void capFolderPick(Fl_Widget*, void *)
 {
     // TODO pass as userdata
     folderPick(inpFileNameDisplay);
+    _captureFolder = inpFileNameDisplay->value();
 }
 
 static int captureWVals[] = {640, 1024, 1280, 1920, 2272, 3072, 4056};
@@ -156,6 +157,7 @@ Fl_Group *MainWin::makeCaptureTab(int w, int h)
     inp->value(foldBuffer);
     if (foldBuffer) free(foldBuffer);
     inpFileNameDisplay = inp;
+    _captureFolder = inp->value();
 
     Fl_Button* btn = new Fl_Button(435, MAGIC_Y+200, 50, 25, "Pick");
     btn->callback(capFolderPick);
