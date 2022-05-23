@@ -58,6 +58,14 @@ static Fl_Menu_Item menu_cmbMetering[] =
     {0,     0, 0, 0, 0,                      0, 0,  0, 0}
 };
 
+const char *getExposureString()
+{
+    return menu_cmbExposure[_exposure_index].text;
+}
+const char *getMeteringString()
+{
+    return menu_cmbMetering[_metering_index].text;
+}
 
 // TODO move to own header
 class HackSpin : public Fl_Spinner

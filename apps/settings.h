@@ -11,13 +11,17 @@
 #include <FL/Fl_Widget.H>
 
 // Camera settings : declaration
-extern bool _hflip;
-extern bool _vflip;
+extern bool   _hflip;
+extern bool   _vflip;
 extern double _bright;
 extern double _saturate;
 extern double _sharp;
 extern double _contrast;
 extern double _evComp;
+extern int    _metering_index;
+extern int    _exposure_index;
+extern float  _analogGain;
+extern bool   _previewOn;
 
 // Inter-process communication
 extern bool stateChange;

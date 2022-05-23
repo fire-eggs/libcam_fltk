@@ -46,6 +46,7 @@ pthread_t *camThread; // co-ordinate shutdown
 extern void do_about();
 extern void do_advanced(int x, int y);
 extern void init_advanced();
+extern void do_export_settings();
 
 static void popup(Fl_File_Chooser* filechooser)
 {
@@ -187,10 +188,17 @@ void cb_PreviewSpeed(Fl_Widget *, void *d)
     frameSkip = val;
 }
 
+void cbExport(Fl_Widget *, void *)
+{
+    // Export settings to a libcamera-apps config file
+    do_export_settings();
+}
+
 Fl_Menu_Item mainmenuItems[] =
 {
     {"&File", 0, nullptr, nullptr, FL_SUBMENU, 0, 0, 0, 0},
     {"Ad&vanced", 0, adv_cb, nullptr, 0, 0, 0, 0, 0},
+    {"Export...", 0, cbExport, nullptr, 0, 0, 0, 0, 0},
     {"E&xit", 0, cb_quit, nullptr, 0, 0, 0, 0, 0},
     {0, 0, 0, 0, 0, 0, 0, 0, 0},
     {"&Preview", 0, nullptr, nullptr, FL_SUBMENU, 0,0,0,0},
@@ -289,7 +297,7 @@ int main(int argc, char** argv)
     _window = &window;
     Fl::add_handler(handleSpecial); // handle internal events
 
-    window.show();
+    window.show(argc, argv);
 
     // Need to initialize the preview state before starting the camera
     getPreviewData();
