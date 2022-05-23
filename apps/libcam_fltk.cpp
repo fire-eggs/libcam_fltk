@@ -36,7 +36,9 @@ Fl_Menu_Bar *_menu;
 MainWin* _window;
 bool _done; // shutdown status : used for final cleanup
 
+extern pthread_t *fire_servo_thread(int argc, char **argv);
 extern pthread_t *fire_proc_thread(int argc, char ** argv);
+
 bool OKTOSAVE; // initial loading of settings: is it OK to save these?
 bool OKTOFIRE; // initial loading of settings: is it OK to send to the camera?
 
@@ -297,6 +299,8 @@ int main(int argc, char** argv)
     initPreviewMenu();
     
     camThread = fire_proc_thread(argc, argv);
+    fire_servo_thread(argc, argv);
+    
     OKTOSAVE = false;  // Note: hack to prevent save
     
     onReset(nullptr,_window); // init camera to defaults [hack: force no save]

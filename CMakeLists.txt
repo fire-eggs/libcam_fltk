@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.6)
 
-project(libcamera-apps)
+project(libcamera-apps LANGUAGES C CXX)
 
 if (NOT EXISTS ${CMAKE_BINARY_DIR}/CMakeCache.txt)
     if (NOT CMAKE_BUILD_TYPE)
@@ -11,8 +11,9 @@ endif()
 
 set (CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set (CMAKE_CXX_STANDARD 17)
-add_compile_options(-Wall -Wextra -pedantic -Wno-unused-parameter -faligned-new -Werror -Wfatal-errors)
 add_definitions(-D_FILE_OFFSET_BITS=64)
+# -faligned-new
+add_compile_options(-Wall -Wextra -pedantic -Wno-unused-parameter -Werror -Wfatal-errors)
 
 if (CMAKE_COMPILER_IS_GNUCXX)
     add_compile_options(-Wno-psabi)

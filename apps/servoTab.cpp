@@ -18,13 +18,6 @@ static void cbStep(Fl_Widget *w, void *d)
     wd->step(val);
 }
 
-static void cbStepT(Fl_Widget *w, void *d)
-{
-    Fl_Spinner *ww = (Fl_Spinner *)w;
-    double val = ww->value();
-    rollT->step(val); // TODO as parameter
-}
-
 static void setValue(Fl_Input *w, double val)
 {
     char buffer[100];
@@ -40,9 +33,9 @@ static void cbRollT(Fl_Widget *w, void *d)
     setValue(currentT, val);
     servoTDegree = val;
     
-    std::cerr << "T: " << val << std::endl;
+    //std::cerr << "T: " << val << std::endl;
     
-    // TODO need a delay    
+    // TODO need a delay    ??
 }
 
 static void cbRollB(Fl_Widget *w, void *d)
@@ -53,9 +46,9 @@ static void cbRollB(Fl_Widget *w, void *d)
     setValue(currentB, val);
     servoBDegree = val;
     
-    std::cerr << "B: " << val << std::endl; 
+    //std::cerr << "B: " << val << std::endl; 
     
-    // TODO need a delay
+    // TODO need a delay ??
 }
 
 static void cbReset(Fl_Widget *w, void *d)
