@@ -165,6 +165,10 @@ static void cbClose(Fl_Widget *, void *)
 
 void do_advanced(int x, int y)
 {
+   // Prevent multiple invocations, but don't want it modal
+    if (advanced)
+        return;
+    
     advanced = make_advanced(x, y);
     
     advanced->show();
