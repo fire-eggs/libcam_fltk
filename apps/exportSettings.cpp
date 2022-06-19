@@ -11,8 +11,11 @@
 
 // TODO seriously consider some sort of settings container!
 
-extern long int _timelapseLimit; // TODO hopefully 0 if 'indefinite'
 extern long int _timelapseStep;
+extern long int _timelapseCount;
+extern int _timelapseW;
+extern int _timelapseH;
+extern bool _timelapsePNG;
 
 extern int previewX;
 extern int previewY;
@@ -30,6 +33,8 @@ extern double _panV;
 
 extern const char *getExposureString();
 extern const char *getMeteringString();
+extern void calculateTimelapse(MainWin *);
+extern MainWin* _window; // TODO hack hack
 
 // dialog box to pick amongst subsets: timelapse, capture, zoom, ... ; pick file to export to
 // add comment for header
@@ -128,9 +133,14 @@ static bool writeConfigFile(const char *filename, int options, const char *comme
     {
         fprintf(f, "\n");
         fprintf(f, "# timelapse settings\n");
-        // TODO do these need to be calculated?
+        // TODO do these need to be calculated? or pulled from prefs?
+        calculateTimelapse(_window);
         writeInt(f, "timelapse", _timelapseStep);
-        writeInt(f, "timeout", _timelapseLimit);
+        writeInt(f, "timeout", _timelapseCount * _timelapseStep);
+        writeString(f, "encoding", _timelapsePNG ? "png" : "jpg");
+        writeInt(f, "height", _timelapseH);
+        writeBool(f, "timestamp", true);
+        writeInt(f, "width", _timelapseW);
     }
 
     // capture settings

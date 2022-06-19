@@ -31,7 +31,7 @@ int _timelapseH;
 bool _timelapsePNG;
 const char *_timelapseFolder;
 unsigned long _timelapseStep;
-unsigned long _timelapseLimit;
+//unsigned long _timelapseLimit;  // not actually using in camThread; disable to remove confusion
 unsigned int _timelapseCount;
 
 extern Prefs *_prefs;
@@ -147,6 +147,50 @@ void MainWin::updateCountdown(bool repeat)
         Fl::repeat_timeout(tick, cbTLcountdown, this);
 }
 
+// Perform the timelapse calculations, establishing values
+// for _timelapseLimit and _timelapseStep.
+//
+// Used in two places: "run timelapse" and "export settings".
+//
+void calculateTimelapse(MainWin *mw)
+{
+    // TODO is it possible the timelapse settings haven't been initialized?
+    
+    int intervalType = mw->m_cmbTLTimeType->value();
+    double intervalStep = mw->m_spTLDblVal->value();
+
+    int framecount = -1;
+    unsigned int lenval = 0;
+    if (mw->m_rdTLFrameCount->value()) // TODO helper, manifest constants
+        framecount = mw->m_spTLFrameCount->value();
+    else if (mw->m_rdTLLength->value()) 
+        lenval = mw->m_TLLengthOfTime->getSeconds();
+    else if (mw->m_rdTLIndefinite->value())
+        framecount = __INT_MAX__;
+    
+    // Convert interval, length into milliseconds
+    _timelapseStep = intervalStep * intervalToMilliseconds(intervalType);
+    unsigned long timelapseLimit = 0;
+    if (framecount > 0 || mw->m_rdTLIndefinite->value())
+        _timelapseCount = framecount;
+    else
+    {
+        timelapseLimit = lenval * 1000;
+        _timelapseCount = timelapseLimit / _timelapseStep;
+    }
+
+    // get file settings
+    _timelapsePNG = mw->m_cmbTLFormat->value() == 1;
+    int sizeVal = mw->m_cmbTLSize->value();
+    _timelapseH = captureHVals[sizeVal];
+    _timelapseW = captureWVals[sizeVal];
+    _timelapseFolder = mw->inpTLFileNameDisplay->value();
+
+    // TODO check if _timelapseStep or _timelapseLimit are negative
+    // TODO check for all file settings being valid
+    
+}
+
 static void cbTimelapse(Fl_Widget *w, void *d)
 {
     dolog("cbTimelapse");
@@ -161,6 +205,8 @@ static void cbTimelapse(Fl_Widget *w, void *d)
 
     mw->m_tabTL->selection_color(TL_ACTIVE_COLOR);
 
+    // TODO invoke calculateTimelapse
+    
     int intervalType = mw->m_cmbTLTimeType->value();
     double intervalStep = mw->m_spTLDblVal->value();
 
@@ -177,16 +223,16 @@ static void cbTimelapse(Fl_Widget *w, void *d)
     
     // Convert interval, length into milliseconds
     _timelapseStep = intervalStep * intervalToMilliseconds(intervalType);
-    _timelapseLimit = 0;
+    unsigned long timelapseLimit = 0;
     if (framecount > 0 || mw->m_rdTLIndefinite->value())
         _timelapseCount = framecount;
     else
     {
-        _timelapseLimit = lenval * 1000;
-        _timelapseCount = _timelapseLimit / _timelapseStep;
+        timelapseLimit = lenval * 1000;
+        _timelapseCount = timelapseLimit / _timelapseStep;
     }
 
-    dolog("cbTimelapse2: step:%d frames: %d [limit:%d]", _timelapseStep, _timelapseCount, _timelapseLimit);
+    dolog("cbTimelapse2: step:%d frames: %d [limit:%d]", _timelapseStep, _timelapseCount, timelapseLimit);
     
     // get file settings
     _timelapsePNG = mw->m_cmbTLFormat->value() == 1;
@@ -217,7 +263,7 @@ static void cbTimelapse(Fl_Widget *w, void *d)
         else
         {
             // effective timelapse length -> seconds
-            int tLseconds = lround(_timelapseLimit / 1000.0);
+            int tLseconds = lround(timelapseLimit / 1000.0);
             if (_timelapseCount)
             {
                 tLseconds = lround(_timelapseCount * _timelapseStep / 1000.0);
