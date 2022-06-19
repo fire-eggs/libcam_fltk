@@ -2,12 +2,14 @@
 #include <stdlib.h> // system
 #include <ctime>    // time, time_t, localtime, strftime
 #include "settings.h"
+#include "mainwin.h"
 
 #include <FL/Fl_Double_Window.H>
 #include <FL/Fl_Check_Button.H>
 #include <FL/Fl_Input.H>
 #include <FL/Fl_Output.H>
 #include <FL/Fl_File_Chooser.H>
+#include <FL/Fl_Radio_Round_Button.H>
 
 // TODO seriously consider some sort of settings container!
 
@@ -49,10 +51,12 @@ extern MainWin* _window; // TODO hack hack
 Fl_Double_Window *exportDlg;
 Fl_Check_Button  *previewChk;
 Fl_Check_Button  *zoomChk;
-Fl_Check_Button  *timelapseChk;
-Fl_Check_Button  *captureChk;
+Fl_Check_Button  *stillChk;
+Fl_Radio_Round_Button  *timelapseChk;
+Fl_Radio_Round_Button  *captureChk;
 Fl_Input *commentInp;
-Fl_Output *outFile;
+//Fl_Output *outFile;
+Fl_Box *outFile;
 
 static void writeDouble(FILE *f, const char *str, double val)
 {
@@ -181,22 +185,29 @@ static bool writeConfigFile(const char *filename, int options, const char *comme
 static void cbExport(Fl_Widget *, void *)
 {
     // TODO verify destination set
-    const char *outfile = outFile->value();
-    
+    //const char *outfile = outFile->value();
+    const char *outfile = outFile->label();
+
+#if 0 // TODO pending update to FLTK    
     if (fl_make_path_for_file(outfile) == 0)
     {
         fl_alert("Unable to create necessary directory");
         return;
     }
-    
+#endif
+
     // determine which settings to write based on checkboxes
     int settings = 0;
     settings |= (previewChk->value() != 0) ? PREVIEW_SET : 0;
     settings |= (zoomChk->value() != 0) ? ZOOM_SET : 0;
-    settings |= (timelapseChk->value() != 0) ? TIMELAPSE_SET : 0;
-    settings |= (captureChk->value() != 0) ? CAPTURE_SET : 0;
+    if (stillChk->value() != 0)
+    {
+        settings |= (timelapseChk->value() != 0) ? TIMELAPSE_SET : 0;
+        settings |= (captureChk->value() != 0) ? CAPTURE_SET : 0;
+    }
     
-    bool res = writeConfigFile(outFile->value(), settings, commentInp->value());
+    const char *start = outFile->label(); // outFile->value()
+    bool res = writeConfigFile(start, settings, commentInp->value());
     if (!res)
     {
         fl_alert("Failed to write config file");
@@ -225,7 +236,8 @@ static void cbClose(Fl_Widget *, void *)
 
 static void outFilePick(Fl_Widget *, void *)
 {
-    Fl_File_Chooser* choose = new Fl_File_Chooser(outFile->value(), "Text files (*.txt)",
+    const char *start = outFile->label(); // outFile->value()
+    Fl_File_Chooser* choose = new Fl_File_Chooser(start, "Text files (*.txt)",
                                                   Fl_File_Chooser::CREATE,
                                                   "Specify a file to export to");
     choose->preview(false); // force preview off
@@ -251,7 +263,8 @@ static void outFilePick(Fl_Widget *, void *)
     char *loaddir = (char*)choose->value();
 
     // update input field with picked folder
-    outFile->value(loaddir);   
+    outFile->label(loaddir);
+    //outFile->value(loaddir);   
 }
 
 Fl_Double_Window *make_export()
@@ -272,14 +285,21 @@ Fl_Double_Window *make_export()
 
     Y += 30;
 
-    // TODO Are timelapse and capture mutually exclusive?
-    timelapseChk = new Fl_Check_Button(10, Y, 150, 25, "Timelapse Settings");
+    stillChk = new Fl_Check_Button(10, Y, 150, 25, "libcamera-still Settings");
+    stillChk->value(0);
+
+    // TODO consider enabling/disabling timelapse/capture radios based on 'stillChk'
+    
+    Y += 30;    
+    
+    // Timelapse and capture are mutually exclusive
+    timelapseChk = new Fl_Radio_Round_Button(30, Y, 150, 25, "Timelapse Settings");
     timelapseChk->value(0);
 
     Y += 30;
 
-    captureChk = new Fl_Check_Button(10, Y, 150, 25, "Capture Settings");
-    captureChk->value(0);
+    captureChk = new Fl_Radio_Round_Button(30, Y, 150, 25, "Capture Settings");
+    captureChk->value(1);
 
     Y += 30;
 
@@ -288,22 +308,27 @@ Fl_Double_Window *make_export()
     commentInp->align(Fl_Align(FL_ALIGN_TOP_LEFT));
     commentInp->tooltip("Provide text to include in the file header");
 
-    Y += 75;
+    Y += 60;
     
     // output file
-    outFile = new Fl_Output(10, Y, 300, 25, "Output file:");
-    outFile->align(Fl_Align(FL_ALIGN_TOP_LEFT));
-    outFile->value("/home/pi/Documents/config.txt");
+    Fl_Box *outflabel = new Fl_Box(10, Y, 100, 25);
+    outflabel->label("Output file:");
+    outflabel->align(Fl_Align(FL_ALIGN_LEFT|FL_ALIGN_INSIDE));
+    //outFile->align(Fl_Align(FL_ALIGN_TOP_LEFT));
+    outFile = new Fl_Box(10, Y+30, 300, 25);
+    outFile->label("/home/pi/Documents/config.txt");
+    outFile->align(Fl_Align(FL_ALIGN_LEFT|FL_ALIGN_INSIDE));
 
-    Fl_Button* btn = new Fl_Button(320, Y, 50, 25, "Pick");
+    Fl_Button* btn = new Fl_Button(110, Y, 50, 25, "Pick");
     btn->callback(outFilePick);
     
+    Y += 60;
     {
-    Fl_Button *o = new Fl_Button(50, 270, 83, 25, "Export");
+    Fl_Button *o = new Fl_Button(50, Y+20, 83, 25, "Export");
     o->callback(cbExport);
     }
     {
-    Fl_Button *o = new Fl_Button(250, 270, 83, 25, "Close");
+    Fl_Button *o = new Fl_Button(250, Y+20, 83, 25, "Close");
     o->callback(cbClose);
     }
         
