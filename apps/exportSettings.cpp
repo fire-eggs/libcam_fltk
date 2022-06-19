@@ -122,7 +122,7 @@ static bool writeConfigFile(const char *filename, int options, const char *comme
         fprintf(f, "\n");
         fprintf(f, "# preview settings\n");
         writeBool(f, "fullscreen", false);
-        writeBool(f, "nopreview", _previewOn);
+        writeBool(f, "nopreview", !_previewOn);
         
         // preview X,Y,W,H
         fprintf(f, "preview=%d,%d,%d,%d\n",previewX,previewY,previewW,previewH);        
