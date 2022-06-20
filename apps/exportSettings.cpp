@@ -10,6 +10,7 @@
 #include <FL/Fl_Output.H>
 #include <FL/Fl_File_Chooser.H>
 #include <FL/Fl_Radio_Round_Button.H>
+#include <FL/Fl_Multiline_Output.H>
 
 // TODO seriously consider some sort of settings container!
 
@@ -55,7 +56,6 @@ Fl_Check_Button  *stillChk;
 Fl_Radio_Round_Button  *timelapseChk;
 Fl_Radio_Round_Button  *captureChk;
 Fl_Input *commentInp;
-//Fl_Output *outFile;
 Fl_Box *outFile;
 
 static void writeDouble(FILE *f, const char *str, double val)
@@ -271,10 +271,17 @@ Fl_Double_Window *make_export()
 {
     // TODO libcamera-still vs libcamera-vid settings?
     
-    auto panel = new Fl_Double_Window(400, 350, "Export options");
+    auto panel = new Fl_Double_Window(400, 400, "Export options");
 
-    int Y = 25;
-
+    int Y = 15;
+    
+    {
+    auto o = new Fl_Multiline_Output(10, Y, 375, 60);
+    o->value("Using the current settings, creates a config\nfile which may be used with the libcamera\napps via the \"-c\" command line option.");
+    o->box(FL_NO_BOX);
+    }
+    
+    Y += 65;
     previewChk = new Fl_Check_Button(10, Y, 150, 25, "Preview Settings");
     previewChk->value(0);
 

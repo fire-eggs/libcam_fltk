@@ -304,9 +304,10 @@ static void changeSettings()
       
       newopt->awb_index = _awb_index;
       
-      // TODO if not zero, need to disable AWB Mode ?
+      // non-zero values here overrides AWB mode
       newopt->awb_gain_b = _awb_gain_b;
       newopt->awb_gain_r = _awb_gain_r;
+      
       newopt->gain = _analogGain;
       // TODO newopt->shutter = _shutter;
 
