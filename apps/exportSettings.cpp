@@ -1,3 +1,9 @@
+/* SPDX-License-Identifier: BSD-3-Clause-Clear */
+/*
+ * Copyright (C) 2022, Kevin Routley
+ *
+ * The "export" dialog box. GUI definition, callback functions.
+ */
 #include <stdio.h>
 #include <stdlib.h> // system
 #include <ctime>    // time, time_t, localtime, strftime
@@ -34,8 +40,12 @@ extern double _zoom;
 extern double _panH;
 extern double _panV;
 
+extern float _awb_gain_b;
+extern float _awb_gain_r;
+
 extern const char *getExposureString();
 extern const char *getMeteringString();
+extern const char *getAWBString();
 extern void calculateTimelapse(MainWin *);
 extern MainWin* _window; // TODO hack hack
 
@@ -52,6 +62,7 @@ extern MainWin* _window; // TODO hack hack
 Fl_Double_Window *exportDlg;
 Fl_Check_Button  *previewChk;
 Fl_Check_Button  *zoomChk;
+Fl_Check_Button  *advChk;
 Fl_Check_Button  *stillChk;
 Fl_Radio_Round_Button  *timelapseChk;
 Fl_Radio_Round_Button  *captureChk;
@@ -170,13 +181,15 @@ static bool writeConfigFile(const char *filename, int options, const char *comme
         fprintf(f, "# zoom setting\n");
         fprintf(f, "roi=%g,%g,%g,%g\n", _panH, _panV, _zoom, _zoom);
     }
-    
-#if 0
-    // advanced
-    awb
-    awbgains
-    
-#endif
+
+    // advanced settings
+    if (options & ADVANCED_SET)
+    {
+        fprintf(f, "\n");
+        fprintf(f, "# advanced settings\n");
+        fprintf(f, "awbgains=%g,%g\n", _awb_gain_r, _awb_gain_b);
+        fprintf(f, "awb=%s\n", getAWBString());
+    }
     
     fclose(f);
     return true;
@@ -200,6 +213,8 @@ static void cbExport(Fl_Widget *, void *)
     int settings = 0;
     settings |= (previewChk->value() != 0) ? PREVIEW_SET : 0;
     settings |= (zoomChk->value() != 0) ? ZOOM_SET : 0;
+    settings |= (advChk->value() != 0) ? ADVANCED_SET : 0;
+    
     if (stillChk->value() != 0)
     {
         settings |= (timelapseChk->value() != 0) ? TIMELAPSE_SET : 0;
@@ -271,12 +286,12 @@ Fl_Double_Window *make_export()
 {
     // TODO libcamera-still vs libcamera-vid settings?
     
-    auto panel = new Fl_Double_Window(400, 400, "Export options");
+    auto panel = new Fl_Double_Window(400, 450, "Export options");
 
     int Y = 15;
     
     {
-    auto o = new Fl_Multiline_Output(10, Y, 375, 60);
+    auto o = new Fl_Multiline_Output(15, Y, 375, 60);
     o->value("Using the current settings, creates a config\nfile which may be used with the libcamera\napps via the \"-c\" command line option.");
     o->box(FL_NO_BOX);
     }
@@ -290,6 +305,11 @@ Fl_Double_Window *make_export()
     zoomChk = new Fl_Check_Button(10, Y, 150, 25, "Zoom Settings");
     zoomChk->value(0);
 
+    Y += 30;
+    
+    advChk = new Fl_Check_Button(10, Y, 150, 25, "Advanced Settings");
+    advChk->value(0);
+    
     Y += 30;
 
     stillChk = new Fl_Check_Button(10, Y, 150, 25, "libcamera-still Settings");

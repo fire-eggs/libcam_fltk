@@ -194,3 +194,10 @@ void init_advanced()
     awbg = advP->get("awbGainB", 0.0f);
     _awb_gain_b = awbg;
 }
+
+const char *getAWBString()
+{
+    Prefs *advP = _prefs->getSubPrefs("advanced");
+    int val = advP->get("awbIndex", 0);
+    return menu_cmbFormat[val].text;
+}
