@@ -197,7 +197,7 @@ void cbExport(Fl_Widget *, void *)
 Fl_Menu_Item mainmenuItems[] =
 {
     {"&File", 0, nullptr, nullptr, FL_SUBMENU, 0, 0, 0, 0},
-    {"Ad&vanced", 0, adv_cb, nullptr, 0, 0, 0, 0, 0},
+    {"Ad&vanced...", 0, adv_cb, nullptr, 0, 0, 0, 0, 0},
     {"Export...", 0, cbExport, nullptr, 0, 0, 0, 0, 0},
     {"E&xit", 0, cb_quit, nullptr, 0, 0, 0, 0, 0},
     {0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -257,17 +257,22 @@ void guiEvent(int val)
 
 void initPreviewMenu()
 {
-    // TODO initialize the preview shown check state
+    // initialize the preview shown check state
     Fl_Menu_Item *mi = (Fl_Menu_Item *)(_menu->find_item(cb_ShowPreview));
     if (isPreviewShown())
         mi->set();
     else
         mi->clear();
     
-    // TODO initialize the preview size radio state
+    // initialize the preview size radio state
     mi = (Fl_Menu_Item *)(_menu->find_item(cb_PreviewSize));
     int v = getPreviewSizeChoice();
     mi = mi->next(v);
+    mi->set();
+    
+    // TODO save playback speed in prefs
+    // initialize the preview playback speed state
+    mi = (Fl_Menu_Item *)(_menu->find_item(cb_PreviewSpeed));
     mi->set();
 }
 
