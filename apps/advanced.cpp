@@ -2,7 +2,7 @@
 /*
  * Copyright (C) 2021-2022, Kevin Routley
  *
- * The "advanced" dialog box. GUI definition, callback functions.
+ * The "advanced" dialog box. GUI definition, callback functions, and inter-thread communication.
  */
 
 #include <iostream>
@@ -17,12 +17,16 @@
 #include <FL/Fl_Spinner.H>
 #include <FL/Fl_Box.H>
 
+#include "prefs.h"
+extern Prefs *_prefs;
+
 extern bool stateChange;
 
+// The AWB settings for camThread
 int32_t _awb_index;
 float   _awb_gain_r;
 float   _awb_gain_b;
-float   _shutter;
+//TODO float   _shutter;
 
 Fl_Double_Window *advanced;
 
@@ -57,7 +61,10 @@ static void onAWBMode(Fl_Widget *w, void *)
     // AWB Mode choice change
     Fl_Choice *o = dynamic_cast<Fl_Choice*>(w);
     int val = o->value();
-        
+    
+    Prefs *setP = _prefs->getSubPrefs("advanced");
+    setP->set("awbIndex", val);
+    
     _awb_index = awb_table[val];
     stateChange = true;
 }
@@ -67,7 +74,10 @@ static void cb_GainsB(Fl_Widget *w, void *)
     // AWB Gains Blue
     Fl_Slider *o = dynamic_cast<Fl_Slider *>(w);
     double val = o->value();
-        
+
+    Prefs *setP = _prefs->getSubPrefs("advanced");
+    setP->set("awbGainB", val);
+    
     _awb_gain_b = val;
     stateChange = true;
 }
@@ -77,13 +87,24 @@ static void cb_GainsR(Fl_Widget *w, void *)
     // AWB Gains Red
     Fl_Slider *o = dynamic_cast<Fl_Slider *>(w);
     double val = o->value();
-        
+
+    Prefs *setP = _prefs->getSubPrefs("advanced");
+    setP->set("awbGainR", val);
+    
     _awb_gain_r = val;
     stateChange = true;    
 }
 
 Fl_Double_Window *make_advanced(int _x, int _y)
 {
+    // TODO copy-pasta see init_advanced
+    Prefs *advP = _prefs->getSubPrefs("advanced");
+    
+    int awbDex = advP->get("awbIndex", 0);
+    float awbgr = advP->get("awbGainR", 0.0f);
+    float awbgb = advP->get("awbGainB", 0.0f);
+    
+    
     auto panel = new Fl_Double_Window(_x, _y, 345, 350, "Advanced Settings");
 
     int Y = 25;
@@ -91,6 +112,7 @@ Fl_Double_Window *make_advanced(int _x, int _y)
     auto awbCmb = new Fl_Choice(10, Y, 150, 25, "AWB Mode");
     awbCmb->down_box(FL_BORDER_BOX);
     awbCmb->copy(menu_cmbFormat);
+    awbCmb->value(awbDex);
     awbCmb->callback(onAWBMode);
     awbCmb->align(Fl_Align(FL_ALIGN_LEFT | FL_ALIGN_TOP));
     
@@ -101,7 +123,7 @@ Fl_Double_Window *make_advanced(int _x, int _y)
         o->type(FL_HOR_NICE_SLIDER);
         o->box(FL_DOWN_BOX);
         o->bounds(0.0, 10.0);
-        o->value(0.0);
+        o->value(awbgb);
         o->when(FL_WHEN_RELEASE);
         o->callback(cb_GainsB);
         o->align(Fl_Align(FL_ALIGN_LEFT | FL_ALIGN_TOP));
@@ -112,7 +134,7 @@ Fl_Double_Window *make_advanced(int _x, int _y)
         o->type(FL_HOR_NICE_SLIDER);
         o->box(FL_DOWN_BOX);
         o->bounds(0.0, 10.0);
-        o->value(0.0);
+        o->value(awbgr);
         o->when(FL_WHEN_RELEASE);
         o->callback(cb_GainsR);
         o->align(Fl_Align(FL_ALIGN_LEFT | FL_ALIGN_TOP));
@@ -162,8 +184,13 @@ void do_advanced(int x, int y)
 
 void init_advanced()
 {
-    _awb_index =     libcamera::controls::AwbAuto;
+    Prefs *advP = _prefs->getSubPrefs("advanced");
+    
+    int val = advP->get("awbIndex", 0);
+    _awb_index = awb_table[val];
 
-    _awb_gain_r = 0.0;
-    _awb_gain_b = 0.0;
+    float awbg = advP->get("awbGainR", 0.0f);
+    _awb_gain_r = awbg;
+    awbg = advP->get("awbGainB", 0.0f);
+    _awb_gain_b = awbg;
 }
